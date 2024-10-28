@@ -7,6 +7,17 @@
 </head>
 <body>
     <h1>Siginup</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div>名前 <input type="text" name="name" value="{{ form.name.value|default:'名前'}}"><div>
+        <div>メールアドレス <input type="email" name="email"></div>
+        <div>パスワード <input type="password" name="password1"></div>
+        <div>確認用パスワード <input type="password" name="password2"></div>
+        <button type="submit">登録</button>
+    </form>
+    {{ form.errors }}
+
     <a href="{% url 'login' %}">ログインへ戻る</a>
+
 </body>
 </html>
