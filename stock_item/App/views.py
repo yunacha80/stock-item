@@ -10,10 +10,10 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from .forms import CustomPasswordChangeForm,EmailChangeForm,ItemForm, StoreItemReferenceFormSet,StoreItemReferenceForm
+from .forms import CustomPasswordChangeForm,EmailChangeForm,ItemForm, StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm
 from django.contrib import messages
 from .models import Item, StoreItemReference
-# from .models import Category
+from .models import Category
 # Create your views here.
 
 
@@ -124,6 +124,7 @@ def item_add(request):
         form = ItemForm()
         formset = StoreItemReferenceFormSet()
         
+        
     return render(request, 'item_add.html', {'form': form, 'formset': formset})
 
 def item_list(request):
@@ -171,6 +172,41 @@ def item_delete(request, item_id):
 #     })
 
 
-# def category_list_view(request):
-#     categories = Category.objects.all()[:10]  # 最大10個のカテゴリを取得
-#     return render(request, 'category_list.html', {'categories': categories})
+def category_list(request):
+    categories = Category.objects.filter(user=request.user)
+    if not categories:
+        print("現在、カテゴリは存在しません。")  # デバッグ用の出力
+    return render(request, 'category_list.html', {'categories': categories})
+    
+@login_required
+def category_add(request):
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            category = form.save(commit=False)
+            category.user = request.user  # 現在のユーザーを設定
+            category.save()
+            return redirect('category_list')
+    else:
+        form = CategoryForm()
+    return render(request, 'category_form.html', {'form': form})
+
+# カテゴリ編集
+def category_edit(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == "POST":
+        form = CategoryForm(request.POST, instance=category)
+        if form.is_valid():
+            form.save()
+            return redirect('category_list')
+    else:
+        form = CategoryForm(instance=category)
+    return render(request, 'category_form.html', {'form': form})
+
+
+def category_delete(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    if request.method == "POST":
+        category.delete()
+        return redirect('category_list')
+    return render(request, 'category_confirm_delete.html', {'category': category})

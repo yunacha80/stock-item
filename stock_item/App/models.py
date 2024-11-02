@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+# from .models import Category
 
 # Create your models here.
 
@@ -29,6 +31,20 @@ class User(AbstractUser):
         db_table = "users"
 
 
+
+def validate_category_limit(value):
+    if len(value) > 10:
+        raise ValidationError('カテゴリは最大10個まで登録可能です。')
+
+
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    display_order = models.IntegerField(default=0) 
+
+    def __str__(self):
+        return self.name
+    
 class Store(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
@@ -40,21 +56,12 @@ class Store(models.Model):
     def __str__(self):
         return self.name
         
-class ItemCategory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.name
-
 class Item(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(ItemCategory, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=50)
     stock_quantity = models.IntegerField(default=0)
-    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # 価格
+    price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)  # 価格
     unit_quantity = models.IntegerField(null=True, blank=True)  # 入数
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     memo = models.CharField(max_length=100, blank=True)
@@ -82,3 +89,4 @@ class StoreItemReference(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - {self.store.name}"
+    

@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Item</title>
 </head>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <title>ナビゲーション</title>
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+
+<nav>
+    <a href="{% url 'login' %}">アプリへ</a>
+    <a href="{% url 'logout' %}">ログアウト</a>
+    <a href="{% url 'password_change' %}">パスワード変更</a>
+    <a href="{% url 'item_add' %}">アイテム追加</a>
+    <a href="{% url 'item_list' %}">アイテム一覧</a>
+    <a href="{% url 'category_list' %}">カテゴリ一覧</a>
+</nav>
+</body>
 <body>
     <h1>Home</h1>
     <a href="{% url 'login' %}">アプリへ</a>

@@ -34,5 +34,8 @@ urlpatterns = [
     path('email_change/', EmailChangeView.as_view(), name='email_change'),
     path('items/add/', views.item_add, name='item_add'),
     path('items/', views.item_list, name='item_list'),
-    # path('category/', category_list_view, name='category_list'),
+    path('categories/', views.category_list, name='category_list'),
+    path('categories/add/', views.category_add, name='category_add'),
+    path('categories/edit/<int:category_id>/', views.category_edit, name='category_edit'),
+    path('categories/delete/<int:category_id>/', views.category_delete, name='category_delete'),
 ]

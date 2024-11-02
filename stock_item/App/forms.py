@@ -5,8 +5,7 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.forms import inlineformset_factory
-from .models import Item,StoreItemReference
-
+from .models import Item,StoreItemReference, Category
 
 
 
@@ -92,3 +91,13 @@ class StoreItemReferenceForm(forms.ModelForm):
 StoreItemReferenceFormSet = inlineformset_factory(
     Item, StoreItemReference, form=StoreItemReferenceForm, extra=1, can_delete=True
 )
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ['name', 'display_order']
+        labels = {
+            'name': 'カテゴリ名',
+            'display_order': '表示順',
+        }
