@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>アイテム追加</title>
+</head>
+<body>
+    <h1>アイテム追加</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        
+        <h4>店舗ごとの価格情報</h4>
+        {{ formset.management_form }}
+        <div id="price-info">
+            {% for form in formset %}
+            <div class="price-entry">
+                {{ form.as_p }}
+                {% if form.instance.pk %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <button type="submit">追加</button>
+    </form>
+    <a href="{% url 'home' %}">戻る</a>
+    
+</body>
+</html>

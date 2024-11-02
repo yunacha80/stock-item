@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Item</title>
+</head>
+<body>
+    <h1>■設定</h1>
+    <br>
+    <h2>ストックアイテムカテゴリ編集</h2>
+    <hr>
+    <<ul>
+        {% for category in categories %}
+            <li>{{ category.name }}: {{ category.description }}</li>
+        <hr>
+        {% endfor %}
+    </ul>
+    
+    <h2>アカウント編集（{{ user.username }}様</h2>
+    <hr>
+    <li><a href="/user/{{ user.id }}">{{ user.username }}</a>
+
+
+    <hr>
+   
+</body>
+
+    <a href="{% url 'login' %}">ログインへ戻る</a>
+
+</body>

@@ -17,7 +17,11 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView, HomeView
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView
+from App import views  
+
+
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -25,4 +29,10 @@ urlpatterns = [
     path('signup/', SignupView.as_view(), name="signup"),
     path('login/', LoginView.as_view(), name="login"),
     path('home/', HomeView.as_view(), name="home"),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('password_change/', PasswordChangeView.as_view(), name='password_change'),
+    path('email_change/', EmailChangeView.as_view(), name='email_change'),
+    path('items/add/', views.item_add, name='item_add'),
+    path('items/', views.item_list, name='item_list'),
+    # path('category/', category_list_view, name='category_list'),
 ]
