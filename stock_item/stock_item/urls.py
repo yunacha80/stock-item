@@ -36,6 +36,7 @@ urlpatterns = [
     path('items/', views.item_list, name='item_list'),
     path('categories/', views.category_list, name='category_list'),
     path('categories/add/', views.category_add, name='category_add'),
+    path('items/edit/<int:item_id>/', views.item_edit, name='item_edit'),
     path('categories/edit/<int:category_id>/', views.category_edit, name='category_edit'),
     path('categories/delete/<int:category_id>/', views.category_delete, name='category_delete'),
     path('purchase_history/', views.purchase_history_list, name='purchase_history_list'),

@@ -4,7 +4,7 @@ from App.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory,modelformset_factory
 from .models import Item,StoreItemReference, Category,PurchaseHistory,Store,StoreTravelTime
 
 
@@ -79,17 +79,41 @@ class ItemForm(forms.ModelForm):
 class StoreItemReferenceForm(forms.ModelForm):
     class Meta:
         model = StoreItemReference
-        fields = ['store', 'price', 'unit_quantity', 'memo']
+        fields = ['price', 'unit_quantity', 'memo']
         labels = {
-            'store': '店舗',
             'price': '価格',
             'unit_quantity': '入数',
             'memo': 'メモ',
         }
 
-StoreItemReferenceFormSet = inlineformset_factory(
-    Item, StoreItemReference, form=StoreItemReferenceForm, extra=1, can_delete=True
+    @property
+    def unit_price(self):
+        price = self.cleaned_data.get('price')
+        unit_quantity = self.cleaned_data.get('unit_quantity')
+        return price / unit_quantity if price and unit_quantity else None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        price = cleaned_data.get('price')
+        unit_quantity = cleaned_data.get('unit_quantity')
+
+        # 価格と入数が両方とも入力されている場合に単価を計算
+        if price is not None and unit_quantity is not None and unit_quantity > 0:
+            cleaned_data['unit_price'] = price / unit_quantity
+        else:
+            cleaned_data['unit_price'] = None  # 単価が計算できない場合はNoneに設定
+
+        return cleaned_data
+
+
+StoreItemReferenceFormSet = modelformset_factory(
+    StoreItemReference,
+    fields=['store', 'price', 'unit_quantity', 'memo'],
+    extra=1,  # 新しい店舗価格を追加できるフォームを1つ追加
+    can_delete=True  # 削除も可能にする
 )
+
+
 
 
 

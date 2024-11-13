@@ -7,10 +7,14 @@
 <body>
     <h1>アイテム一覧</h1>
     <a href="{% url 'item_add' %}">新規アイテム追加</a>
-     {% if items %}
+    
+    {% if items %}
         <ul>
             {% for item in items %}
-                <li>{{ item.name }} - 在庫数: {{ item.stock_quantity }}</li>
+                <li>
+                    <!-- アイテム名をリンクにする -->
+                    <a href="{% url 'item_edit' item.id %}">{{ item.name }}</a> - 在庫数: {{ item.stock_quantity }}
+                </li>
             {% endfor %}
         </ul>
     {% else %}
