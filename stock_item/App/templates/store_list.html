@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>店舗一覧</title>
+</head>
+<body>
+    <h1>店舗一覧</h1>
+    <a href="{% url 'store_add' %}">新規店舗追加</a>
+    <ul>
+        {% for store in stores %}
+        <li>
+            {{ store.name }} 
+            <a href="{% url 'store_edit' store.id %}">編集</a>
+            <form action="{% url 'store_delete' store.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">削除</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% if not categories %}
+    <p>登録された店舗はありません。</p>
+{% endif %}
+</body>
+</html>
+
+
+{% comment %} <h1>カテゴリ一覧</h1>
+<a href="{% url 'category_add' %}">新規カテゴリ追加</a>
+<ul>
+    {% for category in categories %}
+        <li>{{ category.name }}
+            <a href="{% url 'category_edit' category.id %}">編集</a>
+            <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">削除</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+{% if not categories %}
+    <p>まだカテゴリが登録されていません。</p>
+{% endif %}
+</body>
+</html>
+</body>
+</html> {% endcomment %}

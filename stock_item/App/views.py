@@ -1,19 +1,21 @@
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
-from App.forms import SignupForm, LoginForm,EmailChangeForm,ItemForm
+from App.forms import SignupForm, LoginForm,EmailChangeForm,ItemForm,PurchaseHistoryFilterForm
 from django.contrib.auth import login,logout
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from .forms import CustomPasswordChangeForm,EmailChangeForm,ItemForm, StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm
-from django.contrib import messages
-from .models import Item, StoreItemReference
-from .models import Category
+from .models import Item, StoreItemReference,Category,PurchaseHistory,Store,StoreTravelTime
+from .forms import CustomPasswordChangeForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet
+
+
+
 # Create your views here.
 
 
@@ -210,3 +212,87 @@ def category_delete(request, category_id):
         category.delete()
         return redirect('category_list')
     return render(request, 'category_confirm_delete.html', {'category': category})
+
+
+
+# 購入履歴
+def purchase_history_list(request):
+    histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
+    return render(request, 'purchase_history_list.html', {'histories': histories})
+
+
+# 購入履歴検索
+def purchase_history_Search(request):
+    # ユーザーに関連する購入履歴を取得
+    histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
+    form = PurchaseHistoryFilterForm(request.GET)
+
+    # アイテム名での絞り込み
+    if form.is_valid() and form.cleaned_data['item']:
+        histories = histories.filter(item=form.cleaned_data['item'])
+
+    return render(request, 'items/purchase_history_list.html', {'histories': histories, 'form': form})
+
+
+# 店舗追加
+def store_add(request):
+    if request.method == 'POST':
+        form = StoreForm(request.POST)
+        formset = StoreTravelTimeFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
+            store = form.save(commit=False)
+            store.user = request.user  # 現在のログインユーザーを関連付ける
+            store.save()
+
+            store_travel_times = formset.save(commit=False)
+            for travel in store_travel_times:
+                travel.store_from = store
+                travel.save()
+            return redirect('store_list')  # 店舗一覧ページにリダイレクト（適宜URLを設定）
+    else:
+        form = StoreForm()
+        formset = StoreTravelTimeFormSet()
+    return render(request, 'store_add.html', {'form': form, 'formset': formset})
+
+# 店舗一覧
+def store_list(request):
+    stores = Store.objects.filter(user=request.user)
+    return render(request, 'store_list.html', {'stores': stores})
+
+
+def store_edit(request, pk):
+    store = Store.objects.get(pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = StoreForm(request.POST, instance=store)
+        formset = StoreTravelTimeFormSet(request.POST, instance=store)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            store_travel_times = formset.save(commit=False)
+            for travel in store_travel_times:
+                travel.store_from = store
+                travel.save()
+            formset.save()
+            return redirect('store_list')
+    else:
+        form = StoreForm(instance=store)
+        formset = StoreTravelTimeFormSet(instance=store)
+    return render(request, 'store_edit.html', {'form': form, 'formset': formset})
+
+
+def store_delete(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if request.method == "POST":
+        store.delete()
+        return redirect('store_list')
+    return render(request, 'store_confirm_delete.html', {'store': store})
+
+
+def add_store_travel_time(request):
+    if request.method == 'POST':
+        form = StoreTravelTimeFormSet(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('store_travel_time_list')  # 移動時間一覧ページにリダイレクト
+    else:
+        form = StoreTravelTimeFormSet()
+    return render(request, 'stores/add_store_travel_time.html', {'form': form})

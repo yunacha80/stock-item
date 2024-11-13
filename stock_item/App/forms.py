@@ -5,8 +5,7 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.forms import inlineformset_factory
-from .models import Item,StoreItemReference, Category
-
+from .models import Item,StoreItemReference, Category,PurchaseHistory,Store,StoreTravelTime
 
 
 
@@ -93,6 +92,7 @@ StoreItemReferenceFormSet = inlineformset_factory(
 )
 
 
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -101,3 +101,43 @@ class CategoryForm(forms.ModelForm):
             'name': 'カテゴリ名',
             'display_order': '表示順',
         }
+
+
+class PurchaseHistoryForm(forms.ModelForm):
+    class Meta:
+        model = PurchaseHistory
+        fields = ['item', 'purchased_date', 'purchased_quantity']
+        labels = {
+            'item': 'アイテム',
+            'purchased_date': '購入日',
+            'purchased_quantity': '購入数量',
+        }
+
+
+# 購入履歴検索
+class PurchaseHistoryFilterForm(forms.Form):
+        item = forms.ModelChoiceField(
+        queryset=Item.objects.all().distinct(),
+        required=False,
+        label="アイテム名"
+    )
+        
+
+# 店舗追加
+class StoreForm(forms.ModelForm):
+    class Meta:
+        model = Store
+        fields = ['name', 'address', 'phone_number', 'travel_time_home_min']
+        labels = {
+            'name': '店舗名',
+            'address': '住所',
+            'phone_number': '電話番号',
+            'travel_time_home_min': '自宅からの移動時間（分）',
+        }
+
+StoreTravelTimeFormSet = inlineformset_factory(
+    parent_model=Store,
+    model=StoreTravelTime,
+    fields='__all__',
+    fk_name='store1'  # or store2 指定
+)

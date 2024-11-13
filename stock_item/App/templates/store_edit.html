@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>店舗編集</title>
+</head>
+<body>
+    <h1>店舗編集</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <h2>他店舗との移動時間設定</h2>
+        {{ formset.management_form }}
+        <table>
+            {% for subform in formset %}
+                <tr>
+                    <td>{{ subform.store_to.label }}: {{ subform.store_to }}</td>
+                    <td>{{ subform.travel_time_min.label }}: {{ subform.travel_time_min }}</td>
+                    <td>{% if subform.instance.pk %}<button type="button" class="remove-form">削除</button>{% endif %}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        
+        <button type="submit">保存</button>
+    </form>
+</body>
+</html>
