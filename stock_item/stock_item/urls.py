@@ -40,10 +40,9 @@ urlpatterns = [
     path('categories/delete/<int:category_id>/', views.category_delete, name='category_delete'),
     path('purchase_history/', views.purchase_history_list, name='purchase_history_list'),
     path('purchase_history/Search/', views.purchase_history_Search, name='purchase_history_Search'),
-    path('stores/', views.store_list, name='store_list'),
-    path('stores/add/', views.store_add, name='store_add'),
+    path('stores/list/', views.store_list, name='store_list'),
     path('stores/edit/<int:store_id>/', views.store_edit, name='store_edit'),
     path('stores/delete/<int:store_id>/', views.store_delete, name='store_delete'),
-     path('stores/add/', views.store_add, name='store_add'),
+    path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
 ]

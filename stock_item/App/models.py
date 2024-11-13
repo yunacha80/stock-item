@@ -97,15 +97,15 @@ class StoreItemReference(models.Model):
 class StoreTravelTime(models.Model):
     store1 = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store1_travel_times')
     store2 = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store2_travel_times')
-    store_from = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="travel_from", verbose_name="出発店舗")
-    store_to = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="travel_to", verbose_name="到着店舗")
     travel_time_min = models.IntegerField(verbose_name="移動時間（分）")  # 移動時間（分）
 
-    class Meta:
-        unique_together = ('store_from', 'store_to')  # 重複データの防止
-
     def __str__(self):
-        return f"{self.store_from.name} → {self.store_to.name} : {self.travel_time_min}分"
+        return f"{self.store1.name} to {self.store2.name} : {self.travel_time_min}分"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['store1', 'store2'], name='unique_store_travel_time')
+        ]
     
 
 

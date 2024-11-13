@@ -2,26 +2,30 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>店舗追加</title>
+    <title>新規店舗登録</title>
 </head>
 <body>
-    <h1>店舗追加</h1>
-    <form method="post">
+    <h1>新規店舗登録</h1>
+
+    <form method="POST">
         {% csrf_token %}
-        {{ form.as_p }}
-        <h2>他店舗との移動時間設定</h2>
-        {{ formset.management_form }}
-        <table>
-            {% for subform in formset %}
-                <tr>
-                    <td>{{ subform.store_to.label }}: {{ subform.store_to }}</td>
-                    <td>{{ subform.travel_time_min.label }}: {{ subform.travel_time_min }}</td>
-                    <td>{% if subform.instance.pk %}<button type="button" class="remove-form">削除</button>{% endif %}</td>
-                </tr>
-            {% endfor %}
-        </table>
         
-        <button type="submit">登録</button>
+        <h2>店舗情報</h2>
+        {{ store_form.as_p }}  <!-- 店舗情報フォーム -->
+
+        <h2>他店舗との移動時間設定</h2>
+
+        <div class="store-list">
+            {% for store in stores %}
+                <div class="store-row">
+                    <label for="travel_time_{{ store.id }}">店舗「{{ store.name }}」への移動時間:</label>
+                    <input type="number" name="travel_time_{{ store.id }}" id="travel_time_{{ store.id }}" placeholder="移動時間 (分)" required>
+                </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit">保存</button>
     </form>
+
 </body>
 </html>

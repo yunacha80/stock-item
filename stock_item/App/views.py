@@ -1,6 +1,7 @@
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
+from django.db import transaction
 from App.forms import SignupForm, LoginForm,EmailChangeForm,ItemForm,PurchaseHistoryFilterForm
 from django.contrib.auth import login,logout
 from django.contrib.auth import update_session_auth_hash
@@ -12,7 +13,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
 from .models import Item, StoreItemReference,Category,PurchaseHistory,Store,StoreTravelTime
-from .forms import CustomPasswordChangeForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet
+from .forms import CustomPasswordChangeForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm
 
 
 
@@ -235,56 +236,62 @@ def purchase_history_Search(request):
 
 
 # 店舗追加
-def store_add(request):
-    if request.method == 'POST':
-        form = StoreForm(request.POST)
-        formset = StoreTravelTimeFormSet(request.POST)
-        if form.is_valid() and formset.is_valid():
-            store = form.save(commit=False)
-            store.user = request.user  # 現在のログインユーザーを関連付ける
-            store.save()
+# def store_add(request):
+#     if request.method == 'POST':
+#         form = StoreForm(request.POST)
+#         formset = StoreTravelTimeFormSet(request.POST)
+#         if form.is_valid() and formset.is_valid():
+#             store = form.save(commit=False)
+#             store.user = request.user  # 現在のログインユーザーを関連付ける
+#             store.save()
 
-            store_travel_times = formset.save(commit=False)
-            for travel in store_travel_times:
-                travel.store_from = store
-                travel.save()
-            return redirect('store_list')  # 店舗一覧ページにリダイレクト（適宜URLを設定）
-    else:
-        form = StoreForm()
-        formset = StoreTravelTimeFormSet()
-    return render(request, 'store_add.html', {'form': form, 'formset': formset})
+#             store_travel_times = formset.save(commit=False)
+#             for travel in store_travel_times:
+#                 travel.store_from = store
+#                 travel.save()
+#             return redirect('store_list')  # 店舗一覧ページにリダイレクト（適宜URLを設定）
+#     else:
+#         form = StoreForm()
+#         formset = StoreTravelTimeFormSet()
+#     return render(request, 'store_add.html', {'form': form, 'formset': formset})
 
 # 店舗一覧
 def store_list(request):
     stores = Store.objects.filter(user=request.user)
+    if not stores.exists():
+        messages.info(request, "登録された店舗がありません。")    
     return render(request, 'store_list.html', {'stores': stores})
 
 
-def store_edit(request, pk):
-    store = Store.objects.get(pk=pk, user=request.user)
-    if request.method == 'POST':
-        form = StoreForm(request.POST, instance=store)
-        formset = StoreTravelTimeFormSet(request.POST, instance=store)
-        if form.is_valid() and formset.is_valid():
-            form.save()
-            store_travel_times = formset.save(commit=False)
-            for travel in store_travel_times:
-                travel.store_from = store
-                travel.save()
-            formset.save()
-            return redirect('store_list')
-    else:
-        form = StoreForm(instance=store)
-        formset = StoreTravelTimeFormSet(instance=store)
-    return render(request, 'store_edit.html', {'form': form, 'formset': formset})
+# def store_edit(request, pk):
+#     store = get_object_or_404(Store, pk=pk, user=request.user)
+#     if request.method == 'POST':
+#         form = StoreForm(request.POST, instance=store)
+#         formset = StoreTravelTimeFormSet(request.POST, instance=store)
+#         if form.is_valid() and formset.is_valid():
+#             form.save()
+#             store_travel_times = formset.save(commit=False)
+#             for travel in store_travel_times:
+#                 travel.store_from = store
+#                 travel.save()
+#             messages.success(request, "店舗情報が更新されました。")
+#             return redirect('store_list')
+#         else:
+#             messages.error(request, "フォームにエラーがあります。")
+#     else:
+#         form = StoreForm(instance=store)
+#         formset = StoreTravelTimeFormSet(instance=store)
+#     return render(request, 'store_edit.html', {'form': form, 'formset': formset})
 
 
 def store_delete(request, store_id):
-    store = get_object_or_404(Store, id=store_id)
+    store = get_object_or_404(Store, id=store_id, user=request.user)
     if request.method == "POST":
         store.delete()
-        return redirect('store_list')
+        messages.success(request, "店舗が削除されました。")
+        return redirect('store_list')  # URL名を使用
     return render(request, 'store_confirm_delete.html', {'store': store})
+
 
 
 def add_store_travel_time(request):
@@ -292,7 +299,76 @@ def add_store_travel_time(request):
         form = StoreTravelTimeFormSet(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('store_travel_time_list')  # 移動時間一覧ページにリダイレクト
+            messages.success(request, "移動時間が追加されました。")
+            return redirect('store_list')
+        else:
+            messages.error(request, "フォームにエラーがあります。")
     else:
         form = StoreTravelTimeFormSet()
-    return render(request, 'stores/add_store_travel_time.html', {'form': form})
+    return render(request, 'store_add.html', {'form': form})
+
+# 新規店舗追加
+def store_add(request):
+    stores = Store.objects.filter(user=request.user)  # 登録済み店舗の取得
+
+    if request.method == 'POST':
+        store_form = StoreForm(request.POST)
+
+        if store_form.is_valid():
+            try:
+                with transaction.atomic():  # トランザクションを開始
+                    store = store_form.save(commit=False)
+                    store.user = request.user
+                    store.save()
+
+                    # 他店舗との移動時間を保存
+                    for store_instance in stores:
+                        travel_time_key = f"travel_time_{store_instance.id}"
+                        if travel_time_key in request.POST:
+                            travel_time = request.POST[travel_time_key]
+
+                            # 移動時間を保存
+                            StoreTravelTime.objects.create(
+                                store1=store,
+                                store2=store_instance,
+                                travel_time_min=travel_time
+                            )
+                            StoreTravelTime.objects.create(
+                                store1=store_instance,
+                                store2=store,
+                                travel_time_min=travel_time
+                            )
+
+                    messages.success(request, "店舗が追加されました。")
+                    return redirect('store_list')
+
+            except Exception as e:
+                print(f"Error: {e}")
+                messages.error(request, "店舗の追加中にエラーが発生しました。")
+            
+    else:
+        store_form = StoreForm()
+
+    return render(request, 'store_add.html', {'store_form': store_form, 'stores': stores})
+
+# 店舗編集
+def store_edit(request, pk):
+    store = Store.objects.get(pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = StoreForm(request.POST, instance=store)
+        formset = StoreTravelTimeFormSet(request.POST, instance=store)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+
+            store_travel_times = formset.save(commit=False)
+            for travel in store_travel_times:
+                travel.store1 = store  # 出発店舗を設定
+                travel.save()
+
+            messages.success(request, "店舗情報と移動時間が更新されました。")
+            return redirect('store_list')
+    else:
+        form = StoreForm(instance=store)
+        formset = StoreTravelTimeFormSet(instance=store)
+
+    return render(request, 'store_edit.html', {'form': form, 'formset': formset})

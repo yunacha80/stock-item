@@ -138,6 +138,12 @@ class StoreForm(forms.ModelForm):
 StoreTravelTimeFormSet = inlineformset_factory(
     parent_model=Store,
     model=StoreTravelTime,
-    fields='__all__',
-    fk_name='store1'  # or store2 指定
+    fields=['store2', 'travel_time_min'],  # 移動時間と対象店舗
+    fk_name='store1',  # 親店舗（出発店舗）
+    extra=1  # 新しいフォームを追加するための設定（デフォルトで1）
 )
+
+# StoreTravelTimeのフォームセット
+class StoreTravelTimeForm(forms.Form):
+    store_2 = forms.ModelChoiceField(queryset=Store.objects.all(), label="他店舗")
+    travel_time = forms.IntegerField(label="移動時間 (分)")
