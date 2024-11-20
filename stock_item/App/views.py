@@ -2,6 +2,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.db import transaction
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from App.forms import SignupForm, LoginForm,EmailChangeForm,ItemForm,PurchaseHistoryFilterForm
 from django.contrib.auth import login,logout
 from django.contrib.auth import update_session_auth_hash
@@ -12,8 +14,10 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from .models import Item, StoreItemReference,Category,PurchaseHistory,Store,StoreTravelTime
-from .forms import CustomPasswordChangeForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm
+from .models import Item, StoreItemReference,Category,PurchaseHistory,Store,StoreTravelTime,ShoppingList
+from .forms import CustomPasswordChangeForm,ItemForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm,ItemForm
+from django.utils import timezone
+from django.utils.timezone import now
 
 
 
@@ -103,36 +107,142 @@ class HomeView(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, "home.html")
     
+def item_list(request):
+    items = Item.objects.all()  # すべてのアイテムを取得
+    return render(request, 'item_list.html', {'items': items})
+
 
 
 
 def item_add(request):
     if request.method == 'POST':
         form = ItemForm(request.POST)
-        formset = StoreItemReferenceFormSet(request.POST)
-        
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             item = form.save(commit=False)
-            item.user = request.user  # 現在のログインユーザーを設定
+            item.user = request.user  # ログインユーザーを関連付ける
             item.save()
-            
-            # フォームセットの各フォームにアイテムを関連付けて保存
-            price_references = formset.save(commit=False)
-            for price_reference in price_references:
-                price_reference.item = item
-                price_reference.save()
-            
-            return redirect('item_list')
+            return redirect('home')  # HOMEにリダイレクト
     else:
         form = ItemForm()
-        formset = StoreItemReferenceFormSet()
-        
-        
-    return render(request, 'item_add.html', {'form': form, 'formset': formset})
 
-def item_list(request):
-    items = Item.objects.filter(user=request.user)
-    return render(request, 'item_list.html', {'items': items})
+    return render(request, 'item_add.html', {'form': form})
+
+
+# def item_add(request):
+#     stores = Store.objects.all()  # 店舗を取得
+#     stores_with_forms = []  # stores_with_forms を初期化
+
+#     # 各店舗にフォームをバインドして stores_with_forms を作成
+#     for store in stores:
+#         stores_with_forms.append({
+#             'store': store.name,
+#             'form': StoreItemReferenceForm()  # 空のフォームを用意
+#         })
+
+#     if request.method == 'POST':
+#         form = ItemForm(request.POST)  # アイテムフォームをPOSTでバインド
+#         formset = StoreItemReferenceFormSet(request.POST)  # フォームセットをPOSTでバインド
+
+#         # バインド後にフォームが有効かどうかを確認
+#         if form.is_valid() and formset.is_valid():
+#             # フォームとフォームセットのデータを保存
+#             item = form.save(commit=False)  # アイテムの保存
+#             item.save()
+
+#             # フォームセットの保存
+#             for store_form in formset:
+#                 store_item = store_form.save(commit=False)
+#                 store_item.item = item
+#                 store_item.save()
+
+#             return redirect('item_list')  # アイテム一覧にリダイレクト
+#         else:
+#             # バリデーションエラー時の処理
+#             return render(request, 'item_add.html', {
+#                 'form': form,
+#                 'formset': formset,
+#                 'stores_with_forms': stores_with_forms,
+#             })
+
+#     # GETリクエスト時はフォームを初期化して表示
+#     form = ItemForm()
+#     formset = StoreItemReferenceFormSet(queryset=StoreItemReference.objects.none())
+#     return render(request, 'item_add.html', {
+#         'form': form,
+#         'formset': formset,
+#         'stores_with_forms': stores_with_forms,
+#     })
+
+
+
+
+# def item_add(request):
+#     stores = Store.objects.all()
+#     stores_with_forms = []
+
+#     if request.method == 'POST':
+#         form = ItemForm(request.POST)
+#         formset = StoreItemReferenceFormSet(request.POST)
+
+#         if form.is_valid() and formset.is_valid():
+#             with transaction.atomic():
+#                 item = form.save(commit=False)
+#                 item.user = request.user
+#                 try:
+#                     item.save()  # アイテムを保存
+#                 except Exception as e:
+#                     print(f"Error saving item: {e}")
+#                     return render(request, 'item_add.html', {
+#                         'form': form,
+#                         'formset': formset,
+#                         'stores_with_forms': stores_with_forms,
+#                         'error_message': f'アイテムの保存に失敗しました: {str(e)}'
+#                     })
+
+#                 # 購入間隔の計算
+#                 last_purchase = PurchaseHistory.objects.filter(item=item).order_by('-purchased_date').first()
+#                 if last_purchase and last_purchase.purchased_date:
+#                     item.purchase_interval_days = (timezone.now().date() - last_purchase.purchased_date).days
+#                 else:
+#                     item.purchase_interval_days = 0
+
+#                 item.save()  # 再度保存
+
+#                 # フォームセットのデータ保存
+#                 price_references = formset.save(commit=False)
+#                 for price_reference, store in zip(price_references, stores):
+#                     price_reference.item = item
+#                     price_reference.store = store
+#                     # unit_priceの計算
+#                     if price_reference.unit_quantity:
+#                         price_reference.unit_price = price_reference.price / price_reference.unit_quantity
+#                     price_reference.save()
+
+#                 return redirect('item_list')  # アイテムリストにリダイレクト
+#         else:
+#             # フォームやフォームセットにエラーがあれば表示
+#             print("Form Errors: ", form.errors)
+#             print("Formset Errors: ", formset.errors)
+
+#             return render(request, 'item_add.html', {
+#                 'form': form,
+#                 'formset': formset,
+#                 'stores_with_forms': stores_with_forms,
+#                 'form_errors': form.errors,
+#                 'formset_errors': formset.errors
+#             })
+
+#     # GETリクエストの場合はフォームを表示する処理
+#     form = ItemForm()
+#     formset = StoreItemReferenceFormSet(queryset=StoreItemReference.objects.none())  # 空のフォームセットを表示
+
+#     return render(request, 'item_add.html', {
+#         'form': form,
+#         'formset': formset,
+#         'stores_with_forms': stores_with_forms
+#     })
+
+
 
 
 def item_edit(request, item_id):
@@ -415,3 +525,65 @@ def store_edit(request, pk):
         formset = StoreTravelTimeFormSet(instance=store)
 
     return render(request, 'store_edit.html', {'form': form, 'formset': formset})
+
+
+def shopping_list_view(request):
+    """
+    買い物リストを表示するビュー
+    """
+    shopping_items = ShoppingList.objects.filter(item__user=request.user)
+    return render(request, 'shopping_list.html', {'shopping_items': shopping_items})
+
+@require_POST
+def update_quantity(request, shopping_list_id):
+    """
+    購入予定数を増減する
+    """
+    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+    action = request.POST.get('action')
+
+    if action == 'increment':
+        shopping_item.quantity_to_buy += 1
+    elif action == 'decrement' and shopping_item.quantity_to_buy > 0:
+        shopping_item.quantity_to_buy -= 1
+
+    shopping_item.save()
+    return JsonResponse({'quantity_to_buy': shopping_item.quantity_to_buy})
+
+@require_POST
+def delete_from_list(request, shopping_list_id):
+    """
+    買い物リストからアイテムを削除する
+    """
+    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+    shopping_item.delete()
+    return JsonResponse({'success': True})
+
+@require_POST
+def mark_as_purchased(request, shopping_list_id):
+    """
+    購入済みとしてマークし、購入履歴に保存
+    """
+    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+    purchased_date = request.POST.get('purchased_date')
+    purchased_quantity = shopping_item.quantity_to_buy
+
+    if purchased_date:
+        # 購入履歴に保存
+        PurchaseHistory.objects.create(
+            item=shopping_item.item,
+            purchased_date=purchased_date,
+            purchased_quantity=purchased_quantity
+        )
+
+        # 在庫数を更新
+        shopping_item.item.stock_quantity += purchased_quantity
+        shopping_item.item.save()
+
+        # 在庫数が最低値を超えた場合はリストから削除
+        if shopping_item.item.stock_quantity >= shopping_item.item.stock_min_threshold:
+            shopping_item.delete()
+
+        return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'success': False, 'error': '購入日を入力してください。'})

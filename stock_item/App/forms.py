@@ -4,8 +4,8 @@ from App.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.forms import inlineformset_factory,modelformset_factory
-from .models import Item,StoreItemReference, Category,PurchaseHistory,Store,StoreTravelTime
+from django.forms import inlineformset_factory,modelformset_factory,BaseInlineFormSet
+from .models import Item,StoreItemReference, Category,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
 
 
 
@@ -61,59 +61,121 @@ class EmailChangeForm(forms.Form):
         
         return cleaned_data
      
+
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'reminder']
+        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date', 'reminder']
         labels = {
             'name': 'アイテム名',
             'category': 'カテゴリ',
             'stock_quantity': '在庫数',
             'memo': 'メモ',
             'stock_min_threshold': '最低在庫数',
+            'last_purchase_date': '最終購入日',
             'reminder': 'リマインダー',
         }
 
+    # 在庫数（整数）を検証
+    stock_quantity = forms.IntegerField(
+        min_value=0,
+        label="在庫数",
+        required=True,
+        error_messages={'invalid': '在庫数量は整数でなければなりません。'}
+    )
 
+    # 最小在庫数（整数）を検証
+    stock_min_threshold = forms.IntegerField(
+        min_value=0,
+        label="最低在庫数",
+        required=True,
+        error_messages={'invalid': '最小在庫閾値は整数でなければなりません。'}
+    )
+
+    # 最終購入日（オプション）
+    last_purchase_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="最終購入日",
+        required=False
+    )
+
+
+# class StoreItemReferenceForm(forms.ModelForm):
+#     class Meta:
+#         model = StoreItemReference
+#         fields = ['price', 'unit_quantity', 'memo']
+#         labels = {
+#             'price': '価格',
+#             'unit_quantity': '入数',
+#             'memo': 'メモ',
+#         }
+
+#     # 単価計算（価格 / 入数）
+#     unit_price = forms.DecimalField(
+#         required=False,
+#         label="単価",
+#         decimal_places=2,
+#         max_digits=10,
+#         widget=forms.NumberInput(attrs={'step': 'any'})
+#     )
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+#         price = cleaned_data.get('price')
+#         unit_quantity = cleaned_data.get('unit_quantity')
+
+#         # unit_priceを自動的に計算
+#         if price is not None and unit_quantity is not None and unit_quantity > 0:
+#             cleaned_data['unit_price'] = price / unit_quantity
+#         else:
+#             cleaned_data['unit_price'] = None
+
+#         return cleaned_data
+
+
+# # StoreItemReferenceFormSetを定義
+# StoreItemReferenceFormSet = modelformset_factory(
+#     StoreItemReference,
+#     fields=['price', 'unit_quantity', 'memo'],
+#     extra=5,  # 新しい店舗価格を追加できるフォームを1つ追加
+#     can_delete=True  # 削除も可能にする
+# )
 
 class StoreItemReferenceForm(forms.ModelForm):
     class Meta:
         model = StoreItemReference
-        fields = ['price', 'unit_quantity', 'memo']
+        fields = ['store', 'price', 'unit_quantity', 'memo']
         labels = {
+            'store': '店舗名',
             'price': '価格',
             'unit_quantity': '入数',
             'memo': 'メモ',
         }
+        widgets = {
+            'store': forms.TextInput(attrs={'readonly': 'readonly'}),
+            'price': forms.NumberInput(attrs={'step': '1'}),
+            'unit_quantity': forms.NumberInput(attrs={'step': '1'}),
+            'memo': forms.TextInput(),
+        }
 
-    @property
-    def unit_price(self):
-        price = self.cleaned_data.get('price')
-        unit_quantity = self.cleaned_data.get('unit_quantity')
-        return price / unit_quantity if price and unit_quantity else None
-
-    def clean(self):
-        cleaned_data = super().clean()
-        price = cleaned_data.get('price')
-        unit_quantity = cleaned_data.get('unit_quantity')
-
-        # 価格と入数が両方とも入力されている場合に単価を計算
-        if price is not None and unit_quantity is not None and unit_quantity > 0:
-            cleaned_data['unit_price'] = price / unit_quantity
-        else:
-            cleaned_data['unit_price'] = None  # 単価が計算できない場合はNoneに設定
-
-        return cleaned_data
+class BaseStoreItemReferenceFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:  # 新規アイテムの時
+            for store in Store.objects.all():
+                # 初期データをフォームに追加
+                self.forms.append(StoreItemReferenceForm(initial={'store': store}))
 
 
-StoreItemReferenceFormSet = modelformset_factory(
+
+StoreItemReferenceFormSet = inlineformset_factory(
+    Item,
     StoreItemReference,
-    fields=['store', 'price', 'unit_quantity', 'memo'],
-    extra=1,  # 新しい店舗価格を追加できるフォームを1つ追加
-    can_delete=True  # 削除も可能にする
+    form=StoreItemReferenceForm,
+    formset=BaseStoreItemReferenceFormSet,
+    extra=0,  # 登録店舗分だけフォームを表示
+    can_delete=False,
 )
-
-
 
 
 

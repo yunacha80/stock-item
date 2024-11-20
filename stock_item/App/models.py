@@ -63,11 +63,13 @@ class Item(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=50, blank=False, null=False)
     stock_quantity = models.IntegerField(default=0)
-    price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)  # 価格
-    unit_quantity = models.IntegerField(null=True, blank=True)  # 入数
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)  # 価格
+    # unit_quantity = models.IntegerField(null=True, blank=True)  # 入数
+    # unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     memo = models.CharField(max_length=100, blank=True)
     stock_min_threshold = models.IntegerField(default=0)
+    purchase_interval_days = models.IntegerField(null=True, blank=True, verbose_name="購入頻度（日）")
+    # last_purchase_date = models.DateField(null=True, blank=True, verbose_name="最終購入日")
     reminder = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -75,22 +77,25 @@ class Item(models.Model):
     def __str__(self):
         return self.name
     
+    @property
+    def needs_restock(self):
+        """在庫数が最低在庫数を下回っているか確認"""
+        return self.stock_quantity < self.stock_min_threshold
+    
 
 class StoreItemReference(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    store = models.ForeignKey(Store, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # 価格
-    unit_quantity = models.IntegerField(null=True, blank=True)  # 入数
-    memo = models.CharField(max_length=100, blank=True)  # 価格のメモ
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='store_references')
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store_references')
+    price = models.IntegerField(null=True, blank=True)
+    unit_quantity = models.IntegerField(null=True, blank=True)
+    memo = models.CharField(max_length=100, blank=True)
 
     @property
     def unit_price(self):
-        return self.price / self.unit_quantity if self.unit_quantity else None
+        if self.price and self.unit_quantity:
+            return self.price / self.unit_quantity
+        return None
 
-    def __str__(self):
-        return f"{self.item.name} - {self.store.name}"
 
  
 # 店舗間移動時間
@@ -110,15 +115,34 @@ class StoreTravelTime(models.Model):
 
 
     
-# 購入履歴
-class PurchaseHistory(models.Model):
-      item = models.ForeignKey('Item', related_name='purchase_histories', on_delete=models.CASCADE)
-      purchased_date = models.DateField()
-      purchased_quantity = models.IntegerField()
-      created_at = models.DateTimeField(auto_now_add=True)
-      updated_at = models.DateTimeField(auto_now=True)
+# # 購入履歴
+# class PurchaseHistory(models.Model):
+#       item = models.ForeignKey('Item', related_name='purchase_histories', on_delete=models.CASCADE)
+#       purchased_date = models.DateField()
+#       purchased_quantity = models.IntegerField()
+#       created_at = models.DateTimeField(auto_now_add=True)
+#       updated_at = models.DateTimeField(auto_now=True)
 
-      def __str__(self):
-        return f"{self.item.name} - {self.purchased_date} - 数量: {self.purchased_quantity}"
+#       def __str__(self):
+#         return f"{self.item.name} - {self.purchased_date} - 数量: {self.purchased_quantity}"
       
 
+# 買い物リスト
+class ShoppingList(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, related_name='shopping_list', on_delete=models.CASCADE)
+    quantity_to_buy = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.item.name} - {self.quantity_to_buy}"
+
+class PurchaseHistory(models.Model):
+    item = models.ForeignKey(Item, related_name='purchase_histories', on_delete=models.CASCADE)
+    purchased_date = models.DateField()
+    purchased_quantity = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.item.name} - {self.purchased_date} - 数量: {self.purchased_quantity}"

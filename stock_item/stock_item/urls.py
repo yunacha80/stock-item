@@ -34,6 +34,7 @@ urlpatterns = [
     path('email_change/', EmailChangeView.as_view(), name='email_change'),
     path('items/add/', views.item_add, name='item_add'),
     path('items/', views.item_list, name='item_list'),
+    # path('items/<int:item_id>/', views.item_detail, name='item_detail'),  # アイテム詳細ページ
     path('categories/', views.category_list, name='category_list'),
     path('categories/add/', views.category_add, name='category_add'),
     path('items/edit/<int:item_id>/', views.item_edit, name='item_edit'),
@@ -46,4 +47,8 @@ urlpatterns = [
     path('stores/delete/<int:store_id>/', views.store_delete, name='store_delete'),
     path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
+    path('shopping_list/', views.shopping_list_view, name='shopping_list'),
+    path('shopping_list/update_quantity/<int:shopping_list_id>/', views.update_quantity, name='update_quantity'),
+    path('shopping_list/delete/<int:shopping_list_id>/', views.delete_from_list, name='delete_from_list'),
+    path('shopping_list/mark_as_purchased/<int:shopping_list_id>/', views.mark_as_purchased, name='mark_as_purchased'),
 ]
