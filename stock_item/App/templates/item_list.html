@@ -3,20 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <title>アイテム一覧</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .low-stock {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <h1>アイテム一覧</h1>
-    <a href="{% url 'item_add' %}">新規アイテム追加</a>
-    
+    <a href="{% url 'add_item' %}">新規アイテム追加</a>
+
     {% if items %}
-        <ul>
-            {% for item in items %}
-                <li>
-                    <!-- アイテム名をリンクにする -->
-                    <a href="{% url 'item_edit' item.id %}">{{ item.name }}</a> - 在庫数: {{ item.stock_quantity }}
-                </li>
-            {% endfor %}
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>アイテム名</th>
+                    <th>在庫数</th>
+                    <th>カテゴリ</th>
+                    <th>最終購入日</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <a href="{% url 'item_detail' item.id %}">{{ item.name }}</a>
+                    </td>
+                    <td class="{% if item.stock_quantity <= item.stock_min_threshold %}low-stock{% endif %}">
+                        {{ item.stock_quantity }}
+                    </td>
+                    <td>{{ item.category.name }}</td>
+                    <td>{{ item.last_purchase_date|date:"Y/m/d" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         <p>まだアイテムが登録されていません。</p>
     {% endif %}

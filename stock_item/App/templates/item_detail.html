@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ item.name }} の詳細</title>
+</head>
+<body>
+    <h1>{{ item.name }}</h1>
+    <p>カテゴリ: {{ item.category.name }}</p>
+    <p>在庫数: {{ item.stock_quantity }}</p>
+    <p>最低在庫数: {{ item.stock_min_threshold }}</p>
+    <p>最終購入日: {{ item.last_purchase_date|date:"Y/m/d" }}</p>
+    <p>メモ: {{ item.memo }}</p>
+
+    <h2>店舗価格の編集</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>店舗名</th>
+                    <th>価格</th>
+                    <th>入数</th>
+                    <th>メモ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for store_form in store_forms %}
+                <tr>
+                    <!-- 店舗名を表示 -->
+                    <td>{{ store_form.instance.store.name }}</td>
+
+                    <!-- フォームフィールドを表示 -->
+                    <td>{{ store_form.price }}</td>
+                    <td>{{ store_form.price_per_unit }}</td>
+                    <td>{{ store_form.memo }}</td>
+
+                    <!-- 隠しフィールドとして店舗を追加 -->
+                    {{ store_form.store }} <!-- 隠しフィールドを追加してフォームに値を渡す -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">保存</button>
+    </form>
+
+    <a href="{% url 'item_list' %}">一覧に戻る</a>
+</body>
+</html>

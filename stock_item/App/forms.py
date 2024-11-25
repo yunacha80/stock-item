@@ -65,14 +65,14 @@ class EmailChangeForm(forms.Form):
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date', 'reminder']
+        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'purchase_interval_days', 'reminder']
         labels = {
             'name': 'アイテム名',
             'category': 'カテゴリ',
             'stock_quantity': '在庫数',
             'memo': 'メモ',
             'stock_min_threshold': '最低在庫数',
-            'last_purchase_date': '最終購入日',
+            'purchase_interval_days': '購入頻度',
             'reminder': 'リマインダー',
         }
 
@@ -89,12 +89,12 @@ class ItemForm(forms.ModelForm):
             raise forms.ValidationError('最低在庫数は0以上でなければなりません。')
         return stock_min_threshold
 
-    # 最終購入日（オプション）
-    last_purchase_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
-        label="最終購入日",
-        required=False
-    )
+    # # # 最終購入日（オプション）
+    # # last_purchase_date = forms.DateField(
+    # #     widget=forms.DateInput(attrs={'type': 'date'}),
+    # #     label="最終購入日",
+    # #     required=False
+    # )
 
 
 class StoreItemReferenceForm(forms.ModelForm):
@@ -108,11 +108,14 @@ class StoreItemReferenceForm(forms.ModelForm):
             'memo': 'メモ',
         }
         widgets = {
-            'store': forms.TextInput(attrs={'readonly': 'readonly'}),  # 店舗名を読み取り専用
-            'price': forms.NumberInput(attrs={'step': '1', 'class': 'form-control'}),
-            'price_per_unit': forms.NumberInput(attrs={'step': '1', 'class': 'form-control'}),
+            'store': forms.HiddenInput(),  # 隠しフィールド
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
+            'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
             'memo': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+
+
 
 
 

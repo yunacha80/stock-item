@@ -64,7 +64,7 @@ class Store(models.Model):
         
 class Item(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     stock_quantity = models.IntegerField()
     memo = models.CharField(max_length=100, blank=True, null=True)
@@ -93,7 +93,7 @@ class StoreItemReference(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.item.name} - {self.store.name}"
+        return f"{self.store.name} - {self.item.name}"
 
 
 
