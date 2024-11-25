@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.utils.timezone import now
 # from .models import Category
 
 # Create your models here.
@@ -41,6 +43,8 @@ class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100, blank=False, null=False)
     display_order = models.IntegerField(default=0) 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
@@ -49,8 +53,8 @@ class Category(models.Model):
 class Store(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, blank=False, null=False)
-    phone_number = models.CharField(max_length=20, blank=True)
-    address = models.CharField(max_length=200, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    address = models.CharField(max_length=200, blank=True, null=True)
     travel_time_home_min = models.IntegerField(null=False, blank=False, default=0, verbose_name="自宅からの移動時間（分）")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -60,16 +64,12 @@ class Store(models.Model):
         
 class Item(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
-    name = models.CharField(max_length=50, blank=False, null=False)
-    stock_quantity = models.IntegerField(default=0)
-    # price = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True)  # 価格
-    # unit_quantity = models.IntegerField(null=True, blank=True)  # 入数
-    # unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    memo = models.CharField(max_length=100, blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    stock_quantity = models.IntegerField()
+    memo = models.CharField(max_length=100, blank=True, null=True)
     stock_min_threshold = models.IntegerField(default=0)
     purchase_interval_days = models.IntegerField(null=True, blank=True, verbose_name="購入頻度（日）")
-    # last_purchase_date = models.DateField(null=True, blank=True, verbose_name="最終購入日")
     reminder = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -84,17 +84,19 @@ class Item(models.Model):
     
 
 class StoreItemReference(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='store_references')
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store_references')
-    price = models.IntegerField(null=True, blank=True)
-    unit_quantity = models.IntegerField(null=True, blank=True)
-    memo = models.CharField(max_length=100, blank=True)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    price = models.IntegerField()
+    price_per_unit = models.FloatField()
+    memo = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    @property
-    def unit_price(self):
-        if self.price and self.unit_quantity:
-            return self.price / self.unit_quantity
-        return None
+    def __str__(self):
+        return f"{self.item.name} - {self.store.name}"
+
+
+
 
 
  

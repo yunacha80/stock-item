@@ -14,8 +14,9 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from .models import Item, StoreItemReference,Category,PurchaseHistory,Store,StoreTravelTime,ShoppingList
-from .forms import CustomPasswordChangeForm,ItemForm,StoreItemReferenceFormSet,StoreItemReferenceForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm,ItemForm
+from django.forms import inlineformset_factory
+from .models import Item, Category,PurchaseHistory,Store,StoreTravelTime,ShoppingList,StoreItemReference
+from .forms import CustomPasswordChangeForm,ItemForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm,StoreItemReferenceForm
 from django.utils import timezone
 from django.utils.timezone import now
 
@@ -106,6 +107,7 @@ class HomeView(LoginRequiredMixin, View):
     login_url = "login"
     def get(self, request):
         return render(request, "home.html")
+
     
 def item_list(request):
     items = Item.objects.all()  # すべてのアイテムを取得
@@ -114,65 +116,40 @@ def item_list(request):
 
 
 
-def item_add(request):
+def add_item(request):
+    stores = Store.objects.all()  # 登録済みの全店舗を取得
+    store_forms = []
+
+    # 各店舗ごとのフォームを作成
+    for store in stores:
+        form = StoreItemReferenceForm(initial={'store': store})  # 'store' フィールドを初期化
+        store_forms.append(form)
+
     if request.method == 'POST':
-        form = ItemForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.user = request.user  # ログインユーザーを関連付ける
-            item.save()
-            return redirect('home')  # HOMEにリダイレクト
+        item_form = ItemForm(request.POST)
+        store_forms = [
+            StoreItemReferenceForm(request.POST, prefix=f"store_{store.id}", initial={'store': store}) for store in stores
+        ]
+
+        if item_form.is_valid() and all(form.is_valid() for form in store_forms):
+            item = item_form.save()
+
+            # 各店舗情報を保存
+            for form in store_forms:
+                store_reference = form.save(commit=False)
+                store_reference.item = item
+                store_reference.save()
+
+            return redirect('item_list')  # アイテム一覧ページにリダイレクト
     else:
-        form = ItemForm()
+        item_form = ItemForm()
 
-    return render(request, 'item_add.html', {'form': form})
+    return render(request, 'add_item.html', {
+        'item_form': item_form,
+        'store_forms': store_forms,
+    })
 
-
-# def item_add(request):
-#     stores = Store.objects.all()  # 店舗を取得
-#     stores_with_forms = []  # stores_with_forms を初期化
-
-#     # 各店舗にフォームをバインドして stores_with_forms を作成
-#     for store in stores:
-#         stores_with_forms.append({
-#             'store': store.name,
-#             'form': StoreItemReferenceForm()  # 空のフォームを用意
-#         })
-
-#     if request.method == 'POST':
-#         form = ItemForm(request.POST)  # アイテムフォームをPOSTでバインド
-#         formset = StoreItemReferenceFormSet(request.POST)  # フォームセットをPOSTでバインド
-
-#         # バインド後にフォームが有効かどうかを確認
-#         if form.is_valid() and formset.is_valid():
-#             # フォームとフォームセットのデータを保存
-#             item = form.save(commit=False)  # アイテムの保存
-#             item.save()
-
-#             # フォームセットの保存
-#             for store_form in formset:
-#                 store_item = store_form.save(commit=False)
-#                 store_item.item = item
-#                 store_item.save()
-
-#             return redirect('item_list')  # アイテム一覧にリダイレクト
-#         else:
-#             # バリデーションエラー時の処理
-#             return render(request, 'item_add.html', {
-#                 'form': form,
-#                 'formset': formset,
-#                 'stores_with_forms': stores_with_forms,
-#             })
-
-#     # GETリクエスト時はフォームを初期化して表示
-#     form = ItemForm()
-#     formset = StoreItemReferenceFormSet(queryset=StoreItemReference.objects.none())
-#     return render(request, 'item_add.html', {
-#         'form': form,
-#         'formset': formset,
-#         'stores_with_forms': stores_with_forms,
-#     })
-
+    
 
 
 
@@ -245,58 +222,58 @@ def item_add(request):
 
 
 
-def item_edit(request, item_id):
-    item = get_object_or_404(Item, id=item_id, user=request.user)
+# def item_edit(request, item_id):
+#     item = get_object_or_404(Item, id=item_id, user=request.user)
     
-    # アイテムに関連するすべての店舗を取得
-    stores = Store.objects.all()  # すべての店舗を取得
-    store_references = StoreItemReference.objects.filter(item=item)  # アイテムに関連する店舗ごとの価格情報
+#     # アイテムに関連するすべての店舗を取得
+#     stores = Store.objects.all()  # すべての店舗を取得
+#     store_references = StoreItemReference.objects.filter(item=item)  # アイテムに関連する店舗ごとの価格情報
 
-    # 店舗ごとの情報を辞書にまとめる
-    store_reference_dict = {reference.store.id: reference for reference in store_references}
+#     # 店舗ごとの情報を辞書にまとめる
+#     store_reference_dict = {reference.store.id: reference for reference in store_references}
 
-    if request.method == "POST":
-        form = ItemForm(request.POST, instance=item)
-        formset = []
+#     if request.method == "POST":
+#         form = ItemForm(request.POST, instance=item)
+#         formset = []
 
-        # 各店舗に対してフォームを生成
-        for store in stores:
-            reference = store_reference_dict.get(store.id)
-            formset.append(StoreItemReferenceForm(request.POST, instance=reference) if reference else StoreItemReferenceForm(request.POST))
+#         # 各店舗に対してフォームを生成
+#         for store in stores:
+#             reference = store_reference_dict.get(store.id)
+#             formset.append(StoreItemReferenceForm(request.POST, instance=reference) if reference else StoreItemReferenceForm(request.POST))
 
-        if form.is_valid() and all(f.is_valid() for f in formset):  # 各フォームを検証
-            item = form.save(commit=False)
-            item.user = request.user
-            item.save()
+#         if form.is_valid() and all(f.is_valid() for f in formset):  # 各フォームを検証
+#             item = form.save(commit=False)
+#             item.user = request.user
+#             item.save()
 
-            # 各店舗の価格情報を保存
-            for store, reference_form in zip(stores, formset):
-                reference = reference_form.save(commit=False)
-                reference.item = item  # アイテムを関連付け
-                reference.store = store  # 店舗を設定
-                reference.save()
+#             # 各店舗の価格情報を保存
+#             for store, reference_form in zip(stores, formset):
+#                 reference = reference_form.save(commit=False)
+#                 reference.item = item  # アイテムを関連付け
+#                 reference.store = store  # 店舗を設定
+#                 reference.save()
 
-            return redirect('item_list')  # アイテム一覧へリダイレクト
-    else:
-        form = ItemForm(instance=item)
-        formset = []
+#             return redirect('item_list')  # アイテム一覧へリダイレクト
+#     else:
+#         form = ItemForm(instance=item)
+#         formset = []
 
-        # 各店舗に対してフォームを生成
-        for store in stores:
-            reference = store_reference_dict.get(store.id)
-            formset.append(StoreItemReferenceForm(instance=reference) if reference else StoreItemReferenceForm())
+#         # 各店舗に対してフォームを生成
+#         for store in stores:
+#             reference = store_reference_dict.get(store.id)
+#             formset.append(StoreItemReferenceForm(instance=reference) if reference else StoreItemReferenceForm())
 
-    # stores_with_formsの作成（zipを1回使用）
-    stores_with_forms = [
-        {
-            'store': store,
-            'form': reference_form,
-            'unit_price': reference_form.instance.price / reference_form.instance.unit_quantity if reference_form.instance.price and reference_form.instance.unit_quantity else None
-        }
-        for store, reference_form in zip(stores, formset)
-    ]
+#     # stores_with_formsの作成（zipを1回使用）
+#     stores_with_forms = [
+#         {
+#             'store': store,
+#             'form': reference_form,
+#             'unit_price': reference_form.instance.price / reference_form.instance.unit_quantity if reference_form.instance.price and reference_form.instance.unit_quantity else None
+#         }
+#         for store, reference_form in zip(stores, formset)
+#     ]
 
-    return render(request, 'item_form.html', {'form': form, 'stores_with_forms': stores_with_forms})
+#     return render(request, 'item_form.html', {'form': form, 'stores_with_forms': stores_with_forms})
 
 
 # アイテム削除

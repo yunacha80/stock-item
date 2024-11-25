@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規アイテム追加</title>
+    
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>新規アイテム追加</h1>
+        <form method="post">
+            {% csrf_token %}
+            
+            <h2>アイテム情報</h2>
+            {{ item_form.as_p }}
+
+            <h2>店舗情報</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>価格</th>
+                        <th>入数</th>
+                        <th>メモ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store_form in store_forms %}
+                    <tr>
+                        <!-- 店舗名を初期値から表示 -->
+                        <td>{{ store_form.initial.store.name }}</td> <!-- 店舗名 -->
+
+                        <!-- 価格、入数、メモの入力欄 -->
+                        <td>{{ store_form.price }}</td>
+                        <td>{{ store_form.price_per_unit }}</td>
+                        <td>{{ store_form.memo }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <button type="submit" class="btn btn-primary">保存</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+
+
+
+{% comment %} <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイテム追加</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>アイテム追加</h1>
+        <form method="post">
+            {% csrf_token %}
+            <h2>基本情報</h2>
+            {{ form.as_p }}
+
+            <h2>店舗ごとの価格入力</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>価格</th>
+                        <th>入数</th>
+                        <th>単価</th>
+                        <th>メモ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ store.name }}</td>
+                        <td><input type="number" name="price_{{ store.id }}" step="1" min="0"></td>
+                        <td><input type="number" name="unit_quantity_{{ store.id }}" step="1" min="0"></td>
+                        <td>
+                            <span>自動計算</span>
+                        </td>
+                        <td><input type="text" name="memo_{{ store.id }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit">追加</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+
+
+
+{% comment %} <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アイテム追加</title> {% endcomment %}
+    {% comment %} <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style> {% endcomment %}
+{% comment %} </head> {% endcomment %}
+{% comment %} <body>
+    <div class="container">
+        <h1>アイテム追加</h1>
+        <form method="post">
+            {% csrf_token %}
+            <!-- アイテム情報の入力 -->
+            <h2>基本情報</h2>
+            {{ form.as_p }}
+
+            <!-- 店舗ごとの価格情報入力 -->
+            <h2>店舗ごとの価格入力</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>価格</th>
+                        <th>入数</th>
+                        <th>メモ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ store.name }}</td>
+                        <td><input type="number" name="price_{{ store.id }}" step="1" min="0"></td>
+                        <td><input type="number" name="unit_quantity_{{ store.id }}" step="1" min="0"></td>
+                        <td><input type="text" name="memo_{{ store.id }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit">追加</button>
+        </form>
+    </div>
+</body>
+</html> {% endcomment %} 
