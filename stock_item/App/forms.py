@@ -62,40 +62,38 @@ class EmailChangeForm(forms.Form):
         return cleaned_data
      
 
+
+
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item
-        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'purchase_interval_days', 'reminder']
+        fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date', 'reminder']
         labels = {
             'name': 'アイテム名',
             'category': 'カテゴリ',
             'stock_quantity': '在庫数',
             'memo': 'メモ',
             'stock_min_threshold': '最低在庫数',
-            'purchase_interval_days': '購入頻度',
+            'last_purchase_date': '最終購入日',
             'reminder': 'リマインダー',
         }
 
-    # 最小在庫数（整数）を検証
-    def clean_stock_quantity(self):
-        stock_quantity = self.cleaned_data.get('stock_quantity')
-        if stock_quantity < 0:
-            raise forms.ValidationError('在庫数量は0以上でなければなりません。')
-        return stock_quantity
-
-    def clean_stock_min_threshold(self):
-        stock_min_threshold = self.cleaned_data.get('stock_min_threshold')
-        if stock_min_threshold < 0:
-            raise forms.ValidationError('最低在庫数は0以上でなければなりません。')
-        return stock_min_threshold
-
-    # 最終購入日（オプション）
     last_purchase_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="最終購入日",
-        required=False
+        required=True
     )
 
+
+class PurchaseHistoryForm(forms.ModelForm):
+    class Meta:
+        model = PurchaseHistory
+        fields = ['item', 'purchased_date', 'purchased_quantity']
+        labels = {
+            'item': 'アイテム',
+            'purchased_date': '購入日',
+            'purchased_quantity': '購入数量',
+        }
 
 
 
@@ -157,15 +155,7 @@ class CategoryForm(forms.ModelForm):
         }
 
 
-class PurchaseHistoryForm(forms.ModelForm):
-    class Meta:
-        model = PurchaseHistory
-        fields = ['item', 'purchased_date', 'purchased_quantity']
-        labels = {
-            'item': 'アイテム',
-            'purchased_date': '購入日',
-            'purchased_quantity': '購入数量',
-        }
+
 
 
 # 購入履歴検索
