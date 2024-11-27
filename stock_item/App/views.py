@@ -114,46 +114,59 @@ def item_list(request):
     return render(request, 'item_list.html', {'items': items})
 
 
-from django.contrib.auth.decorators import login_required
+
+
 
 @login_required
 def add_item(request):
     stores = Store.objects.all()  # 登録済みの全店舗を取得
-    store_forms = [
-        StoreItemReferenceForm(initial={'store': store}, prefix=f"store_{store.id}") for store in stores
-    ]
+    store_forms = []
+
+    # 店舗ごとにフォームを作成し、インスタンスを明示的に設定
+    for store in stores:
+        store_item_reference = StoreItemReference(store=store)  # store を設定したインスタンス
+        form = StoreItemReferenceForm(instance=store_item_reference, prefix=f"store_{store.id}")
+        store_forms.append(form)
 
     if request.method == 'POST':
-        print("POSTリクエストを受信しました")
-        print("POSTデータ:", request.POST)
-
         item_form = ItemForm(request.POST)
         store_forms = [
-            StoreItemReferenceForm(request.POST, prefix=f"store_{store.id}") for store in stores
+            StoreItemReferenceForm(
+                request.POST,
+                instance=StoreItemReference(store=store),
+                prefix=f"store_{store.id}"
+            )
+            for store in stores
         ]
 
         if item_form.is_valid() and all(form.is_valid() for form in store_forms):
-            # アイテムを保存 (一旦保存を保留)
-            item = item_form.save(commit=False)
-            item.user = request.user  # ログイン中のユーザーを設定
-            item.save()
+            # アイテムを保存
+            item = item_form.save(commit=False)  # 一時保存
+            item.user = request.user  # 現在のユーザーを設定
+            item.save()  # 本保存
             print("アイテム保存成功:", item)
 
             # 各店舗情報を保存
             for form in store_forms:
                 store_reference = form.save(commit=False)
-                store_reference.item = item  # アイテムを関連付け
+                store_reference.item = item
+
+                # チェックボックスの処理
+                price_unknown = form.cleaned_data.get('price_unknown')
+                no_price = form.cleaned_data.get('no_price')
+                if price_unknown or no_price:
+                    store_reference.price = None
+                    store_reference.price_per_unit = None
+
                 store_reference.save()
                 print(f"店舗情報保存成功: {store_reference}")
 
-            # 保存後、リダイレクト
             return redirect('item_list')
         else:
-            # バリデーションエラー
-            print("アイテムフォームのエラー:", item_form.errors)
+            print("バリデーションエラー発生")
+            print(item_form.errors)
             for form in store_forms:
-                if not form.is_valid():
-                    print(f"{form.prefix} のエラー:", form.errors)
+                print(form.errors)
 
     else:
         item_form = ItemForm()
@@ -162,7 +175,6 @@ def add_item(request):
         'item_form': item_form,
         'store_forms': store_forms,
     })
-
 
 
 
@@ -297,39 +309,64 @@ def add_item(request):
 #     return render(request, 'item_form.html', {'form': form, 'stores_with_forms': stores_with_forms})
 
 
-def item_detail(request, item_id):
+@login_required
+def edit_item(request, item_id):
     item = get_object_or_404(Item, id=item_id)
-    
-    # アイテムに関連する店舗価格情報を取得
-    store_prices = item.storeitemreference_set.all()
+    store_references = StoreItemReference.objects.filter(item=item)
+    stores = Store.objects.all()
+
+    # 店舗フォームを作成（既存データをロード）
+    store_forms = [
+        StoreItemReferenceForm(
+            instance=store_references.filter(store=store).first() or StoreItemReference(store=store, item=item),
+            prefix=f"store_{store.id}"
+        )
+        for store in stores
+    ]
 
     if request.method == 'POST':
-        # フォームを送信されたデータで再初期化
+        item_form = ItemForm(request.POST, instance=item)
         store_forms = [
-            StoreItemReferenceForm(request.POST, instance=store_price, prefix=f"store_{store_price.store.id}")
-            for store_price in store_prices
-        ]
-        
-        # フォームのバリデーション
-        if all(form.is_valid() for form in store_forms):
-            # 各店舗情報を保存
-            for form in store_forms:
-                form.save()
-            return redirect('item_list')  # 保存後のリダイレクト先
-        else:
-            print("フォームのエラー")
-            for form in store_forms:
-                print(form.errors)
-    else:
-        # GETリクエストの場合、フォームを初期化
-        store_forms = [
-            StoreItemReferenceForm(instance=store_price, prefix=f"store_{store_price.store.id}")
-            for store_price in store_prices
+            StoreItemReferenceForm(
+                request.POST,
+                instance=store_references.filter(store=store).first() or StoreItemReference(store=store, item=item),
+                prefix=f"store_{store.id}"
+            )
+            for store in stores
         ]
 
-    return render(request, 'item_detail.html', {
-        'item': item,
-        'store_prices': store_prices,
+        if item_form.is_valid() and all(form.is_valid() for form in store_forms):
+            # アイテムを保存
+            item = item_form.save()
+            print("アイテム保存成功:", item)
+
+            # 各店舗情報を保存
+            for form in store_forms:
+                store_reference = form.save(commit=False)
+                store_reference.item = item
+
+                # チェックボックスの処理
+                price_unknown = form.cleaned_data.get('price_unknown')
+                no_price = form.cleaned_data.get('no_price')
+                if price_unknown or no_price:
+                    store_reference.price = None
+                    store_reference.price_per_unit = None
+
+                store_reference.save()
+                print(f"店舗情報保存成功: {store_reference}")
+
+            return redirect('item_list')
+        else:
+            print("バリデーションエラー発生")
+            print(item_form.errors)
+            for form in store_forms:
+                print(form.errors)
+
+    else:
+        item_form = ItemForm(instance=item)
+
+    return render(request, 'edit_item.html', {
+        'item_form': item_form,
         'store_forms': store_forms,
     })
 

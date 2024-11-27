@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新規アイテム追加</title>
+    <title>アイテム編集</title>
 </head>
 <body>
     <div class="container mt-5">
-        <h1>新規アイテム追加</h1>
+        <h1>アイテム編集</h1>
         <form method="post">
             {% csrf_token %}
             
@@ -45,7 +45,11 @@
                                    name="{{ store_form.prefix }}-price_per_unit" 
                                    value="{{ store_form.initial.price_per_unit }}">
                         </td>
-                        <td>{{ store_form.memo }}</td>
+                        <td>
+                            <input type="text" 
+                                   name="{{ store_form.prefix }}-memo" 
+                                   value="{{ store_form.initial.memo }}">
+                        </td>
 
                         <!-- 価格不明 チェックボックス -->
                         <td>

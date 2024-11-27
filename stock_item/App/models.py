@@ -86,8 +86,8 @@ class Item(models.Model):
 class StoreItemReference(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
-    price = models.IntegerField()
-    price_per_unit = models.FloatField()
+    price = models.IntegerField(null=True, blank=True)
+    price_per_unit = models.FloatField(null=True, blank=True)
     memo = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

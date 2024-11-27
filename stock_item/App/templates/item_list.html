@@ -23,6 +23,19 @@
         }
     </style>
 </head>
+<nav>
+    <a href="{% url 'login' %}">アプリへ</a>
+    <a href="{% url 'logout' %}">ログアウト</a>
+    <a href="{% url 'password_change' %}">パスワード変更</a>
+    <a href="{% url 'store_add' %}">店舗追加</a>
+    <a href="{% url 'store_list' %}">店舗一覧</a>
+    <a href="{% url 'shopping_list' %}">買い物リスト</a>
+    <a href="{% url 'add_item' %}">アイテム追加</a>
+    <a href="{% url 'item_list' %}">アイテム一覧</a>
+    <a href="{% url 'category_list' %}">カテゴリ追加</a>
+    <a href="{% url 'purchase_history_list' %}">購入履歴</a>
+    
+</nav>
 <body>
     <h1>アイテム一覧</h1>
     <a href="{% url 'add_item' %}">新規アイテム追加</a>
@@ -41,7 +54,7 @@
                 {% for item in items %}
                 <tr>
                     <td>
-                        <a href="{% url 'item_detail' item.id %}">{{ item.name }}</a>
+                        <a href="{% url 'edit_item' item.id %}">{{ item.name }}</a>
                     </td>
                     <td class="{% if item.stock_quantity <= item.stock_min_threshold %}low-stock{% endif %}">
                         {{ item.stock_quantity }}

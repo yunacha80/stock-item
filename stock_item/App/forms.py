@@ -89,15 +89,20 @@ class ItemForm(forms.ModelForm):
             raise forms.ValidationError('最低在庫数は0以上でなければなりません。')
         return stock_min_threshold
 
-    # # # 最終購入日（オプション）
-    # # last_purchase_date = forms.DateField(
-    # #     widget=forms.DateInput(attrs={'type': 'date'}),
-    # #     label="最終購入日",
-    # #     required=False
-    # )
+    # 最終購入日（オプション）
+    last_purchase_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="最終購入日",
+        required=False
+    )
+
+
 
 
 class StoreItemReferenceForm(forms.ModelForm):
+    price_unknown = forms.BooleanField(required=False, label='価格不明')
+    no_price = forms.BooleanField(required=False, label='取り扱いなし')
+
     class Meta:
         model = StoreItemReference
         fields = ['store', 'price', 'price_per_unit', 'memo']
@@ -108,12 +113,34 @@ class StoreItemReferenceForm(forms.ModelForm):
             'memo': 'メモ',
         }
         widgets = {
-            'store': forms.HiddenInput(),  # 隠しフィールド
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
-            'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
-            'memo': forms.TextInput(attrs={'class': 'form-control'}),
+            'store': forms.TextInput(attrs={'readonly': 'readonly'}),
+            'price': forms.NumberInput(attrs={'step': '1'}),
+            'price_per_unit': forms.NumberInput(attrs={'step': '1'}),
+            'memo': forms.TextInput(),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        price_unknown = cleaned_data.get('price_unknown')
+        no_price = cleaned_data.get('no_price')
+        price = cleaned_data.get('price')
+        price_per_unit = cleaned_data.get('price_per_unit')
+
+    # 価格不明または取り扱いなしの場合、価格をNoneに設定
+        if price_unknown or no_price:
+           cleaned_data['price'] = None
+           cleaned_data['price_per_unit'] = None
+        else:
+        # 価格が未入力の場合にエラーを発生
+            if price is None or price_per_unit is None:
+                raise forms.ValidationError(
+                    "価格と入数は必須です。ただし、価格不明または取り扱いなしを選択した場合は省略可能です。"
+                    )
+            
+            return cleaned_data
+
+
+        
 
 
 
