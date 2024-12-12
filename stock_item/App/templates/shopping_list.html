@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>買い物リスト</title>
 </head>
 <body>
@@ -9,113 +10,35 @@
     <table>
         <thead>
             <tr>
-                <th>アイテム名 (現：在庫数)</th>
-                <th>購入数</th>
-                <th>削除</th>
+                <th>選択</th>
+                <th>アイテム名</th>
+                <th>在庫数</th>
                 <th>購入済み</th>
+                <th>購入数</th>
                 <th>購入日</th>
             </tr>
         </thead>
-        <tbody>
-            {% for shopping_item in shopping_items %}
+        <tbody id="shopping-list">
+            {% for item in items %}
             <tr>
-                <td>{{ shopping_item.item.name }} (現：{{ shopping_item.item.stock_quantity }}個)</td>
-                <td>
-                    <button class="decrement" data-id="{{ shopping_item.id }}">-</button>
-                    <span class="quantity">{{ shopping_item.quantity_to_buy }}</span>
-                    <button class="increment" data-id="{{ shopping_item.id }}">+</button>
-                </td>
-                <td>
-                    <button class="delete" data-id="{{ shopping_item.id }}">🗑️</button>
-                </td>
-                <td>
-                    <input type="checkbox" class="mark-purchased" data-id="{{ shopping_item.id }}">
-                </td>
-                <td>
-                    <input type="date" class="purchased-date" data-id="{{ shopping_item.id }}">
-                </td>
+                <td><input type="checkbox" class="select-item" data-id="{{ item.id }}"></td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.stock_quantity }}</td>
+                <td><input type="checkbox" class="mark-purchased" data-id="{{ item.id }}"></td>
+                <td><input type="number" class="purchased-quantity" min="1"></td>
+                <td><input type="date" class="purchased-date"></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <button id="update-list">更新</button>
+    <button id="suggest-stores-btn">買い回り提案</button>
+
+    <div id="store-suggestions" style="margin-top: 20px;">
+        <h2>買い回り提案</h2>
+        <ul id="suggestions-list"></ul>
+    </div>
 </body>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    // 数量増減
-    document.querySelectorAll('.increment, .decrement').forEach(button => {
-        button.addEventListener('click', function () {
-            const action = this.classList.contains('increment') ? 'increment' : 'decrement';
-            const shoppingListId = this.dataset.id;
-
-            fetch(`/shopping_list/update_quantity/${shoppingListId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ action }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.quantity_to_buy !== undefined) {
-                    this.parentElement.querySelector('.quantity').textContent = data.quantity_to_buy;
-                }
-            });
-        });
-    });
-
-    // 削除
-    document.querySelectorAll('.delete').forEach(button => {
-        button.addEventListener('click', function () {
-            const shoppingListId = this.dataset.id;
-
-            fetch(`/shopping_list/delete/${shoppingListId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    this.closest('tr').remove();
-                }
-            });
-        });
-    });
-
-    // 購入済み
-    document.querySelectorAll('.mark-purchased').forEach(checkbox => {
-        checkbox.addEventListener('change', function () {
-            const shoppingListId = this.dataset.id;
-            const purchasedDate = this.closest('tr').querySelector('.purchased-date').value;
-
-            if (!purchasedDate) {
-                alert("購入日を選択してください。");
-                this.checked = false;
-                return;
-            }
-
-            fetch(`/shopping_list/mark_as_purchased/${shoppingListId}/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ purchased_date: purchasedDate }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    this.closest('tr').remove();
-                } else {
-                    alert(data.error || "エラーが発生しました。");
-                }
-            });
-        });
-    });
-});
-</script>
+<script src="shopping_list.js"></script>
 </html>

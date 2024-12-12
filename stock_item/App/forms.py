@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.forms import inlineformset_factory,modelformset_factory,BaseInlineFormSet
-from .models import Item, Category,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
+from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
 
 
 
@@ -61,7 +61,14 @@ class EmailChangeForm(forms.Form):
         
         return cleaned_data
      
-
+class ItemCategoryForm(forms.ModelForm):
+    class Meta:
+        model = ItemCategory
+        fields = ['name', 'display_order']
+        labels = {
+            'name': 'カテゴリ名',
+            'display_order': '表示順',
+        }
 
 
 class ItemForm(forms.ModelForm):
@@ -138,21 +145,7 @@ class StoreItemReferenceForm(forms.ModelForm):
             return cleaned_data
 
 
-        
-
-
-
-
-
-
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ['name', 'display_order']
-        labels = {
-            'name': 'カテゴリ名',
-            'display_order': '表示順',
-        }
+    
 
 
 

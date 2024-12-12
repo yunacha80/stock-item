@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, purchase_history_list,add_item,item_list,edit_item
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, purchase_history_list,add_item,item_list,edit_item,item_delete
 from App import views  
 
 
@@ -34,6 +34,7 @@ urlpatterns = [
     path('email_change/', EmailChangeView.as_view(), name='email_change'),
     path('add/', add_item, name='add_item'),
     path('items/', item_list, name='item_list'),
+    path('items/<int:item_id>/delete/', item_delete, name='item_delete'),
     path('categories/', views.category_list, name='category_list'),
     path('categories/add/', views.category_add, name='category_add'),
     path('items/<int:item_id>/', edit_item, name='edit_item'),
@@ -47,8 +48,7 @@ urlpatterns = [
     path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
     path('shopping_list/', views.shopping_list_view, name='shopping_list'),
-    path('shopping_list/update_quantity/<int:shopping_list_id>/', views.update_quantity, name='update_quantity'),
-    path('shopping_list/delete/<int:shopping_list_id>/', views.delete_from_list, name='delete_from_list'),
-    path('shopping_list/mark_as_purchased/<int:shopping_list_id>/', views.mark_as_purchased, name='mark_as_purchased'),
-    # path('store_prices/add/', views.store_price_add, name='store_price_add'),
+    # path('shopping_list/add_items/', views.add_item_view, name='add_item_view'),
+    # path('shopping_list/add_items_to_shopping_list/', views.add_items_to_shopping_list, name='add_items_to_shopping_list'),
+    # path('shopping_list/update_quantities/', views.update_quantities, name='update_quantities'),
 ]

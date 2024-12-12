@@ -2,77 +2,37 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新規アイテム追加</title>
+    <title>買い物アイテム追加</title>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1>新規アイテム追加</h1>
-        <form method="post">
-            {% csrf_token %}
-            
-            <!-- アイテム情報 -->
-            <h2>アイテム情報</h2>
-            {{ item_form.as_p }}
-
-            <!-- 店舗情報 -->
-            <h2>店舗情報</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>店舗名</th>
-                        <th>価格</th>
-                        <th>入数</th>
-                        <th>メモ</th>
-                        <th>価格不明</th>
-                        <th>取り扱いなし</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for store_form in store_forms %}
-                    <tr>
-                        <!-- 店舗名を表示 -->
-                        <td>{{ store_form.instance.store.name }}</td>
-
-                        <!-- 入力フィールド -->
-                        <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price" 
-                                   value="{{ store_form.initial.price }}">
-                        </td>
-                        <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price_per_unit" 
-                                   value="{{ store_form.initial.price_per_unit }}">
-                        </td>
-                        <td>{{ store_form.memo }}</td>
-
-                        <!-- 価格不明 チェックボックス -->
-                        <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-price_unknown" 
-                                   {% if store_form.initial.price_unknown %}checked{% endif %}>
-                            価格不明
-                        </td>
-
-                        <!-- 取り扱いなし チェックボックス -->
-                        <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-no_price" 
-                                   {% if store_form.initial.no_price %}checked{% endif %}>
-                            取り扱いなし
-                        </td>
-                    </tr>
-                    <!-- 隠しフィールド -->
-                    {{ store_form.store.as_hidden }}
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- 保存ボタン -->
-            <button type="submit" class="btn btn-primary">保存</button>
-            <a href="{% url 'item_list' %}">一覧に戻る</a>
-        </form>
-    </div>
+    <h1>買い物アイテム追加</h1>
+    <form id="add-items-form" action="{% url 'add_items_to_shopping_list' %}" method="post">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>アイテム名</th>
+                    <th>購入数</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="items" value="{{ item.id }}">
+                            {{ item.name }}
+                        </label>
+                    </td>
+                    <td>
+                        <input type="number" name="quantity_{{ item.id }}" placeholder="購入数" min="1">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit">登録</button>
+    </form>
+    <a href="{% url 'shopping_list' %}">買い物リストへ戻る</a>
 </body>
 </html>

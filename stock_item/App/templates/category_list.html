@@ -25,16 +25,16 @@
     <a href="{% url 'category_add' %}">新規カテゴリ追加</a>
     <ul>
         {% for category in categories %}
-            <li>{{ category.name }}
-                <a href="{% url 'category_edit' category.id %}">編集</a>
-                <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
+            <li>{{ itemcategory.name }}
+                <a href="{% url 'category_edit' itemcategory.id %}">編集</a>
+                <form action="{% url 'category_delete' itemcategory.id %}" method="post" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit">削除</button>
                 </form>
             </li>
         {% endfor %}
     </ul>
-    {% if not categories %}
+    {% if not itemcategories %}
         <p>まだカテゴリが登録されていません。</p>
     {% endif %}
 </body>

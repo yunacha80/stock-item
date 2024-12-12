@@ -75,6 +75,7 @@
 
             <!-- 保存ボタン -->
             <button type="submit" class="btn btn-primary">保存</button>
+            <button type="submit" name="delete" class="btn btn-danger"><a href="{% url 'item_delete' item.id %}">削除</a></button>
             <a href="{% url 'item_list' %}">一覧に戻る</a>
         </form>
     </div>

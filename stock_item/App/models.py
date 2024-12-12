@@ -34,20 +34,28 @@ class User(AbstractUser):
 
 
 
-def validate_category_limit(value):
-    if len(value) > 10:
-        raise ValidationError('カテゴリは最大10個まで登録可能です。')
+def validate_ItemCategory_limit(user):
+    """カテゴリは最大10個まで登録可能です。"""
+    if ItemCategory.objects.filter(user=user).count() >= 10:
+        raise ValidationError("カテゴリは最大10個まで登録可能です。")
 
-
-class Category(models.Model):
+class ItemCategory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, blank=False, null=False)
-    display_order = models.IntegerField(default=0) 
+    name = models.CharField(max_length=50, blank=False, null=False)
+    display_order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        """カテゴリ数の制限をチェック"""
+        validate_ItemCategory_limit(self.user)
+
+    class Meta:
+        db_table = "App_category" 
+
     
 
 class Store(models.Model):
@@ -64,11 +72,11 @@ class Store(models.Model):
         
 class Item(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    category = models.ForeignKey('ItemCategory', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
-    stock_quantity = models.IntegerField()
+    stock_quantity = models.IntegerField(default=0)
     memo = models.CharField(max_length=100, blank=True, null=True)
-    stock_min_threshold = models.IntegerField(default=0)
+    stock_min_threshold = models.IntegerField(default=1)
     purchase_interval_days = models.IntegerField(null=True, blank=True, verbose_name="購入頻度（日）")
     reminder = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -81,6 +89,8 @@ class Item(models.Model):
     def needs_restock(self):
         """在庫数が最低在庫数を下回っているか確認"""
         return self.stock_quantity < self.stock_min_threshold
+
+
     
 
 class StoreItemReference(models.Model):
@@ -129,15 +139,7 @@ class StoreTravelTime(models.Model):
 #         return f"{self.item.name} - {self.purchased_date} - 数量: {self.purchased_quantity}"
       
 
-# 買い物リスト
-class ShoppingList(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, related_name='shopping_list', on_delete=models.CASCADE)
-    quantity_to_buy = models.IntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.item.name} - {self.quantity_to_buy}"
 
 class PurchaseHistory(models.Model):
     item = models.ForeignKey(Item, related_name='purchase_histories', on_delete=models.CASCADE)

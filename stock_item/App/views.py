@@ -1,7 +1,7 @@
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
-from django.db import transaction
+from django.db import transaction,models
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from App.forms import SignupForm, LoginForm,EmailChangeForm,ItemForm,PurchaseHistoryFilterForm
@@ -14,11 +14,11 @@ from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from django.forms import inlineformset_factory
-from .models import Item, Category,PurchaseHistory,Store,StoreTravelTime,ShoppingList,StoreItemReference
-from .forms import CustomPasswordChangeForm,ItemForm, CategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm,StoreItemReferenceForm
+from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
+from .forms import CustomPasswordChangeForm,ItemForm, ItemCategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeFormSet,StoreTravelTimeForm,StoreItemReferenceForm
 from django.utils import timezone
 from django.utils.timezone import now
+import json
 
 
 
@@ -117,10 +117,6 @@ def item_list(request):
 
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Item, PurchaseHistory
-from .forms import ItemForm, PurchaseHistoryForm
-from django.utils import timezone
 
 @login_required
 def add_item(request):
@@ -279,12 +275,16 @@ def edit_item(request, item_id):
 
 
 
-# アイテム削除
 def item_delete(request, item_id):
-    item = Item.objects.filter(user=request.user),get_object_or_404(Item, id=item_id)
-    if request.method == "POST":
-        item.delete()
-        return redirect('item_list')
+    # ユーザーが所有するアイテムを取得
+    item = get_object_or_404(Item, id=item_id, user=request.user)
+
+    if request.method == "POST":  # POST リクエストを受けた場合
+        print(f"Deleting item: {item.id}")  # デバッグ用出力
+        item.delete()  # アイテムを削除
+        return redirect('item_list')  # 削除後のリダイレクト
+
+    # GET リクエストの場合、削除確認ページを表示
     return render(request, 'item_confirm_delete.html', {'item': item})
 
 # def item_detail(request, item_id):
@@ -309,7 +309,7 @@ def item_delete(request, item_id):
 
 
 def category_list(request):
-    categories = Category.objects.filter(user=request.user)
+    categories = ItemCategory.objects.filter(user=request.user)
     if not categories:
         print("現在、カテゴリは存在しません。")  # デバッグ用の出力
     return render(request, 'category_list.html', {'categories': categories})
@@ -317,31 +317,31 @@ def category_list(request):
 @login_required
 def category_add(request):
     if request.method == "POST":
-        form = CategoryForm(request.POST)
+        form = ItemCategoryForm(request.POST)
         if form.is_valid():
             category = form.save(commit=False)
             category.user = request.user  # 現在のユーザーを設定
             category.save()
             return redirect('category_list')
     else:
-        form = CategoryForm()
+        form = ItemCategoryForm()
     return render(request, 'category_form.html', {'form': form})
 
 # カテゴリ編集
 def category_edit(request, category_id):
-    category = get_object_or_404(Category, id=category_id)
+    category = get_object_or_404(ItemCategory, id=category_id)
     if request.method == "POST":
-        form = CategoryForm(request.POST, instance=category)
+        form = ItemCategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
             return redirect('category_list')
     else:
-        form = CategoryForm(instance=category)
+        form = ItemCategoryForm(instance=category)
     return render(request, 'category_form.html', {'form': form})
 
 
 def category_delete(request, category_id):
-    category = get_object_or_404(Category, id=category_id)
+    category = get_object_or_404(ItemCategory, id=category_id)
     if request.method == "POST":
         category.delete()
         return redirect('category_list')
@@ -507,63 +507,173 @@ def store_edit(request, pk):
     return render(request, 'store_edit.html', {'form': form, 'formset': formset})
 
 
+# def shopping_list_view(request):
+#     """
+#     買い物リストを表示するビュー
+#     """
+#     shopping_items = ShoppingList.objects.filter(item__user=request.user)
+#     # 追加のデバッグ出力（開発用）
+#     for shopping_item in shopping_items:
+#         print(f"アイテム名: {shopping_item.item.name}, 現在在庫数: {shopping_item.item.stock_quantity}, 最低在庫数: {shopping_item.item.stock_min_threshold}")
+
+#     # 購入予定数を最低在庫値に基づいて調整
+#     for item in shopping_items:
+#         if item.quantity_to_buy < item.item.stock_min_threshold - item.item.stock_quantity:
+#             item.quantity_to_buy = item.item.stock_min_threshold - item.item.stock_quantity
+
+#     return render(request, 'shopping_list.html', {'shopping_items': shopping_items})
+
+# @require_POST
+# def update_quantity(request, shopping_list_id):
+#     """
+#     購入予定数を増減する
+#     """
+#     shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+#     action = request.POST.get('action')
+
+#     if action == 'increment':
+#         shopping_item.quantity_to_buy += 1
+#     elif action == 'decrement' and shopping_item.quantity_to_buy > 0:
+#         shopping_item.quantity_to_buy -= 1
+
+#     shopping_item.save()
+#     return JsonResponse({'quantity_to_buy': shopping_item.quantity_to_buy})
+
+
+
+# @require_POST
+# def delete_from_list(request, shopping_list_id):
+#     """
+#     買い物リストからアイテムを削除する
+#     """
+#     shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+#     shopping_item.delete()
+#     return JsonResponse({'success': True})
+
+# @require_POST
+# def mark_as_purchased(request, shopping_list_id):
+#     """
+#     購入済みとしてマークし、購入履歴に保存。
+#     在庫数が最低在庫数を超えた場合、買い物リストから削除。
+#     """
+#     shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
+#     purchased_quantity = int(request.POST.get('purchased_quantity', 0))
+#     purchased_date = request.POST.get('purchased_date')
+
+#     # 入力値の検証
+#     if purchased_quantity <= 0 or not purchased_date:
+#         return JsonResponse({'success': False, 'error': '購入数または購入日が無効です。'})
+
+#     # 購入履歴を保存
+#     PurchaseHistory.objects.create(
+#         item=shopping_item.item,
+#         purchased_date=purchased_date,
+#         purchased_quantity=purchased_quantity
+#     )
+
+#     # 在庫数を更新
+#     initial_stock = shopping_item.item.stock_quantity  # デバッグ用
+#     shopping_item.item.stock_quantity += purchased_quantity
+#     shopping_item.item.save()
+
+#     # デバッグログ
+#     print(f"Item ID: {shopping_item.item.id}, Initial Stock: {initial_stock}, Purchased: {purchased_quantity}, Updated Stock: {shopping_item.item.stock_quantity}, Min Threshold: {shopping_item.item.stock_min_threshold}")
+
+#     # 在庫が最低値を満たした場合、リストから削除
+#     if shopping_item.item.stock_quantity >= shopping_item.item.stock_min_threshold:
+#         shopping_item.delete()
+#         return JsonResponse({'success': True, 'removed': True})
+
+#     # 在庫がまだ不足している場合
+#     return JsonResponse({'success': True, 'removed': False})
+
+
+# @require_POST
+# def add_item_to_shopping_list(request, item_id):
+#     """
+#     ユーザーが手動でアイテムを買い物リストに追加する
+#     """
+#     item = get_object_or_404(Item, id=item_id)
+
+#     # アイテムがすでにリストにない場合に追加
+#     if not ShoppingList.objects.filter(user=request.user, item=item).exists():
+#         ShoppingList.objects.create(user=request.user, item=item, quantity_to_buy=1)
+
+#     return JsonResponse({'success': True})
+
+
+
 def shopping_list_view(request):
     """
     買い物リストを表示するビュー
     """
-    shopping_items = ShoppingList.objects.filter(item__user=request.user)
-    return render(request, 'shopping_list.html', {'shopping_items': shopping_items})
+    # 在庫が足りないアイテムを取得（在庫が最低在庫数を下回ったアイテム）
+    items = Item.objects.filter(user=request.user, stock_quantity__lt=models.F("stock_min_threshold"))
+    
+    return render(request, "shopping_list.html", {"items": items})
 
-@require_POST
-def update_quantity(request, shopping_list_id):
-    """
-    購入予定数を増減する
-    """
-    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
-    action = request.POST.get('action')
 
-    if action == 'increment':
-        shopping_item.quantity_to_buy += 1
-    elif action == 'decrement' and shopping_item.quantity_to_buy > 0:
-        shopping_item.quantity_to_buy -= 1
-
-    shopping_item.save()
-    return JsonResponse({'quantity_to_buy': shopping_item.quantity_to_buy})
-
-@require_POST
-def delete_from_list(request, shopping_list_id):
+def update_stock_and_history(request, item_id):
     """
-    買い物リストからアイテムを削除する
+    購入済みのアイテムを更新し、購入履歴を保存
     """
-    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
-    shopping_item.delete()
-    return JsonResponse({'success': True})
+    if request.method == "POST":
+        # アイテムを取得
+        item = get_object_or_404(Item, id=item_id, user=request.user)
+        
+        # 購入数と購入日を取得
+        purchased_quantity = int(request.POST.get("purchased_quantity"))
+        purchased_date = request.POST.get("purchased_date")
+        
+        # 在庫数を更新
+        item.stock_quantity += purchased_quantity
+        item.save()
 
-@require_POST
-def mark_as_purchased(request, shopping_list_id):
-    """
-    購入済みとしてマークし、購入履歴に保存
-    """
-    shopping_item = get_object_or_404(ShoppingList, id=shopping_list_id)
-    purchased_date = request.POST.get('purchased_date')
-    purchased_quantity = shopping_item.quantity_to_buy
-
-    if purchased_date:
-        # 購入履歴に保存
+        # 購入履歴を保存
         PurchaseHistory.objects.create(
-            item=shopping_item.item,
-            purchased_date=purchased_date,
-            purchased_quantity=purchased_quantity
+            item=item,
+            purchased_quantity=purchased_quantity,
+            purchased_date=purchased_date
         )
 
-        # 在庫数を更新
-        shopping_item.item.stock_quantity += purchased_quantity
-        shopping_item.item.save()
+        # 在庫が最低在庫数を超えた場合は買い物リストから削除
+        if item.stock_quantity >= item.stock_min_threshold:
+            return JsonResponse({"success": True, "removed": True})
 
-        # 在庫数が最低値を超えた場合はリストから削除
-        if shopping_item.item.stock_quantity >= shopping_item.item.stock_min_threshold:
-            shopping_item.delete()
+        return JsonResponse({"success": True, "removed": False})
 
-        return JsonResponse({'success': True})
-    else:
-        return JsonResponse({'success': False, 'error': '購入日を入力してください。'})
+
+def suggest_stores(request):
+    """
+    アイテムの買い回り提案を行うビュー
+    """
+    # GETパラメータで送信されたアイテムのIDリストを取得
+    item_ids = request.GET.getlist("item_ids")
+    items = Item.objects.filter(id__in=item_ids, user=request.user)
+
+    suggestions = []
+
+    # アイテムごとの店舗提案を行う
+    for item in items:
+        stores = item.storeitemreference_set.all().order_by("price")[:3]  # 価格順で上位3件を取得
+        suggestions.append({
+            "item": item.name,
+            "stores": [{"name": store.store.name, "price": store.price} for store in stores]
+        })
+
+    return JsonResponse({"suggestions": suggestions})
+
+
+def add_to_shopping_list(request):
+    """
+    在庫が足りないアイテムを自動で買い物リストに追加する
+    """
+    # 在庫が足りないアイテムを取得
+    items_to_add = Item.objects.filter(user=request.user, stock_quantity__lt=models.F("stock_min_threshold"))
+    
+    for item in items_to_add:
+        # ショッピングリストへの追加処理（実際のアプリケーションに応じて調整）
+        # ここでは、アイテム名を表示して追加することを示しています。
+        print(f"アイテム {item.name} を買い物リストに追加します。")
+    
+    return JsonResponse({"message": "在庫不足のアイテムが買い物リストに追加されました。"})
