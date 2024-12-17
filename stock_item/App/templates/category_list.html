@@ -14,7 +14,7 @@
     <a href="{% url 'login' %}">アプリへ</a>
     <a href="{% url 'logout' %}">ログアウト</a>
     <a href="{% url 'password_change' %}">パスワード変更</a>
-    <a href="{% url 'item_add' %}">アイテム追加</a>
+    <a href="{% url 'add_item' %}">アイテム追加</a>
     <a href="{% url 'item_list' %}">アイテム一覧</a>
     <a href="{% url 'category_list' %}">カテゴリ追加</a>
 </nav>
@@ -25,16 +25,16 @@
     <a href="{% url 'category_add' %}">新規カテゴリ追加</a>
     <ul>
         {% for category in categories %}
-            <li>{{ itemcategory.name }}
-                <a href="{% url 'category_edit' itemcategory.id %}">編集</a>
-                <form action="{% url 'category_delete' itemcategory.id %}" method="post" style="display:inline;">
+            <li>{{ category.name }}
+                <a href="{% url 'category_edit' category.id %}">編集</a>
+                <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit">削除</button>
                 </form>
             </li>
         {% endfor %}
     </ul>
-    {% if not itemcategories %}
+    {% if not categories %}
         <p>まだカテゴリが登録されていません。</p>
     {% endif %}
 </body>

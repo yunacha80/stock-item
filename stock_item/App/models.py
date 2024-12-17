@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.timezone import now
+from django.db.models.signals import post_save
 # from .models import Category
 
 # Create your models here.
@@ -49,9 +50,11 @@ class ItemCategory(models.Model):
     def __str__(self):
         return self.name
 
-    def clean(self):
-        """カテゴリ数の制限をチェック"""
-        validate_ItemCategory_limit(self.user)
+    # def clean(self):
+    #     """カテゴリ数の制限をチェック"""
+    #     if not self.user:
+    #         return
+    #     validate_ItemCategory_limit(self.user)
 
     class Meta:
         db_table = "App_category" 
@@ -89,6 +92,10 @@ class Item(models.Model):
     def needs_restock(self):
         """在庫数が最低在庫数を下回っているか確認"""
         return self.stock_quantity < self.stock_min_threshold
+    
+    def update_stock(self, purchased_quantity):
+        self.stock_quantity += purchased_quantity
+        self.save()
 
 
     
@@ -150,3 +157,22 @@ class PurchaseHistory(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - {self.purchased_date} - 数量: {self.purchased_quantity}"
+    
+
+
+class PurchaseItem(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    planned_purchase_quantity = models.IntegerField(default=0)
+    purchased_quantity = models.IntegerField(null=True, blank=True)
+    purchased_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def update_stock_and_check(self):
+        """在庫を更新し、リストから削除するかチェック"""
+        if self.purchased_quantity:
+            self.item.update_stock(self.purchased_quantity)
+            if self.item.stock_quantity >= self.item.stock_min_threshold:
+                self.delete()
+
+    

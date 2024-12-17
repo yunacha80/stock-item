@@ -1,44 +1,59 @@
 <!DOCTYPE html>
 <html lang="ja">
+{% extends "base.html" %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
-    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>買い物リスト</title>
 </head>
+{% endblock head %}
+{% block content %}
 <body>
     <h1>買い物リスト</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>選択</th>
-                <th>アイテム名</th>
-                <th>在庫数</th>
-                <th>購入済み</th>
-                <th>購入数</th>
-                <th>購入日</th>
-            </tr>
-        </thead>
-        <tbody id="shopping-list">
-            {% for item in items %}
-            <tr>
-                <td><input type="checkbox" class="select-item" data-id="{{ item.id }}"></td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.stock_quantity }}</td>
-                <td><input type="checkbox" class="mark-purchased" data-id="{{ item.id }}"></td>
-                <td><input type="number" class="purchased-quantity" min="1"></td>
-                <td><input type="date" class="purchased-date"></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <button id="update-list">更新</button>
-    <button id="suggest-stores-btn">買い回り提案</button>
-
-    <div id="store-suggestions" style="margin-top: 20px;">
-        <h2>買い回り提案</h2>
-        <ul id="suggestions-list"></ul>
-    </div>
+    <form method="post" action="{% url 'update_stock_and_history' %}">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>アイテム名 (現在庫数)</th>
+                    <th>購入予定数</th>
+                    <th>購入済み</th>
+                    <th>購入した数</th>
+                    <th>購入日</th>
+                    <th>更新</th>
+                    <th>削除</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.name }} (現在：{{ item.stock_quantity }}個)</td>
+                    <td>
+                        <button type="button" class="decrement">－</button>
+                        <input type="number" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity }}" min="0">
+                        <button type="button" class="increment">＋</button>
+                    </td>
+                    <td>
+                        <input type="checkbox" name="purchased_{{ item.id }}">
+                    </td>
+                    <td>
+                        <input type="number" name="purchased_quantity_{{ item.id }}" min="1">
+                    </td>
+                    <td>
+                        <input type="date" name="purchased_date_{{ item.id }}">
+                    </td>
+                    <td>
+                        <button type="submit" name="action" value="update_{{ item.id }}">更新</button>
+                        <button type="submit" name="action" value="delete_{{ item.id }}">🗑️</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
 </body>
-<script src="shopping_list.js"></script>
+{% load static %}
+<script src="{% static 'shopping_list.js' %}"></script>
+{% endblock %}
 </html>
+

@@ -47,8 +47,8 @@ urlpatterns = [
     path('stores/delete/<int:store_id>/', views.store_delete, name='store_delete'),
     path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
-    path('shopping_list/', views.shopping_list_view, name='shopping_list'),
-    # path('shopping_list/add_items/', views.add_item_view, name='add_item_view'),
-    # path('shopping_list/add_items_to_shopping_list/', views.add_items_to_shopping_list, name='add_items_to_shopping_list'),
-    # path('shopping_list/update_quantities/', views.update_quantities, name='update_quantities'),
+    path("shopping-list/", views.shopping_list_view, name="shopping_list"),
+    path("shopping-list/update/", views.update_stock_and_history, name="update_stock_and_history"),
+    path("shopping-list/suggest-stores/", views.suggest_stores, name="suggest_stores"),
+    # path("shopping-list/delete/<int:item_id>/", views.delete_item_from_list, name="delete_item_from_list"),
 ]
