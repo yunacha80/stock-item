@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
+{% extends "base.html" %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
     <title>購入履歴</title>
 </head>
+{% endblock head %}
+{% block content %}
 <body>
     <h1>購入履歴</h1>
 
@@ -39,4 +43,5 @@
     </ul>
     <a href="{% url 'home' %}">戻る</a>
 </body>
+{% endblock %}
 </html>

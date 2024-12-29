@@ -64,6 +64,7 @@ class EmailChangeForm(forms.Form):
 class ItemCategoryForm(forms.ModelForm):
     class Meta:
         model = ItemCategory
+        exclude = ['user']
         fields = ['name', 'display_order']
         labels = {
             'name': 'カテゴリ名',
@@ -124,6 +125,13 @@ class StoreItemReferenceForm(forms.ModelForm):
             'memo': forms.TextInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        initial_data = kwargs.pop('initial_data', {})
+        super().__init__(*args, **kwargs)
+        self.fields['price_unknown'].initial = initial_data.get('price_unknown', False)
+        self.fields['no_price'].initial = initial_data.get('no_price', False)
+
+        
     def clean(self):
         cleaned_data = super().clean()
         price_unknown = cleaned_data.get('price_unknown')

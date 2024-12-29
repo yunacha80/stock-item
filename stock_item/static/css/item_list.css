@@ -1,0 +1,31 @@
+/* アイテム一覧ページのスタイル */
+.item-list-page table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.item-list-page th, 
+.item-list-page td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+.item-list-page th {
+    background-color: #f4f4f4;
+}
+
+.item-list-page .low-stock {
+    color: red;
+    font-weight: bold;
+}
+
+.item-list-page a {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.item-list-page a:hover {
+    text-decoration: underline;
+}

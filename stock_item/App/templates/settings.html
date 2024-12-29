@@ -1,31 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Item</title>
+    <title>設定 - Stock Item</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
+{% endblock head %}
+
 <body>
-    <h1>■設定</h1>
-    <br>
+{% block content %}
+    <h1>設定</h1>
+
+    <!-- ストックアイテムカテゴリ編集 -->
     <h2>ストックアイテムカテゴリ編集</h2>
     <hr>
-    <<ul>
+    <ul>
         {% for category in categories %}
-            <li>{{ category.name }}: {{ category.description }}</li>
+        <li>{{ category.name }}
+            <a href="{% url 'category_edit' category.id %}">編集</a>
+            <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">削除</button>
+            </form>
+        </li>
+        <hr>
+        {% empty %}
+        <li>カテゴリが登録されていません。</li>
+        {% endfor %}
+    </ul>
+    <!-- +カテゴリ追加ボタン -->
+    <form method="POST" action="{% url 'category_add' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">カテゴリ追加</button>
+    </form>
+    <hr>
+
+    <br>
+
+    <!-- 在庫最低値のデフォルト数値変更 -->
+    <h2>在庫最低値のデフォルト数値変更</h2>
+    <hr>
+    <form method="POST" action="{% url 'update_stock_min_threshold' %}">
+        {% csrf_token %}
+        <div class="stock-adjuster">
+            <button type="button" class="decrement">−</button>
+            <input id="default-stock" type="number" name="default_stock" value="{{ default_stock }}" readonly>
+            <button type="button" class="increment">＋</button>
+        </div>
+        <button type="submit">変更を保存</button>
+    </form>
+    <hr>
+    <br>
+
+    <!-- 店舗編集 -->
+    <h2>店舗編集（10店舗まで登録可能）</h2>
+    <hr>
+    <ul>
+        {% for store in stores %}
+        <li>{{ store.name }}
+            <a href="{% url 'store_edit' store.id %}">編集</a>
+            <form action="{% url 'store_delete' store.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">削除</button>
+            </form>
+        </li>
         <hr>
         {% endfor %}
     </ul>
-    
-    <h2>アカウント編集（{{ user.username }}様</h2>
+    <br>
+
+    <!-- アカウント編集 -->
+    <h2>アカウント編集（{{ user.email }}様）</h2>
     <hr>
-    <li><a href="/user/{{ user.id }}">{{ user.username }}</a>
-
-
+    <li><a href="{% url 'email_change' %}">メールアドレス変更</a></li>
     <hr>
-   
-</body>
+    <li><a href="{% url 'password_change' %}">パスワード変更</a></li>
+    <hr>
+    <li><a href="{% url 'logout' %}">ログアウト</a></li>
+    <br>
+    <br>
+    <br>
 
-    <a href="{% url 'login' %}">ログインへ戻る</a>
-
+<script src="{% static 'js/shopping_list.js' %}"></script>
+{% endblock %}
 </body>
+</html>

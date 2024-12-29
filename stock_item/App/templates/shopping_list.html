@@ -1,36 +1,44 @@
 <!DOCTYPE html>
 <html lang="ja">
 {% extends "base.html" %}
+{% load static %}
+
 {% block head %}
 <head>
     <meta charset="UTF-8">
-    <title>買い物リスト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>買い物リストと買い回り提案</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
 {% endblock head %}
+
 {% block content %}
 <body>
     <h1>買い物リスト</h1>
-    <form method="post" action="{% url 'update_stock_and_history' %}">
+
+    <!-- 在庫更新用フォーム -->
+    <form method="post" action="{% url 'shopping_list' %}">
         {% csrf_token %}
         <table>
             <thead>
                 <tr>
+                    <th>選択</th>
                     <th>アイテム名 (現在庫数)</th>
                     <th>購入予定数</th>
                     <th>購入済み</th>
                     <th>購入した数</th>
                     <th>購入日</th>
                     <th>更新</th>
-                    <th>削除</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in items %}
                 <tr>
+                    <td><input type="checkbox" class="select-item" name="item_ids" value="{{ item.id }}"></td>
                     <td>{{ item.name }} (現在：{{ item.stock_quantity }}個)</td>
                     <td>
-                        <button type="button" class="decrement">－</button>
-                        <input type="number" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity }}" min="0">
+                        <button type="button" class="decrement">−</button>
+                        <input type="number" class="planned-quantity" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity }}" min="0">
                         <button type="button" class="increment">＋</button>
                     </td>
                     <td>
@@ -44,16 +52,74 @@
                     </td>
                     <td>
                         <button type="submit" name="action" value="update_{{ item.id }}">更新</button>
-                        <button type="submit" name="action" value="delete_{{ item.id }}">🗑️</button>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </form>
+
+    <!-- 買い回り提案用フォーム -->
+    <form method="post" action="{% url 'shopping_list' %}">
+        {% csrf_token %}
+        <button type="submit" name="action" value="suggest">買い回り提案</button>
+    </form>
+
+    <h2>選択アイテム: {{ selected_items|length }}点</h2>
+
+    <!-- 提案結果表示 -->
+    {% if suggestions %}
+        <h2>■ 買い回り提案</h2>
+        <div class="suggestions">
+            {% for suggestion in suggestions %}
+                <details>
+                    <summary>
+                        ▼ {{ suggestion.type }}
+                        {% if suggestion.route|length > 1 %}
+                            {{ suggestion.route|join:" ➡ " }}
+                        {% else %}
+                            {{ suggestion.route|join:", " }}
+                        {% endif %}
+                        {% if suggestion.total_price %}
+                            合計金額 {{ suggestion.total_price|floatformat:2 }}円 (単価合計 {{ suggestion.unit_total_price|floatformat:2 }}円)
+                        {% endif %}
+                        {% if suggestion.total_time %}
+                            移動時間 {{ suggestion.total_time }}分
+                        {% endif %}
+                    </summary>
+                    <ul>
+                        {% for store, items in suggestion.store_details.items %}
+                            <li>
+                                <strong>{{ store }}</strong>:
+                                <ul>
+                                    {% for item_name, item_data in items.items %}
+                                        <li>
+                                            {{ item.name }}: {{ item.quantity }}個
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endfor %}
+                        {% if suggestion.missing_items %}
+                            <li style="color:red;">取扱いの有無及び価格不明: {{ suggestion.missing_items|join:", " }}</li>
+                        {% endif %}
+                    </ul>
+                </details>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>提案が見つかりませんでした。</p>
+    {% endif %}
+
+    <!-- メッセージ表示部分 -->
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 </body>
-{% load static %}
-<script src="{% static 'shopping_list.js' %}"></script>
+<script src="{% static 'js/shopping_list.js' %}"></script>
 {% endblock %}
 </html>
-

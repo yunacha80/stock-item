@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,7 +54,10 @@
         }
     </style>
 </head>
+{% endblock head %}
+
 <body>
+{% block content %}
     <div class="container">
         <h1>アイテム追加</h1>
         <form method="post">
@@ -123,5 +129,6 @@
             <a href="{% url 'item_list' %}">一覧に戻る</a>
         </form>
     </div>
+{% endblock %}
 </body>
 </html>

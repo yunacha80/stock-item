@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+{% extends "base.html" %}
+{% block title %}カテゴリ追加{% endblock title %}
+
+{% block content %}
+<h1>新しいカテゴリを追加</h1>
+<form method="POST" action="{% url 'add_category' %}">
+    {% csrf_token %}
+    <div>
+        <label for="id_name">カテゴリ名:</label>
+        {{ form.name }}
+    </div>
+    <div>
+        <label for="id_display_order">表示順:</label>
+        {{ form.display_order }}
+    </div>
+    <button type="submit">追加</button>
+</form>
+{% if messages %}
+    <ul>
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+<a href="{% url 'category_list' %}">カテゴリ一覧に戻る</a>
+{% endblock content %}

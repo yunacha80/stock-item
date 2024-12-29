@@ -124,7 +124,7 @@ STATIC_URL = "/static/"
 # 静的ファイルが格納されているディレクトリを指定
 STATICFILES_DIRS = [
     BASE_DIR / "static",  # プロジェクトのルートディレクトリ内のstaticフォルダ
-]
+    ]
 
 
 # Default primary key field type

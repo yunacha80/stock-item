@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
+{% extends "base.html" %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
     <title>店舗編集</title>
 </head>
+{% endblock head %}
+{% block content %}
 <body>
     <h1>店舗編集</h1>
     <form method="post">
@@ -25,4 +29,5 @@
         <button type="submit">保存</button>
     </form>
 </body>
+{% endblock %}
 </html>

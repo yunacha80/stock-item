@@ -18,10 +18,14 @@
 
 <!DOCTYPE html>
 <html lang="ja">
+{% extends "base.html" %}
+{% block head %}
 <head>
     <meta charset="UTF-8">
     <title>店舗追加/編集</title>
 </head>
+{% endblock head %}
+{% block content %}
 <body>
     <h1>{% if form.instance.id %}店舗編集{% else %}新規店舗追加{% endif %}</h1>
     <form method="post">
@@ -31,4 +35,5 @@
     </form>
     <a href="{% url 'store_list' %}">戻る</a>
 </body>
+{% endblock %}
 </html>

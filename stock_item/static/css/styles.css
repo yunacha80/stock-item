@@ -1,0 +1,83 @@
+/* ナビゲーションメニューのスタイル */
+.navigation {
+    background-color: #f8f9fa;
+    padding: 10px;
+    display: flex;
+    justify-content: space-around;
+    border-bottom: 1px solid #ccc;
+}
+
+.navigation ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 10px;
+}
+
+.nav-item {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: white;
+    text-align: center;
+}
+
+.nav-item a {
+    text-decoration: none;
+    color: #333;
+}
+
+.nav-item.active {
+    background-color: #e9ecef; /* 薄いグレー */
+    font-weight: bold;
+    color: #000;
+}
+
+.hidden {
+    display: none;
+}
+
+.suggestion h3 {
+    cursor: pointer;
+    color: #007BFF;
+}
+
+.suggestion-details {
+    margin-left: 20px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-left: 3px solid #007BFF;
+}
+
+.missing-items {
+    color: red;
+    font-weight: bold;
+}
+
+
+
+.stock-threshold-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stock-threshold-control button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.stock-threshold-control input {
+    width: 60px;
+    height: 40px;
+    text-align: center;
+    font-size: 1.1em;
+}
+
+
