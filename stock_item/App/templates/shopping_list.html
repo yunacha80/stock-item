@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>買い物リストと買い回り提案</title>
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 {% endblock head %}
 
@@ -42,7 +42,7 @@
                         <button type="button" class="increment">＋</button>
                     </td>
                     <td>
-                        <input type="checkbox" name="purchased_{{ item.id }}">
+                        <input type="checkbox" name="purchased_{{ item.id }}">購入済
                     </td>
                     <td>
                         <input type="number" name="purchased_quantity_{{ item.id }}" min="1">
@@ -75,10 +75,10 @@
                 <details>
                     <summary>
                         ▼ {{ suggestion.type }}
-                        {% if suggestion.route|length > 1 %}
-                            {{ suggestion.route|join:" ➡ " }}
+                        {% if suggestion.route|length == 1 %}
+                            {{ suggestion.route.0 }}
                         {% else %}
-                            {{ suggestion.route|join:", " }}
+                            {{ suggestion.route|join:" ➡ " }}
                         {% endif %}
                         {% if suggestion.total_price %}
                             合計金額 {{ suggestion.total_price|floatformat:2 }}円 (単価合計 {{ suggestion.unit_total_price|floatformat:2 }}円)
@@ -92,7 +92,7 @@
                             <li>
                                 <strong>{{ store }}</strong>:
                                 <ul>
-                                    {% for item_name, item_data in items.items %}
+                                    {% for item in items %}
                                         <li>
                                             {{ item.name }}: {{ item.quantity }}個
                                         </li>

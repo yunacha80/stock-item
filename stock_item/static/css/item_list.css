@@ -1,31 +1,138 @@
-/* アイテム一覧ページのスタイル */
-.item-list-page table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+body.item-list-page {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    padding: 20px;
 }
 
-.item-list-page th, 
-.item-list-page td {
-    border: 1px solid #ccc;
+h1 {
+    text-align: center;
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+a.btn-add-item {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background-color: #3498db;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+a.btn-add-item:hover {
+    background-color: #2980b9;
+}
+
+/* カテゴリボタン */
+.category-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.category-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #3498db;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.category-btn:hover {
+    background-color: #2980b9;
+}
+
+.category-btn.active {
+    background-color: #2980b9;
+    font-weight: bold;
+}
+
+/* テーブル */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+thead th {
+    background-color: #3498db;
+    color: white;
     padding: 10px;
     text-align: left;
 }
 
-.item-list-page th {
-    background-color: #f4f4f4;
+tbody td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    vertical-align: middle;
 }
 
-.item-list-page .low-stock {
-    color: red;
-    font-weight: bold;
+tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
 }
 
-.item-list-page a {
-    text-decoration: none;
-    color: #007bff;
+.stock-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.item-list-page a:hover {
-    text-decoration: underline;
+.stock-control button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.stock-control button:hover {
+    background-color: #2980b9;
+}
+
+/* アクションボタン */
+.action-box {
+    display: inline-flex;
+    gap: 10px;
+}
+
+.add-to-list {
+    padding: 5px 10px;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.add-to-list:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.delete-item {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.delete-item:hover {
+    background-color: #c0392b;
 }

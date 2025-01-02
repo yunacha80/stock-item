@@ -12,35 +12,89 @@
 {% block content %}
 <body class="item-list-page">
     <h1>アイテム一覧</h1>
-    <a href="{% url 'add_item' %}">新規アイテム追加</a>
+    <a href="{% url 'add_item' %}" class="btn-add-item">新規アイテム追加</a>
 
-    {% if items %}
+    <!-- カテゴリボタン -->
+    <div class="category-buttons">
+        <button class="category-btn {% if selected_category == 'all' %}active{% endif %}" onclick="window.location.href='?category=all'">全て</button>
+        {% for category in categories %}
+            <button class="category-btn {% if selected_category == category.name %}active{% endif %}" onclick="window.location.href='?category={{ category.name }}'">
+                {{ category.name }}
+            </button>
+        {% endfor %}
+    </div>
+
+    <!-- アイテムがない時の表示 -->
+    {% if not displayed_items %}
+        <p class="no-items">まだアイテムが登録されていません。</p>
+    {% else %}
+        <!-- アイテム一覧 -->
         <table>
             <thead>
                 <tr>
                     <th>アイテム名</th>
-                    <th>在庫数</th>
                     <th>カテゴリ</th>
+                    <th>在庫数</th>
                     <th>最終購入日</th>
+                    <th>リマインダー</th>
+                    <th>買い物リストに追加</th>
+                    <th>削除</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in items %}
-                <tr>
+                {% for entry in item_data %}
+                <tr id="item-{{ entry.item.id }}">
                     <td>
-                        <a href="{% url 'edit_item' item.id %}">{{ item.name }}</a>
+                        <a href="{% url 'edit_item' entry.item.id %}" class="item-name">{{ entry.item.name }}</a>
                     </td>
-                    <td class="{% if item.stock_quantity <= item.stock_min_threshold %}low-stock{% endif %}">
-                        {{ item.stock_quantity }}
+                    <td>{{ entry.item.category.name }}</td>
+                    <td>
+                        <div class="stock-control">
+                            <button class="decrement" data-item-id="{{ entry.item.id }}">−</button>
+                            <span class="stock-quantity">{{ entry.item.stock_quantity }}</span>
+                            <button class="increment" data-item-id="{{ entry.item.id }}">＋</button>
+                        </div>
                     </td>
-                    <td>{{ item.category.name }}</td>
-                    <td>{{ item.last_purchase_date|date:"Y/m/d"|default:"不明" }}</td>
+                    <td>
+                        {% if entry.last_purchase_date %}
+                            {{ entry.last_purchase_date|date:"Y/m/d" }}
+                        {% else %}
+                            不明
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.item.reminder %}
+                            設定済み
+                        {% else %}
+                            設定なし
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.item.id in shopping_list_items %}
+                            <button class="add-to-list" data-item-id="{{ item.item.id }}" disabled>追加済</button>
+                        {% else %}
+                            <button class="add-to-list" data-item-id="{{ item.item.id }}">追加</button>
+                        {% endif %}
+                    </td>
+                    <td class="actions">    
+                        <div class="action-box">
+                            <!-- ゴミ箱（削除ボタン） -->
+                            <button class="delete-item" data-item-id="{{ entry.item.id }}">🗑️</button>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        <p>まだアイテムが登録されていません。</p>
+    {% endif %}
+
+    <!-- メッセージ表示部分 -->
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
     {% endif %}
 </body>
 {% endblock %}

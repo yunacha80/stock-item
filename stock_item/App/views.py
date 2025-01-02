@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.db import transaction,models
-from django.db.models import Min,F,Max
+from django.db.models import Min,F,Max,Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -24,6 +24,7 @@ from django.http import Http404
 import json
 from itertools import permutations
 from django.core.exceptions import ValidationError
+from collections import defaultdict
 
 
 # Create your views here.
@@ -114,11 +115,41 @@ class HomeView(LoginRequiredMixin, View):
 
 
 def item_list(request):
-    items = (
-        Item.objects.filter(user=request.user)
-        .annotate(last_purchase_date=Max('purchase_histories__purchased_date'))  # 最終購入日を取得
-    )
-    return render(request, 'item_list.html', {'items': items})
+    # 現在のユーザーを取得
+    user = request.user
+
+    # 全アイテムとカテゴリを取得
+    items = Item.objects.filter(user=user)
+    categories = ItemCategory.objects.filter(user=user).order_by('display_order')
+
+    # カテゴリ選択
+    selected_category = request.GET.get('category', 'all')
+    if selected_category == 'all':
+        displayed_items = items
+    else:
+        displayed_items = items.filter(category__name=selected_category)
+
+    # 最終購入日を取得
+    item_data = []
+    for item in displayed_items:
+        last_purchase = item.purchase_histories.order_by('-purchased_date').first()
+        item_data.append({
+            'item': item,
+            'last_purchase_date': last_purchase.purchased_date if last_purchase else None,
+        })
+
+    # 買い物リストに追加されているアイテムのIDを取得
+    shopping_list_items = PurchaseHistory.objects.filter(item__in=items).values_list('item_id', flat=True).distinct()
+    print(list(shopping_list_items))  # デバッグ用
+
+
+    return render(request, 'item_list.html', {
+        'categories': categories,
+        'selected_category': selected_category,
+        'displayed_items': displayed_items,
+        'item_data': item_data,
+        'shopping_list_items': list(shopping_list_items), 
+    })
 
 
 
@@ -345,7 +376,12 @@ def category_list(request):
         print("現在、カテゴリは存在しません。")  # デバッグ用の出力
     return render(request, 'category_list.html', {'categories': categories})
 
-
+def categorized_item_list(request):
+    items = Item.objects.filter(user=request.user)
+    items_by_category = defaultdict(list)
+    for item in items:
+        items_by_category[item.category.name].append(item)
+    return render(request, 'item_list.html', {'items_by_category': items_by_category})
 
 @login_required
 def category_add(request):
@@ -717,110 +753,6 @@ def update_stock_min_threshold(request):
 
 
 
-@login_required
-def shopping_list_view(request):
-    """
-    買い物リストの表示、購入済み処理、提案生成を管理。
-    """
-    items = Item.objects.filter(
-        user=request.user, stock_quantity__lt=models.F('stock_min_threshold')
-    ).annotate(
-        planned_purchase_quantity=models.F('stock_min_threshold') - models.F('stock_quantity')
-    )
-
-    suggestions = []
-    feedback_messages = []
-
-    if request.method == "POST":
-        action = request.POST.get("action", "")
-
-        if action == "suggest":
-            # 提案生成処理
-            try:
-                price_suggestion, price_missing, price_total, price_unit_total, price_store_details = calculate_lowest_price_route(items)
-                time_suggestion, total_time, time_missing, time_total, time_unit_total, time_store_details = calculate_shortest_time_route(items)
-                combined_suggestion, combined_missing, combined_total_price, combined_unit_total, combined_store_details = calculate_best_balance_route(items)
-
-                suggestions = [
-                    {
-                        "type": "最安値",
-                        "details": price_suggestion,
-                        "total_price": price_total,
-                        "unit_total_price": price_unit_total,
-                        "route": [data["store"] for data in price_suggestion.values()],
-                        "total_time": None,
-                        "store_details": price_store_details,
-                        "missing_items": price_missing,
-                    },
-                    {
-                        "type": "最短時間",
-                        "details": time_suggestion,
-                        "total_price": time_total,
-                        "unit_total_price": time_unit_total,
-                        "route": [data["store"] for data in time_suggestion.values()],
-                        "total_time": total_time,
-                        "store_details": time_store_details,
-                        "missing_items": time_missing,
-                    },
-                    {
-                        "type": "低価格＋短時間",
-                        "details": combined_suggestion,
-                        "total_price": combined_total_price,
-                        "unit_total_price": combined_unit_total,
-                        "route": [data["store"] for data in combined_suggestion.values()],
-                        "total_time": total_time,
-                        "store_details": combined_store_details,
-                        "missing_items": combined_missing,
-                    },
-                ]
-            except Exception as e:
-                feedback_messages.append("提案生成中にエラーが発生しました。")
-                print(f"DEBUG: Error: {e}")
-
-        elif action.startswith("update_"):
-            # 購入済み処理
-            try:
-                item_id = int(action.split("_")[1])
-                item = get_object_or_404(Item, id=item_id, user=request.user)
-
-                purchased_quantity = int(request.POST.get(f"purchased_quantity_{item_id}", 0))
-                purchased_date = request.POST.get(f"purchased_date_{item_id}")
-
-                if purchased_quantity > 0 and purchased_date:
-                    # 在庫を更新
-                    item.stock_quantity += purchased_quantity
-                    item.save()
-
-                    # 購入履歴を保存
-                    PurchaseHistory.objects.create(
-                        item=item,
-                        purchased_quantity=purchased_quantity,
-                        purchased_date=purchased_date
-                    )
-
-                    # 在庫が最低値を満たしている場合、リストから削除
-                    if item.stock_quantity >= item.stock_min_threshold:
-                        feedback_messages.append(f"{item.name} が在庫最低値を超えたためリストから削除されました。")
-                        items = items.exclude(id=item.id)  # 表示アイテムを更新
-
-            except Exception as e:
-                feedback_messages.append(f"購入処理でエラーが発生しました: {e}")
-                print(f"DEBUG: Error during purchase handling: {e}")
-
-    return render(request, "shopping_list.html", {
-        "items": items,
-        "suggestions": suggestions,
-        "messages": feedback_messages,
-    })
-
-
-
-
-
-
-
-
-
 
 
 def reset_hidden_items(request):
@@ -856,12 +788,54 @@ def reset_hidden_items(request):
 #     })
 
 
+
+def calculate_travel_time(cleaned_route, travel_times):
+    """
+    総移動時間を計算する関数。
+    - cleaned_route: 整理されたルート（店舗のリスト）
+    - travel_times: 店舗間の移動時間の辞書
+    """
+    total_time = 0
+
+    if not cleaned_route:
+        return total_time
+
+    # 自宅 → 最初の店舗
+    total_time += cleaned_route[0].travel_time_home_min
+
+    # 店舗間の移動
+    for i in range(len(cleaned_route) - 1):
+        travel_time = travel_times.get((cleaned_route[i], cleaned_route[i + 1]), None)
+        if travel_time is not None:
+            total_time += travel_time
+        else:
+            print(f"DEBUG: Travel time missing between {cleaned_route[i].name} and {cleaned_route[i + 1].name}")
+
+    # 最後の店舗 → 自宅
+    total_time += cleaned_route[-1].travel_time_home_min
+
+    return total_time
+
+
+
+
 def calculate_lowest_price_route(purchase_items):
     results = {}
-    missing_items = []  # 価格または取扱い不明アイテム
-    total_price = 0  # 合計金額
-    unit_total_price = 0  # 単価合計金額
-    store_details = {}  # 店舗ごとの商品詳細
+    missing_items = []
+    total_price = 0
+    unit_total_price = 0
+    store_details = {}
+    route = []
+    travel_times = {}
+
+    # 店舗間の移動時間を準備
+    stores = Store.objects.all()
+    for store1 in stores:
+        for store2 in stores:
+            if store1 != store2:
+                travel_times[(store1, store2)] = StoreTravelTime.objects.filter(
+                    store1=store1, store2=store2
+                ).first().travel_time_min
 
     for item in purchase_items:
         references = StoreItemReference.objects.filter(item=item).exclude(price=None, price_per_unit=None)
@@ -871,20 +845,24 @@ def calculate_lowest_price_route(purchase_items):
             continue
 
         best_reference = min(references, key=lambda ref: ref.price / ref.price_per_unit)
+        store = best_reference.store
         unit_price = best_reference.price / best_reference.price_per_unit
         item_total_price = best_reference.price
 
         results[item.name] = {
-            'store': best_reference.store.name,
+            'store': store.name,
             'unit_price': unit_price,
             'price': item_total_price,
             'quantity': item.planned_purchase_quantity,
         }
 
-        # 店舗ごとの商品詳細を構築
-        if best_reference.store.name not in store_details:
-            store_details[best_reference.store.name] = []
-        store_details[best_reference.store.name].append({
+        if store not in route:
+            route.append(store)
+
+        # 店舗ごとの商品詳細
+        if store.name not in store_details:
+            store_details[store.name] = []
+        store_details[store.name].append({
             'name': item.name,
             'quantity': item.planned_purchase_quantity,
             'unit_price': unit_price,
@@ -893,17 +871,46 @@ def calculate_lowest_price_route(purchase_items):
         total_price += item_total_price
         unit_total_price += unit_price
 
-    return results, missing_items, total_price, unit_total_price, store_details
+    # ルートを整形
+    cleaned_route = clean_route(route)
+
+    # デバッグ用出力
+    print(f"DEBUG: Cleaned Route: {[store.name for store in cleaned_route]}")
+    print(f"DEBUG: Travel Times: {travel_times}")
+
+    # 移動時間を計算
+    total_travel_time = calculate_travel_time(cleaned_route, travel_times)
+
+    # デバッグ用出力
+    print(f"DEBUG: Total Travel Time: {total_travel_time}")
+
+    return results, total_travel_time, missing_items, total_price, unit_total_price, store_details
+
+
 
 
 def calculate_shortest_time_route(purchase_items):
+    """
+    最短時間提案の計算。
+    """
     results = {}
-    total_travel_time = 0
+    route = []
     missing_items = []
     total_price = 0
     unit_total_price = 0
     store_details = {}
+    travel_times = {}
 
+    # 店舗間の移動時間を準備
+    stores = Store.objects.all()
+    for store1 in stores:
+        for store2 in stores:
+            if store1 != store2:
+                travel_time = StoreTravelTime.objects.filter(store1=store1, store2=store2).first()
+                if travel_time:
+                    travel_times[(store1, store2)] = travel_time.travel_time_min
+
+    # 商品ごとに最短時間の店舗を選定
     for item in purchase_items:
         references = StoreItemReference.objects.filter(item=item).exclude(price=None, price_per_unit=None)
 
@@ -918,13 +925,80 @@ def calculate_shortest_time_route(purchase_items):
         item_price = best_reference.price or 0
         unit_price = best_reference.price / best_reference.price_per_unit if best_reference.price_per_unit else 0
 
-        total_price += item_price
-        unit_total_price += unit_price
-        total_travel_time += best_store.travel_time_home_min
-
         results[item.name] = {
             'store': best_store.name,
             'travel_time': best_store.travel_time_home_min,
+            'price': item_price,
+            'quantity': item.planned_purchase_quantity,
+        }
+
+        if best_store not in route:
+            route.append(best_store)
+
+        # 店舗ごとの商品詳細
+        if best_store.name not in store_details:
+            store_details[best_store.name] = []
+        store_details[best_store.name].append({
+            'name': item.name,
+            'quantity': item.planned_purchase_quantity,
+            'unit_price': unit_price,
+        })
+
+        total_price += item_price
+        unit_total_price += unit_price
+
+    # 移動時間の計算
+    cleaned_route = clean_route(route)
+    total_travel_time = calculate_travel_time(cleaned_route, travel_times)
+
+    # デバッグ用出力
+    print(f"DEBUG: Cleaned Route: {[store.name for store in cleaned_route]}")
+    print(f"DEBUG: Travel Times: {travel_times}")
+    print(f"DEBUG: Total Travel Time: {total_travel_time}")
+
+    return results, total_travel_time, missing_items, total_price, unit_total_price, store_details
+
+
+
+
+def calculate_best_balance_route(purchase_items):
+    balance_results = {}
+    combined_total_price = 0
+    combined_unit_total = 0
+    store_details = {}
+    route = []
+    travel_times = {}
+
+    # 店舗間の移動時間を準備
+    stores = Store.objects.all()
+    for store1 in stores:
+        for store2 in stores:
+            if store1 != store2:
+                travel_time = StoreTravelTime.objects.filter(store1=store1, store2=store2).first()
+                if travel_time:
+                    travel_times[(store1, store2)] = travel_time.travel_time_min
+
+    # 各商品の最適店舗を選択しスコアを計算
+    for item in purchase_items:
+        references = StoreItemReference.objects.filter(item=item).exclude(price=None, price_per_unit=None)
+
+        if not references.exists():
+            continue
+
+        # スコア計算 (価格と移動時間のバランス)
+        best_reference = min(references, key=lambda ref: 0.6 * ref.price + 0.4 * ref.store.travel_time_home_min)
+        best_store = best_reference.store
+        route.append(best_store)
+
+        item_price = best_reference.price or 0
+        unit_price = best_reference.price / best_reference.price_per_unit if best_reference.price_per_unit else 0
+
+        combined_total_price += item_price
+        combined_unit_total += unit_price
+
+        balance_results[item.name] = {
+            'store': best_store.name,
+            'score': 0.6 * item_price + 0.4 * best_store.travel_time_home_min,
             'price': item_price,
             'quantity': item.planned_purchase_quantity,
         }
@@ -938,44 +1012,137 @@ def calculate_shortest_time_route(purchase_items):
             'unit_price': unit_price,
         })
 
-    return results, total_travel_time, missing_items, total_price, unit_total_price, store_details
+    # ルート内の重複店舗を削除
+    cleaned_route = clean_route(route)
+
+    # 総移動時間を計算
+    total_travel_time = calculate_travel_time(cleaned_route, travel_times)
+
+    # デバッグ用出力
+    print(f"DEBUG: Cleaned Route: {[store.name for store in cleaned_route]}")
+    print(f"DEBUG: Total Travel Time: {total_travel_time}")
+
+    # 未購入品リストは未処理アイテムから生成
+    combined_missing = [item.name for item in purchase_items if item.name not in balance_results]
+
+    return balance_results, combined_missing, combined_total_price, combined_unit_total, store_details, total_travel_time
 
 
-def calculate_best_balance_route(purchase_items):
-    price_results, price_missing, price_total, price_unit_total, price_store_details = calculate_lowest_price_route(purchase_items)
-    time_results, total_time, time_missing, time_total, time_unit_total, time_store_details = calculate_shortest_time_route(purchase_items)
 
-    balance_results = {}
-    combined_total_price = 0
-    combined_unit_total = 0
-    store_details = {}
 
-    for item_name in price_results.keys():
-        price = price_results[item_name]['price']
-        unit_price = price_results[item_name]['unit_price']
-        time = time_results[item_name]['travel_time']
+@login_required
+def shopping_list_view(request):
+    """
+    買い物リストの表示、購入済み処理、提案生成を管理。
+    """
+    items = Item.objects.filter(
+        user=request.user, stock_quantity__lt=models.F('stock_min_threshold')
+    ).annotate(
+        planned_purchase_quantity=models.F('stock_min_threshold') - models.F('stock_quantity')
+    )
 
-        score = (0.6 * price) + (0.4 * time)
-        balance_results[item_name] = {
-            'store': price_results[item_name]['store'],
-            'score': score,
-            'price': price,
-        }
+    suggestions = []
+    feedback_messages = []
 
-        combined_total_price += price
-        combined_unit_total += unit_price
+    if request.method == "POST":
+        action = request.POST.get("action", "")
 
-        store_name = price_results[item_name]['store']
-        if store_name not in store_details:
-            store_details[store_name] = []
-        store_details[store_name].append({
-            'name': item_name,
-            'quantity': price_results[item_name]['quantity'],
-            'unit_price': unit_price,
-        })
+        if action == "suggest":
+            # 提案生成処理
+            try:
+                # 最安値提案
+                price_suggestion, price_travel_time, price_missing, price_total, price_unit_total, price_store_details = calculate_lowest_price_route(items)
 
-    combined_missing = list(set(price_missing + time_missing))
-    return balance_results, combined_missing, combined_total_price, combined_unit_total, store_details
+                # 最短時間提案
+                time_suggestion, time_travel_time, time_missing, time_total, time_unit_total, time_store_details = calculate_shortest_time_route(items)
+
+                # 低価格＋短時間提案
+                combined_suggestion, combined_missing, combined_total_price, combined_unit_total, combined_store_details, combined_total_time = calculate_best_balance_route(items)
+
+                # 提案リストを作成
+                suggestions = [
+                    {
+                        "type": "最安値",
+                        "details": price_suggestion,
+                        "total_price": price_total,
+                        "unit_total_price": price_unit_total,
+                        "route": clean_route([data["store"] for data in price_suggestion.values()]),
+                        "total_time": price_travel_time,
+                        "store_details": price_store_details,
+                        "missing_items": price_missing,
+                    },
+                    {
+                        "type": "最短時間",
+                        "details": time_suggestion,
+                        "total_price": time_total,
+                        "unit_total_price": time_unit_total,
+                        "route": clean_route([data["store"] for data in time_suggestion.values()]),
+                        "total_time": time_travel_time,
+                        "store_details": time_store_details,
+                        "missing_items": time_missing,
+                    },
+                    {
+                        "type": "低価格＋短時間",
+                        "details": combined_suggestion,
+                        "total_price": combined_total_price,
+                        "unit_total_price": combined_unit_total,
+                        "route": clean_route([data["store"] for data in combined_suggestion.values()]),
+                        "total_time": combined_total_time,
+                        "store_details": combined_store_details,
+                        "missing_items": combined_missing,
+                    },
+                ]
+            except Exception as e:
+                feedback_messages.append(f"提案生成中にエラーが発生しました: {e}")
+                print(f"DEBUG: Error: {e}")
+
+    return render(request, "shopping_list.html", {
+        "items": items,
+        "suggestions": suggestions,
+        "messages": feedback_messages,
+    })
+
+
+def clean_route(route):
+    """
+    ルート内の店舗を順序を維持したまま整形し、重複を排除。
+    """
+    cleaned_route = []
+    for store in route:
+        if not cleaned_route or cleaned_route[-1] != store:
+            cleaned_route.append(store)
+    # 最初と最後の店舗が同じ場合、最後を削除
+    if len(cleaned_route) > 1 and cleaned_route[0] == cleaned_route[-1]:
+        cleaned_route.pop()
+    return cleaned_route
+
+
+
+
+
+
+
+
+
+
+
+def suggestion_detail_view(request, suggestion_type):
+    """
+    提案の詳細表示画面。
+    """
+    # 提案の種類（最安値、最短時間、バランス）に基づいてデータを取得
+    suggestion = {
+        "type": suggestion_type,
+        "details": f"{suggestion_type} に基づく提案詳細情報。",
+        "route": ["Store A", "Store B", "Store C"],
+        "total_price": 2000 if suggestion_type == "最安値" else None,
+        "total_time": 30 if suggestion_type == "最短時間" else None,
+    }
+
+    return render(request, "suggestion_detail.html", {
+        "suggestion": suggestion,
+    })
+
 
 
 @csrf_exempt
@@ -1033,22 +1200,7 @@ def update_stock_and_history(request):
 
 
 
-def suggestion_detail_view(request, suggestion_type):
-    """
-    提案の詳細表示画面。
-    """
-    # 提案の種類（最安値、最短時間、バランス）に基づいてデータを取得
-    suggestion = {
-        "type": suggestion_type,
-        "details": f"{suggestion_type} に基づく提案詳細情報。",
-        "route": ["Store A", "Store B", "Store C"],
-        "total_price": 2000 if suggestion_type == "最安値" else None,
-        "total_time": 30 if suggestion_type == "最短時間" else None,
-    }
 
-    return render(request, "suggestion_detail.html", {
-        "suggestion": suggestion,
-    })
 
 
 

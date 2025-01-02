@@ -1,32 +1,111 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // 増減ボタンの処理
+    // 在庫の増減ボタン
     document.querySelectorAll(".increment").forEach(button => {
         button.addEventListener("click", function () {
-            const input = this.previousElementSibling; // +ボタンの前の要素を取得
-            if (input && input.tagName === "INPUT" && input.type === "number") {
-                input.value = parseInt(input.value || 0) + 1; // 数値を増加
-            }
+            const input = this.previousElementSibling;
+            const itemId = input.dataset.itemId;
+            input.value = parseInt(input.value || 0) + 1;
+            updateStock(itemId, 1); // 在庫を増やすリクエスト
         });
     });
 
     document.querySelectorAll(".decrement").forEach(button => {
         button.addEventListener("click", function () {
-            const input = this.nextElementSibling; // -ボタンの次の要素を取得
-            if (input && input.tagName === "INPUT" && input.type === "number") {
-                input.value = Math.max(0, parseInt(input.value || 0) - 1); // 数値を減少（0以下にはしない）
-            }
+            const input = this.nextElementSibling;
+            const itemId = input.dataset.itemId;
+            input.value = Math.max(0, parseInt(input.value || 0) - 1);
+            updateStock(itemId, -1); // 在庫を減らすリクエスト
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const showAllItemsButton = document.getElementById("show-all-items");
+    
+        showAllItemsButton.addEventListener("click", function () {
+            // すべてのアイテムを表示
+            const categories = document.querySelectorAll(".category");
+            categories.forEach(category => {
+                category.style.display = "block"; // カテゴリを表示
+            });
         });
     });
 
 
-    document.addEventListener("DOMContentLoaded", function () {
-        const toggles = document.querySelectorAll(".toggle-suggestion");
-    
-        toggles.forEach((toggle) => {
-            toggle.addEventListener("click", () => {
-                const details = toggle.nextElementSibling;
-                details.classList.toggle("hidden");
-            });
+    // 買い物リストに追加
+    document.querySelectorAll(".add-to-list").forEach(button => {
+        button.addEventListener("click", function () {
+            const itemId = this.dataset.itemId;
+            addToShoppingList(itemId); // 買い物リストに追加
         });
-    });    
+    });
+
+    // アイテム削除ボタン
+    document.querySelectorAll(".delete-item").forEach(button => {
+        button.addEventListener("click", function () {
+            const itemId = this.dataset.itemId;
+            if (confirm("このアイテムを削除してもよろしいですか？")) {
+                deleteItem(itemId); // アイテムを削除
+            }
+        });
+    });
 });
+
+// 在庫更新
+function updateStock(itemId, delta) {
+    fetch(`/update-stock/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken(),
+        },
+        body: JSON.stringify({ item_id: itemId, delta: delta }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector(`#item-${itemId} .stock-quantity`).textContent = data.new_quantity;
+        }
+    });
+}
+
+// 買い物リストに追加
+function addToShoppingList(itemId) {
+    fetch(`/add-to-shopping-list/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken(),
+        },
+        body: JSON.stringify({ item_id: itemId }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const button = document.querySelector(`#item-${itemId} .add-to-list`);
+            button.textContent = "追加済";
+            button.disabled = true;
+        }
+    });
+}
+
+// アイテム削除
+function deleteItem(itemId) {
+    fetch(`/delete-item/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken(),
+        },
+        body: JSON.stringify({ item_id: itemId }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector(`#item-${itemId}`).remove();
+        }
+    });
+}
+
+function getCSRFToken() {
+    return document.querySelector('[name="csrfmiddlewaretoken"]').value;
+}
