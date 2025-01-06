@@ -453,22 +453,20 @@ def purchase_history_list(request):
 # 購入履歴検索
 @login_required
 def purchase_history_Search(request):
-    # 現在のユーザーに関連する購入履歴を取得
+    form = PurchaseHistoryFilterForm(user=request.user, data=request.GET)
+
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
 
-    # フォームを現在のユーザー情報とともに初期化
-    form = PurchaseHistoryFilterForm(request.GET or None, user=request.user)
+    if form.is_valid() and form.cleaned_data['items']:
+        # 選択された複数のアイテムでフィルタリング
+        histories = histories.filter(item__in=form.cleaned_data['items'])
 
-    # フォームが有効であれば絞り込みを実行
-    if form.is_valid():
-        item = form.cleaned_data.get('item')
-        if item:
-            histories = histories.filter(item=item)
+    return render(request, 'purchase_history_list.html', {'histories': histories, 'form': form})
 
-    return render(request, 'purchase_history_list.html', {
-        'histories': histories,
-        'form': form,
-    })
+
+
+
+
 
 
 

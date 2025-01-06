@@ -179,9 +179,9 @@ button.increment:hover {
     color: #000;
 }
 
-.hidden {
+/* .hidden {
     display: none;
-}
+} */
 
 .suggestion h3 {
     cursor: pointer;

@@ -8,24 +8,24 @@
 </head>
 {% endblock head %}
 {% block content %}
-<body>
+<body class="purchase-history-page">
     <h1>購入履歴</h1>
-
-    <!-- アイテム名での絞り込み検索フォーム -->
-    <form method="get" class="purchase-history-page">
-        {{ form.as_p }}
+    <form method="get" action="{% url 'purchase_history_Search' %}">
+        {{ form.items.label_tag }} <!-- アイテム選択ラベル -->
+        {{ form.items }}           <!-- 複数選択のセレクトボックスまたはチェックボックス -->
         <button type="submit">検索</button>
     </form>
     
+    <!-- 検索結果の表示 -->
     <ul>
         {% for history in histories %}
-        <li>
-            <strong>アイテム:</strong> {{ history.item.name }}<br>
-            <strong>購入日:</strong> {{ history.purchased_date }}<br>
-            <strong>購入数量:</strong> {{ history.purchased_quantity }}
-        </li>
+            <li>
+                購入日: {{ history.purchased_date }}<br>
+                アイテム: {{ history.item.name }}<br>
+                購入数量: {{ history.purchased_quantity }}
+            </li>
         {% empty %}
-        <p>該当する購入履歴がありません。</p>
+            <p>該当する購入履歴がありません。</p>
         {% endfor %}
     </ul>
 
