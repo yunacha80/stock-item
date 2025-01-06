@@ -451,17 +451,32 @@ def purchase_history_list(request):
 
 
 # 購入履歴検索
-@login_required
 def purchase_history_Search(request):
     form = PurchaseHistoryFilterForm(user=request.user, data=request.GET)
 
+    # 全購入履歴を取得
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
 
     if form.is_valid() and form.cleaned_data['items']:
-        # 選択された複数のアイテムでフィルタリング
+        print("選択されたアイテム:", form.cleaned_data['items'])
         histories = histories.filter(item__in=form.cleaned_data['items'])
 
-    return render(request, 'purchase_history_list.html', {'histories': histories, 'form': form})
+    # 日付でグループ化
+    grouped_histories = defaultdict(list)
+    for history in histories:
+        grouped_histories[history.purchased_date].append(history)
+
+    # グループ化された履歴をデバッグ出力
+    print("グループ化された履歴:")
+    for date, group in grouped_histories.items():
+        print(f"日付: {date}, 件数: {len(group)}")
+        for h in group:
+            print(f"  - アイテム: {h.item.name}, 数量: {h.purchased_quantity}")
+
+    return render(request, 'purchase_history_list.html', {
+        'grouped_histories': grouped_histories,
+        'form': form
+    })
 
 
 
