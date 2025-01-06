@@ -132,7 +132,6 @@ class Item(models.Model):
         """
         在庫を更新し、最低在庫数を下回った場合に買い物リストに追加または更新。
         """
-        from .models import PurchaseItem
         # 在庫を更新
         self.stock_quantity += purchased_quantity
         self.save()
@@ -172,7 +171,24 @@ class Item(models.Model):
             return True
         return False
 
-    
+    def update_stock_and_manage_list(self, purchased_quantity):
+        """
+        在庫を更新し、必要に応じて買い物リストから削除。
+        """
+        # 在庫を更新
+        self.stock_quantity += purchased_quantity
+        self.save()
+
+        # 在庫が最低在庫数を上回った場合の処理
+        if self.stock_quantity >= self.stock_min_threshold:
+            PurchaseItem.objects.filter(item=self).delete()
+
+        # 購入履歴の保存
+        PurchaseHistory.objects.create(
+            item=self,
+            purchased_quantity=purchased_quantity,
+            purchased_date=now().date()
+        )
 
 class StoreItemReference(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)

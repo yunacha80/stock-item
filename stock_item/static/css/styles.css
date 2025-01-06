@@ -225,4 +225,49 @@ button.increment:hover {
     font-size: 1.1em;
 }
 
+/* 購入履歴ページ専用のスタイル */
+.purchase-history-page select[multiple] {
+    width: 100%;
+    height: 200px; /* 必要に応じて高さを調整 */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.purchase-history-page input[type="checkbox"] + label {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.purchase-history-page button {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    border: none;
+}
+
+
+.purchase-history details {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+.purchase-history summary {
+    font-weight: bold;
+    cursor: pointer;
+    color: #333;
+}
+
+.purchase-history ul {
+    list-style-type: none;
+    padding-left: 20px;
+}
+
+.purchase-history .item-name {
+    font-weight: bold;
+    color: #2c3e50;
+}
 

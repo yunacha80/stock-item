@@ -27,6 +27,7 @@ from django.core.exceptions import ValidationError
 from collections import defaultdict
 
 
+
 # Create your views here.
 
 
@@ -430,22 +431,46 @@ def category_delete(request, category_id):
 
 
 # 購入履歴
+# 購入履歴をグループ化してデバッグ出力
 def purchase_history_list(request):
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
-    return render(request, 'purchase_history_list.html', {'histories': histories})
+
+    # 購入日でグループ化
+    grouped_histories = defaultdict(list)
+    for history in histories:
+        grouped_histories[history.purchased_date].append(history)
+
+    # デバッグ出力
+    for date, items in grouped_histories.items():
+        print(f"購入日: {date}, アイテム: {[item.item.name for item in items]}")
+
+    return render(request, 'purchase_history_list.html', {
+        'grouped_histories': grouped_histories,
+    })
+
 
 
 # 購入履歴検索
+@login_required
 def purchase_history_Search(request):
-    # ユーザーに関連する購入履歴を取得
+    # 現在のユーザーに関連する購入履歴を取得
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
-    form = PurchaseHistoryFilterForm(request.GET)
 
-    # アイテム名での絞り込み
-    if form.is_valid() and form.cleaned_data['item']:
-        histories = histories.filter(item=form.cleaned_data['item'])
+    # フォームを現在のユーザー情報とともに初期化
+    form = PurchaseHistoryFilterForm(request.GET or None, user=request.user)
 
-    return render(request, 'items/purchase_history_list.html', {'histories': histories, 'form': form})
+    # フォームが有効であれば絞り込みを実行
+    if form.is_valid():
+        item = form.cleaned_data.get('item')
+        if item:
+            histories = histories.filter(item=item)
+
+    return render(request, 'purchase_history_list.html', {
+        'histories': histories,
+        'form': form,
+    })
+
+
 
 
 # 店舗追加
@@ -1096,10 +1121,15 @@ def shopping_list_view(request):
                 feedback_messages.append(f"提案生成中にエラーが発生しました: {e}")
                 print(f"DEBUG: Error: {e}")
 
+
+    # 最新の買い物リストを取得
+    purchase_items = PurchaseItem.objects.filter(item__user=request.user)
+
     return render(request, "shopping_list.html", {
         "items": items,
         "suggestions": suggestions,
         "messages": feedback_messages,
+        "purchase_items": purchase_items,  # 買い物リストの最新アイテム
     })
 
 
@@ -1145,61 +1175,61 @@ def suggestion_detail_view(request, suggestion_type):
 
 
 
+@login_required
 @csrf_exempt
-def update_stock_and_history(request):
+def update_stock_and_check(request):
     """
-    アイテムの在庫を更新し、購入履歴を保存するビュー。
+    購入済みがチェックされたアイテムのみ在庫を更新し、最低在庫数を上回った場合にリストから削除。
     """
     if request.method == "POST":
-        action = request.POST.get("action", "")
-        
-        if "_" not in action:
-            return JsonResponse({"success": False, "error": "無効なアクションです。"})
-
-        action_type, item_id = action.split("_", 1)
         try:
-            item_id = int(item_id)
-        except ValueError:
-            return JsonResponse({"success": False, "error": "無効なアイテムIDです。"})
+            # 購入済みチェックが入ったアイテムを探す
+            item_ids = [
+                key.split("_")[1]
+                for key in request.POST.keys()
+                if key.startswith("purchased_") and request.POST.get(key) == "on"
+            ]
 
-        try:
-            item = get_object_or_404(Item, id=item_id, user=request.user)
+            if not item_ids:
+                return JsonResponse({"success": False, "message": "購入済みアイテムが選択されていません。"})
 
-            if action_type == "update":
-                # 在庫更新の処理
-                purchased_quantity = int(request.POST.get(f"purchased_quantity_{item_id}", 0))
+            for item_id in item_ids:
+                # 個別の購入数量と購入日を取得
+                purchased_quantity = request.POST.get(f"purchased_quantity_{item_id}")
                 purchased_date = request.POST.get(f"purchased_date_{item_id}")
 
-                if purchased_quantity > 0 and purchased_date:
-                    item.stock_quantity += purchased_quantity
-                    item.save()
+                if not purchased_quantity or not purchased_date:
+                    # 必要なデータがない場合はスキップ
+                    continue
 
-                    # 購入履歴を保存
-                    PurchaseHistory.objects.create(
-                        item=item,
-                        purchased_quantity=purchased_quantity,
-                        purchased_date=purchased_date
-                    )
-                    return redirect("shopping_list")  # 買い物リストの画面にリダイレクト
+                # アイテムを取得して在庫を更新
+                item = get_object_or_404(Item, id=item_id, user=request.user)
+                purchased_quantity = int(purchased_quantity)
 
-                return JsonResponse({"success": False, "error": "購入数量または購入日が無効です。"})
+                # 在庫更新
+                item.stock_quantity += purchased_quantity
+                item.save()
 
-            elif action_type == "delete":
-                # アイテム削除
-                item.delete()
-                return redirect("shopping_list")  # 買い物リストの画面にリダイレクト
+                # 購入履歴を作成
+                PurchaseHistory.objects.create(
+                    item=item,
+                    purchased_quantity=purchased_quantity,
+                    purchased_date=purchased_date,
+                )
 
-            else:
-                return JsonResponse({"success": False, "error": "無効なアクションタイプです。"})
+                # 在庫が最低在庫数を上回った場合の処理
+                if item.stock_quantity >= item.stock_min_threshold:
+                    PurchaseItem.objects.filter(item=item).delete()
+
+            # messages.success(request, "購入済みのアイテムが更新されました。")
+            return redirect("shopping_list")
 
         except Exception as e:
-            print(f"DEBUG: Error during action: {e}")
-            return JsonResponse({"success": False, "error": "処理中にエラーが発生しました。"})
+            messages.error(request, f"エラーが発生しました: {e}")
+            return redirect("shopping_list")
 
-    return JsonResponse({"success": False, "error": "無効なリクエストです。"})
-
-
-
+    messages.error(request, "無効なリクエストです。")
+    return redirect("shopping_list")
 
 
 

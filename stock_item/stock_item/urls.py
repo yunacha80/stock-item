@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, purchase_history_list,add_item,item_list,edit_item,item_delete
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete
 from App import views  
 
 
@@ -48,7 +48,7 @@ urlpatterns = [
     path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
     path("shopping-list/", views.shopping_list_view, name="shopping_list"),
-    path("shopping-list/update/", views.update_stock_and_history, name="update_stock_and_history"),
+    path("shopping-list/update/", views.update_stock_and_check, name="update_stock_and_check"),
     # path("shopping-list/suggest-stores/", views.suggest_stores, name="suggest_stores"),
     # path("suggest_stores/", views.suggest_stores, name="suggest_stores"), 
     path("shopping-list/reset-hidden/", views.reset_hidden_items, name="reset_hidden_items"),

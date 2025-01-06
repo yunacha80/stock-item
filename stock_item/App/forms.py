@@ -159,13 +159,25 @@ class StoreItemReferenceForm(forms.ModelForm):
 
 
 
-# 購入履歴検索
 class PurchaseHistoryFilterForm(forms.Form):
-        item = forms.ModelChoiceField(
-        queryset=Item.objects.all().distinct(),
+    """
+    購入履歴検索用のフォーム
+    """
+    item = forms.ModelChoiceField(
+        queryset=Item.objects.none(),  # 初期状態では空にする
         required=False,
         label="アイテム名"
     )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # ユーザーを受け取る
+        super().__init__(*args, **kwargs)
+        if user:
+            # ユーザーのアイテムに限定してクエリセットを設定
+            self.fields['item'].queryset = Item.objects.filter(user=user)
+
+
+
         
 
 

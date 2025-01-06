@@ -17,7 +17,7 @@
     <h1>買い物リスト</h1>
 
     <!-- 在庫更新用フォーム -->
-    <form method="post" action="{% url 'shopping_list' %}">
+    <form method="post" action="{% url 'update_stock_and_check' %}">
         {% csrf_token %}
         <table>
             <thead>
