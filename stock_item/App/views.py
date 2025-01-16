@@ -25,6 +25,7 @@ import json
 from itertools import permutations
 from django.core.exceptions import ValidationError
 from collections import defaultdict
+from datetime import datetime
 
 
 
@@ -397,7 +398,7 @@ def category_add(request):
                 return render(request, 'category_form.html', {'form': form})
             category.save()
             messages.success(request, "カテゴリが追加されました。")
-            return redirect('category_list')
+            return redirect('settings')
         else:
             messages.error(request, "入力内容に誤りがあります。")
     else:
@@ -415,7 +416,7 @@ def category_edit(request, category_id):
         form = ItemCategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
-            return redirect('category_list')
+            return redirect('settings')
     else:
         form = ItemCategoryForm(instance=category)
     return render(request, 'category_form.html', {'form': form})
@@ -425,7 +426,7 @@ def category_delete(request, category_id):
     category = get_object_or_404(ItemCategory, id=category_id)
     if request.method == "POST":
         category.delete()
-        return redirect('category_list')
+        return redirect('settings')
     return render(request, 'category_confirm_delete.html', {'category': category})
 
 
@@ -436,17 +437,22 @@ def purchase_history_list(request):
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
 
     # 購入日でグループ化
+    # `grouped_histories` を初期化し、値に配列(list)をもつ辞書とする
     grouped_histories = defaultdict(list)
     for history in histories:
-        grouped_histories[history.purchased_date].append(history)
+        # history.purchased_dateを文字列 （例："2025-01-14"） に変換しdateStrに代入する
+        dateStr = datetime.strftime(history.purchased_date, "%Y-%m-%d")
+        # dateStrをキーとして配列にhistoryを追加
+        grouped_histories[dateStr].append(history)
 
-    # デバッグ出力
-    for date, items in grouped_histories.items():
-        print(f"購入日: {date}, アイテム: {[item.item.name for item in items]}")
-
-    return render(request, 'purchase_history_list.html', {
-        'grouped_histories': grouped_histories,
-    })
+    return render(
+        request,
+        "purchase_history_list.html",
+        {
+            # defaultdictをdictに変換し、templateで扱えるようにする
+            "grouped_histories": dict(grouped_histories),
+        },
+    )
 
 
 
@@ -474,8 +480,8 @@ def purchase_history_Search(request):
             print(f"  - アイテム: {h.item.name}, 数量: {h.purchased_quantity}")
 
     return render(request, 'purchase_history_list.html', {
-        'grouped_histories': grouped_histories,
-        'form': form
+    'grouped_histories': dict(grouped_histories),  # 明示的に辞書に変換
+    'form': form
     })
 
 
@@ -484,28 +490,6 @@ def purchase_history_Search(request):
 
 
 
-
-
-# 店舗追加
-# def store_add(request):
-#     if request.method == 'POST':
-#         form = StoreForm(request.POST)
-#         formset = StoreTravelTimeFormSet(request.POST)
-#         if form.is_valid() and formset.is_valid():
-#             store = form.save(commit=False)
-#             store.user = request.user  # 現在のログインユーザーを関連付ける
-#             store.save()
-
-#             store_travel_times = formset.save(commit=False)
-#             for travel in store_travel_times:
-#                 travel.store_from = store
-#                 travel.save()
-#             return redirect('store_list')  # 店舗一覧ページにリダイレクト（適宜URLを設定）
-#     else:
-#         form = StoreForm()
-#         formset = StoreTravelTimeFormSet()
-#     return render(request, 'store_add.html', {'form': form, 'formset': formset})
-
 # 店舗一覧
 def store_list(request):
     stores = Store.objects.filter(user=request.user)
@@ -513,26 +497,6 @@ def store_list(request):
         messages.info(request, "登録された店舗がありません。")    
     return render(request, 'store_list.html', {'stores': stores})
 
-
-# def store_edit(request, pk):
-#     store = get_object_or_404(Store, pk=pk, user=request.user)
-#     if request.method == 'POST':
-#         form = StoreForm(request.POST, instance=store)
-#         formset = StoreTravelTimeFormSet(request.POST, instance=store)
-#         if form.is_valid() and formset.is_valid():
-#             form.save()
-#             store_travel_times = formset.save(commit=False)
-#             for travel in store_travel_times:
-#                 travel.store_from = store
-#                 travel.save()
-#             messages.success(request, "店舗情報が更新されました。")
-#             return redirect('store_list')
-#         else:
-#             messages.error(request, "フォームにエラーがあります。")
-#     else:
-#         form = StoreForm(instance=store)
-#         formset = StoreTravelTimeFormSet(instance=store)
-#     return render(request, 'store_edit.html', {'form': form, 'formset': formset})
 
 
 def store_delete(request, store_id):
@@ -645,8 +609,11 @@ def settings_view(request):
             try:
                 new_value = int(new_value)
                 if new_value >= 0:
-                    # 新しい初期値を全アイテムの既定値として設定
-                    Item.objects.filter(user=request.user).update(stock_min_threshold=new_value)
+                    # 個別設定されていないアイテムのみ更新
+                    Item.objects.filter(
+                        user=request.user,
+                        stock_min_threshold=1  # デフォルト値のアイテムを対象
+                    ).update(stock_min_threshold=new_value)
                     default_stock_value = new_value  # 現在の初期値を更新
             except ValueError:
                 pass  # 無効な値は無視
@@ -666,20 +633,36 @@ def settings_view(request):
 
 
 
+
+
 @login_required
 @require_POST
 def update_stock_min_threshold(request):
-    """在庫最低値のデフォルト値を更新"""
-    new_threshold = request.POST.get("stock_min_threshold")
+    """特定のアイテムの在庫最低値を更新"""
     try:
+        item_id = request.POST.get("item_id")
+        new_threshold = request.POST.get("stock_min_threshold")
+        if not item_id or not new_threshold:
+            raise ValueError("アイテムIDまたは値が空です。")
+
         new_threshold = int(new_threshold)
-        # デフォルト値を保存（例: ユーザープロファイルに保存する場合）
-        request.user.profile.default_stock_min_threshold = new_threshold
-        request.user.profile.save()
-        messages.success(request, f"在庫最低値を {new_threshold} に更新しました。")
-    except ValueError:
-        messages.error(request, "無効な数値です。")
+        if new_threshold <= 0:
+            raise ValueError("在庫最低値は正の整数でなければなりません。")
+
+        # 該当アイテムの在庫最低値を更新
+        item = Item.objects.get(id=item_id, user=request.user)
+        item.stock_min_threshold = new_threshold
+        item.save()
+
+        messages.success(request, f"{item.name} の在庫最低値を {new_threshold} に更新しました。")
+    except ValueError as e:
+        messages.error(request, f"エラー: {e}")
+    except Exception as e:
+        messages.error(request, f"予期しないエラーが発生しました: {e}")
+
     return redirect("settings")
+
+
 
 # def shopping_list_view(request):
 #     """
@@ -866,27 +849,39 @@ def calculate_lowest_price_route(purchase_items):
     route = []
     travel_times = {}
 
+    # デバッグ: 関数に渡された購入アイテムの確認
+    print(f"DEBUG: Received purchase_items: {[item.name for item in purchase_items]}")
+
     # 店舗間の移動時間を準備
     stores = Store.objects.all()
     for store1 in stores:
         for store2 in stores:
             if store1 != store2:
-                travel_times[(store1, store2)] = StoreTravelTime.objects.filter(
+                travel_time = StoreTravelTime.objects.filter(
                     store1=store1, store2=store2
-                ).first().travel_time_min
+                ).first()
+                travel_times[(store1, store2)] = travel_time.travel_time_min if travel_time else None
+                print(f"DEBUG: Travel time between {store1.name} and {store2.name}: {travel_times[(store1, store2)]}")
 
     for item in purchase_items:
+        # 商品ごとの参照データを取得
         references = StoreItemReference.objects.filter(item=item).exclude(price=None, price_per_unit=None)
+        print(f"DEBUG: References for item '{item.name}': {[{'store': ref.store.name, 'price': ref.price, 'ppu': ref.price_per_unit} for ref in references]}")
 
+        # 参照データがない場合
         if not references.exists():
             missing_items.append(item.name)
             continue
 
+        # 最安値の参照データを選択
         best_reference = min(references, key=lambda ref: ref.price / ref.price_per_unit)
+        print(f"DEBUG: Best reference for '{item.name}': {{'store': best_reference.store.name, 'unit_price': best_reference.price / best_reference.price_per_unit}}")
+
         store = best_reference.store
         unit_price = best_reference.price / best_reference.price_per_unit
         item_total_price = best_reference.price
 
+        # 結果に追加
         results[item.name] = {
             'store': store.name,
             'unit_price': unit_price,
@@ -894,6 +889,7 @@ def calculate_lowest_price_route(purchase_items):
             'quantity': item.planned_purchase_quantity,
         }
 
+        # ルートに店舗を追加
         if store not in route:
             route.append(store)
 
@@ -906,21 +902,26 @@ def calculate_lowest_price_route(purchase_items):
             'unit_price': unit_price,
         })
 
+        # 合計金額を更新
         total_price += item_total_price
         unit_total_price += unit_price
 
-    # ルートを整形
+    # ルートの整形
+    print(f"DEBUG: Route before cleaning: {[store.name for store in route]}")
     cleaned_route = clean_route(route)
 
-    # デバッグ用出力
-    print(f"DEBUG: Cleaned Route: {[store.name for store in cleaned_route]}")
-    print(f"DEBUG: Travel Times: {travel_times}")
-
     # 移動時間を計算
+    print(f"DEBUG: Cleaned Route: {[store.name for store in cleaned_route]}")
+    print(f"DEBUG: Travel Times Dictionary: {travel_times}")
     total_travel_time = calculate_travel_time(cleaned_route, travel_times)
-
-    # デバッグ用出力
     print(f"DEBUG: Total Travel Time: {total_travel_time}")
+
+    # 最終結果のデバッグ出力
+    print(f"DEBUG: Results: {results}")
+    print(f"DEBUG: Missing Items: {missing_items}")
+    print(f"DEBUG: Total Price: {total_price}")
+    print(f"DEBUG: Unit Total Price: {unit_total_price}")
+    print(f"DEBUG: Store Details: {store_details}")
 
     return results, total_travel_time, missing_items, total_price, unit_total_price, store_details
 
@@ -1087,6 +1088,17 @@ def shopping_list_view(request):
 
         if action == "suggest":
             # 提案生成処理
+            selected_item_ids = request.POST.getlist("item_ids")  # 選択されたアイテムのIDを取得
+            print(f"DEBUG: Selected item IDs: {selected_item_ids}")
+
+            if not selected_item_ids:
+                feedback_messages.append("アイテムを選択してください。")
+            else:
+                # 選択されたアイテムのみを取得
+                purchase_items = Item.objects.filter(id__in=selected_item_ids, user=request.user)
+                print(f"DEBUG: Filtered purchase_items: {[item.name for item in purchase_items]}")
+
+            
             try:
                 # 最安値提案
                 price_suggestion, price_travel_time, price_missing, price_total, price_unit_total, price_store_details = calculate_lowest_price_route(items)

@@ -17,10 +17,7 @@
         <button type="submit">検索</button>
     </form>
 
-    <!-- デバッグ用: grouped_histories の内容を直接表示 -->
-    <pre>
-        {{ grouped_histories|default_if_none:"グループ化された履歴がありません。" }}
-    </pre>
+    
 
     <h2>検索結果</h2>
     {% if grouped_histories %}

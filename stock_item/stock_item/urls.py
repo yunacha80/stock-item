@@ -49,10 +49,8 @@ urlpatterns = [
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
     path("shopping-list/", views.shopping_list_view, name="shopping_list"),
     path("shopping-list/update/", views.update_stock_and_check, name="update_stock_and_check"),
-    # path("shopping-list/suggest-stores/", views.suggest_stores, name="suggest_stores"),
-    # path("suggest_stores/", views.suggest_stores, name="suggest_stores"), 
-    path("shopping-list/reset-hidden/", views.reset_hidden_items, name="reset_hidden_items"),
-    path('settings/', views.settings_view, name='settings'),
     path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
+    path('settings/', views.settings_view, name='settings'),
+    # path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     # path("shopping-list/delete/<int:item_id>/", views.delete_item_from_list, name="delete_item_from_list"),
 ]

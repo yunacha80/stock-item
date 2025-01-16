@@ -1,4 +1,24 @@
 document.addEventListener("DOMContentLoaded", function () {
+    const incrementBtn = document.getElementById("increment-btn");
+    const decrementBtn = document.getElementById("decrement-btn");
+    const stockInput = document.getElementById("stock_min_threshold");
+
+        // ボタンで値を増加
+    incrementBtn.addEventListener("click", function () {
+       let currentValue = parseInt(stockInput.value) || 1;
+       stockInput.value = currentValue + 1;
+    });
+
+    // ボタンで値を減少
+    decrementBtn.addEventListener("click", function () {
+       let currentValue = parseInt(stockInput.value) || 1;
+        if (currentValue > 1) {
+            stockInput.value = currentValue - 1;
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
     // 在庫の増減ボタン
     document.querySelectorAll(".increment").forEach(button => {
         button.addEventListener("click", function () {
@@ -49,6 +69,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+
+
+
 
 // 在庫更新
 function updateStock(itemId, delta) {

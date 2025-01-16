@@ -13,6 +13,7 @@
 
 <body>
 {% block content %}
+<div id="settings-page">
     <h1>設定</h1>
 
     <!-- ストックアイテムカテゴリ編集 -->
@@ -20,73 +21,89 @@
     <hr>
     <ul>
         {% for category in categories %}
-        <li>{{ category.name }}
-            <a href="{% url 'category_edit' category.id %}">編集</a>
-            <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">削除</button>
-            </form>
+        <li>
+            <span>{{ category.name }}</span>
+            <div>
+                <!-- 編集ボタン -->
+                <a href="{% url 'category_edit' category.id %}" class="btn-edit">編集</a>
+                
+                <!-- 削除ボタン -->
+                <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-delete">削除</button>
+                </form>
+            </div>
         </li>
-        <hr>
         {% empty %}
         <li>カテゴリが登録されていません。</li>
         {% endfor %}
     </ul>
+
     <!-- +カテゴリ追加ボタン -->
     <form method="POST" action="{% url 'category_add' %}">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">カテゴリ追加</button>
+        <button type="submit" class="btn-add">カテゴリ追加</button>
     </form>
-    <hr>
 
     <br>
-
-    <!-- 在庫最低値のデフォルト数値変更 -->
+    <hr>
     <h2>在庫最低値のデフォルト数値変更</h2>
-    <hr>
-    <form method="POST" action="{% url 'update_stock_min_threshold' %}">
-        {% csrf_token %}
-        <div class="stock-adjuster">
-            <button type="button" class="decrement">−</button>
-            <input id="default-stock" type="number" name="default_stock" value="{{ default_stock }}" readonly>
-            <button type="button" class="increment">＋</button>
+    <div id="settings-page">
+        <div class="stock-default-container">
+            <h2>在庫最低値の一括変更</h2>
+            <form method="POST" action="{% url 'update_stock_min_threshold' %}">
+                {% csrf_token %}
+                {% comment %} <label for="stock_min_threshold">在庫最低値</label> {% endcomment %}
+                <input id="stock_min_threshold" type="number" name="stock_min_threshold" value="1" min="1" required><br><br>
+                <button type="submit">変更</button>
+           </form>
         </div>
-        <button type="submit">変更を保存</button>
-    </form>
-    <hr>
-    <br>
+    </div>
 
     <!-- 店舗編集 -->
-    <h2>店舗編集（10店舗まで登録可能）</h2>
+    
+    <div id="store-edit-section">
+        <h2>店舗編集（10店舗まで登録可能）</h2>
+        <ul class="store-list">
+            {% for store in stores %}
+            <li class="store-item">
+                <span class="store-name">{{ store.name }}</span>
+                <div class="store-actions">
+                    <a href="{% url 'store_edit' store.id %}" class="btn-edit">編集</a>
+                    <button class="btn-delete" onclick="deleteStore({{ store.id }})">削除</button>
+                </div>
+            </li>
+            {% empty %}
+            <li class="no-store">店舗が登録されていません。</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+
     <hr>
-    <ul>
-        {% for store in stores %}
-        <li>{{ store.name }}
-            <a href="{% url 'store_edit' store.id %}">編集</a>
-            <form action="{% url 'store_delete' store.id %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">削除</button>
-            </form>
-        </li>
-        <hr>
-        {% endfor %}
-    </ul>
+    
     <br>
 
     <!-- アカウント編集 -->
-    <h2>アカウント編集（{{ user.email }}様）</h2>
-    <hr>
-    <li><a href="{% url 'email_change' %}">メールアドレス変更</a></li>
-    <hr>
-    <li><a href="{% url 'password_change' %}">パスワード変更</a></li>
-    <hr>
-    <li><a href="{% url 'logout' %}">ログアウト</a></li>
-    <br>
-    <br>
-    <br>
+    <div id="account-edit-section">
+        <h2>アカウント編集（{{ user.email }}様）</h2>
+        <ul class="account-edit-list">
+            <li class="account-edit-item">
+                <a href="{% url 'email_change' %}">メールアドレス変更</a>
+            </li>
+            <li class="account-edit-item">
+                <a href="{% url 'password_change' %}">パスワード変更</a>
+            </li>
+            <li class="account-edit-item">
+                <a href="{% url 'logout' %}">ログアウト</a>
+            </li>
+        </ul>
+    </div>
+    
 
 <script src="{% static 'js/shopping_list.js' %}"></script>
+</div>
 {% endblock %}
 </body>
 </html>
