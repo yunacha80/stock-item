@@ -85,12 +85,36 @@ class ItemForm(forms.ModelForm):
             'last_purchase_date': '最終購入日',
             'reminder': 'リマインダー',
         }
+        help_texts = {
+            'stock_min_threshold': 'この値を下回るとアイテムが買い物リストに自動追加されます。',
+        }
 
     last_purchase_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="最終購入日",
         required=True
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # CSSを追加
+        self.fields['name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['category'].widget.attrs.update({'class': 'form-control'})
+        self.fields['stock_quantity'].widget.attrs.update({'class': 'form-control'})
+        self.fields['memo'].widget.attrs.update({'class': 'form-control'})
+        self.fields['stock_min_threshold'].widget.attrs.update({'class': 'form-control'})
+        self.fields['last_purchase_date'].widget.attrs.update({'class': 'form-control'})
+        self.fields['reminder'].widget.attrs.update({'class': 'form-control'})
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+
+        # すでに同じ名前のアイテムが存在するか確認
+        if Item.objects.filter(name=name).exists():
+            raise forms.ValidationError("このアイテム名はすでに登録されています。")
+
+        return name
+
 
 
 class PurchaseHistoryForm(forms.ModelForm):
@@ -109,29 +133,38 @@ class StoreItemReferenceForm(forms.ModelForm):
     price_unknown = forms.BooleanField(required=False, label='価格不明')
     no_price = forms.BooleanField(required=False, label='取り扱いなし')
 
+    item_label = forms.CharField(
+        required=False,
+        label="アイテム名",
+        widget=forms.TextInput(attrs={'readonly': 'readonly'})
+    )
+
     class Meta:
         model = StoreItemReference
-        fields = ['store', 'price', 'price_per_unit', 'memo']
+        fields = ['item_label','price', 'price_per_unit', 'memo', 'price_unknown', 'no_price']
         labels = {
-            'store': '店舗名',
             'price': '価格',
             'price_per_unit': '入数',
             'memo': 'メモ',
         }
         widgets = {
-            'store': forms.TextInput(attrs={'readonly': 'readonly'}),
             'price': forms.NumberInput(attrs={'step': '1'}),
             'price_per_unit': forms.NumberInput(attrs={'step': '1'}),
             'memo': forms.TextInput(),
         }
 
     def __init__(self, *args, **kwargs):
-        initial_data = kwargs.pop('initial_data', {})
+        self.store = kwargs.pop('store', None)  # store を取り出し保持
         super().__init__(*args, **kwargs)
-        self.fields['price_unknown'].initial = initial_data.get('price_unknown', False)
-        self.fields['no_price'].initial = initial_data.get('no_price', False)
 
-        
+        if self.instance and self.instance.pk and self.instance.item:
+            self.fields['item_label'].initial = self.instance.item.name  # `item.name` をセット
+
+        # 初期値の設定（インスタンスの値をフォームに反映）
+        if self.instance and self.instance.pk:  # インスタンスが存在する場合
+            self.fields['price_unknown'].initial = self.instance.price_unknown
+            self.fields['no_price'].initial = self.instance.no_price
+
     def clean(self):
         cleaned_data = super().clean()
         price_unknown = cleaned_data.get('price_unknown')
@@ -139,20 +172,39 @@ class StoreItemReferenceForm(forms.ModelForm):
         price = cleaned_data.get('price')
         price_per_unit = cleaned_data.get('price_per_unit')
 
-    # 価格不明または取り扱いなしの場合、価格をNoneに設定
+        # 「価格不明」と「取り扱いなし」が同時に選択されている場合はエラー
+        if price_unknown and no_price:
+            raise forms.ValidationError("「価格不明」と「取り扱いなし」は同時に選択できません。")
+
+        # 価格不明または取り扱いなしの場合、価格と入数をクリア
         if price_unknown or no_price:
-           cleaned_data['price'] = None
-           cleaned_data['price_per_unit'] = None
+            cleaned_data['price'] = None
+            cleaned_data['price_per_unit'] = None
         else:
-        # 価格が未入力の場合にエラーを発生
+            # 価格または入数が未入力の場合はエラー
             if price is None or price_per_unit is None:
-                raise forms.ValidationError(
-                    "価格と入数は必須です。ただし、価格不明または取り扱いなしを選択した場合は省略可能です。"
-                    )
-            
-            return cleaned_data
+                raise forms.ValidationError("価格と入数は必須です。ただし、「価格不明」または「取り扱いなし」を選択した場合は省略可能です。")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.store:  # storeが指定されている場合、インスタンスに設定
+            instance.store = self.store
+        if commit:
+            instance.save()
+        return instance
 
 
+
+
+
+StoreItemReferenceFormSet = modelformset_factory(
+    StoreItemReference,
+    form=StoreItemReferenceForm,
+    extra=0,
+    can_delete=False,
+)
     
 
 
@@ -180,7 +232,7 @@ class StoreForm(forms.ModelForm):
         model = Store
         fields = ['name', 'address', 'phone_number', 'travel_time_home_min']
         labels = {
-            'name': '店舗名',
+            'name': '店舗名(必須)',
             'address': '住所',
             'phone_number': '電話番号',
             'travel_time_home_min': '自宅からの移動時間（分）',
@@ -198,3 +250,12 @@ StoreTravelTimeFormSet = inlineformset_factory(
 class StoreTravelTimeForm(forms.Form):
     store_2 = forms.ModelChoiceField(queryset=Store.objects.all(), label="他店舗")
     travel_time = forms.IntegerField(label="移動時間 (分)")
+
+
+StoreTravelTimeFormSet = inlineformset_factory(
+    parent_model=Store,
+    model=StoreTravelTime,
+    fields=['store2', 'travel_time_min'],
+    fk_name='store1',
+    extra=1
+)

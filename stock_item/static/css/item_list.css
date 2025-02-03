@@ -136,3 +136,9 @@ tbody tr:nth-child(odd) {
 .delete-item:hover {
     background-color: #c0392b;
 }
+
+/* リマインダー */
+.reminder-warning {
+    color: red;
+    font-weight: bold;
+}

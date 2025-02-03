@@ -12,21 +12,96 @@
     <h1>店舗編集</h1>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
 
-        <h2>他店舗との移動時間設定</h2>
-        {{ formset.management_form }}
-        <table>
-            {% for subform in formset %}
-                <tr>
-                    <td>{{ subform.store_to.label }}: {{ subform.store_to }}</td>
-                    <td>{{ subform.travel_time_min.label }}: {{ subform.travel_time_min }}</td>
-                    <td>{% if subform.instance.pk %}<button type="button" class="remove-form">削除</button>{% endif %}</td>
-                </tr>
+        <!-- 店舗情報編集 -->
+        <fieldset>
+            <legend>店舗情報</legend>
+            {{ form.as_p }}
+            {% for error in form.non_field_errors %}
+                <div class="error">{{ error }}</div>
             {% endfor %}
-        </table>
-        
-        <button type="submit">保存</button>
+        </fieldset>
+
+        <!-- 他店舗との移動時間設定 -->
+        <fieldset>
+            <legend>他店舗との移動時間設定</legend>
+            {{ travel_time_formset.management_form }}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>他店舗</th>
+                        <th>移動時間 (分)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tf in travel_time_forms %}
+                        <tr>
+                            <td>{{ tf.store.name }}</td>
+                            <td>
+                                <input type="number" name="travel_time_{{ tf.store.id }}" 
+                                       value="{{ tf.form.initial.travel_time_min }}"
+                                       placeholder="移動時間を入力" min="0">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </fieldset>
+
+        <!-- アイテム価格入力 -->
+        <fieldset>
+            <legend>アイテム価格設定</legend>
+            {{ item_price_formset.management_form }}
+            {% if no_items %}
+                <p>アイテムが登録されていません。</p>
+            {% else %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>アイテム名</th>
+                            <th>価格</th>
+                            <th>単価基準量</th>
+                            <th>メモ</th>
+                            <th>価格不明</th>
+                            <th>取り扱いなし</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subform in item_price_formset %}
+                            <tr>
+                                <td>{{ subform.instance.item.name }}</td>
+                                <td>
+                                    {{ subform.price }}
+                                    {% if subform.price.errors %}
+                                        <div class="error">{{ subform.price.errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ subform.price_per_unit }}
+                                    {% if subform.price_per_unit.errors %}
+                                        <div class="error">{{ subform.price_per_unit.errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ subform.memo }}</td>
+                                <td>{{ subform.price_unknown }}</td>
+                                <td>{{ subform.no_price }}</td>
+                            </tr>
+                            {% if subform.non_field_errors %}
+                                <tr>
+                                    <td colspan="6" class="error">
+                                        {% for error in subform.non_field_errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary">保存</button>
     </form>
 </body>
 {% endblock %}

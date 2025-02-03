@@ -195,6 +195,8 @@ class StoreItemReference(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     price = models.IntegerField(null=True, blank=True, verbose_name="価格")
     price_per_unit = models.IntegerField(null=True, blank=True, verbose_name="単位数")
+    price_unknown = models.BooleanField(default=False, verbose_name="価格不明")  
+    no_price = models.BooleanField(default=False, verbose_name="取り扱いなし")
     memo = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -211,6 +213,8 @@ class StoreItemReference(models.Model):
             raise ValidationError("価格は正の値である必要があります。")
         if self.price_per_unit is not None and self.price_per_unit <= 0:
             raise ValidationError("単位数は正の値である必要があります。")
+        
+    
 
 
 

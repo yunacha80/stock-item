@@ -2,16 +2,26 @@
 <html lang="ja">
 {% extends "base.html" %}
 {% load static %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 {% block head %}
 <head>
     <meta charset="UTF-8">
-    <title>アイテム一覧</title>
+    <title>ストックアイテム一覧</title>
     <link rel="stylesheet" href="{% static 'css/item_list.css' %}">
 </head>
 {% endblock head %}
 {% block content %}
 <body class="item-list-page">
-    <h1>アイテム一覧</h1>
+    <h1>ストックアイテム一覧</h1>
+    <p>DEBUG (テンプレート受け取り時): shopping_list_items = {{ shopping_list_items }}</p>
+
+    {% for item in shopping_list_items %}
+        <p>DEBUG (ループ内): {{ item }} (type: {{ item|slugify }})</p>
+    {% endfor %}
+
+    
+
+
     <a href="{% url 'add_item' %}" class="btn-add-item">新規アイテム追加</a>
 
     <!-- カテゴリボタン -->
@@ -24,11 +34,27 @@
         {% endfor %}
     </div>
 
+    <div class="sort-options">
+        <label for="sort-by">並び替え:</label>
+        <select id="sort-by" onchange="location.href='?category={{ selected_category }}&sort='+this.value">
+            <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>名前 (昇順)</option>
+            <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>名前 (降順)</option>
+            <option value="stock_asc" {% if sort_by == 'stock_asc' %}selected{% endif %}>在庫数 (昇順)</option>
+            <option value="stock_desc" {% if sort_by == 'stock_desc' %}selected{% endif %}>在庫数 (降順)</option>
+            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>購入日 (昇順)</option>
+            <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>購入日 (降順)</option>
+        </select>
+    </div>
     <!-- アイテムがない時の表示 -->
     {% if not displayed_items %}
         <p class="no-items">まだアイテムが登録されていません。</p>
     {% else %}
         <!-- アイテム一覧 -->
+        <p>DEBUG: shopping_list_items (ビューから) = {{ shopping_list_items }}</p>
+
+        {% for item in shopping_list_items %}
+            <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p>
+        {% endfor %}
         <table>
             <thead>
                 <tr>
@@ -63,17 +89,17 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if entry.item.reminder %}
-                            設定済み
+                        {% if entry.reminder_due %}
+                            <span class="reminder-warning">そろそろ購入時期です。在庫数を確認してください。</span>
                         {% else %}
-                            設定なし
+                            -
                         {% endif %}
                     </td>
                     <td>
-                        {% if item.item.id in shopping_list_items %}
-                            <button class="add-to-list" data-item-id="{{ item.item.id }}" disabled>追加済</button>
+                        {% if entry.item.id in shopping_list_items %}
+                            <button class="add-to-list" data-item-id="{{ entry.item.id }}" disabled>追加済</button>
                         {% else %}
-                            <button class="add-to-list" data-item-id="{{ item.item.id }}">追加</button>
+                            <button class="add-to-list" data-item-id="{{ entry.item.id }}" onclick="addToShoppingList(this)">追加</button>
                         {% endif %}
                     </td>
                     <td class="actions">    
@@ -96,6 +122,135 @@
         {% endfor %}
     </ul>
     {% endif %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 在庫増減ボタン
+            document.querySelectorAll(".increment").forEach(button => {
+                button.addEventListener("click", function () {
+                    const stockSpan = this.previousElementSibling; // 在庫数表示部分
+                    let currentStock = parseInt(stockSpan.textContent) || 0;
+                    currentStock++;
+                    stockSpan.textContent = currentStock;
+        
+                    // サーバーに更新リクエスト
+                    updateStock(this.dataset.itemId, 1);
+                });
+            });
+        
+            document.querySelectorAll(".decrement").forEach(button => {
+                button.addEventListener("click", function () {
+                    const stockSpan = this.nextElementSibling; // 在庫数表示部分
+                    let currentStock = parseInt(stockSpan.textContent) || 0;
+                    if (currentStock > 0) {
+                        currentStock--;
+                        stockSpan.textContent = currentStock;
+        
+                        // サーバーに更新リクエスト
+                        updateStock(this.dataset.itemId, -1);
+                    }
+                });
+            });
+        
+            // 買い物リストに追加
+            document.querySelectorAll(".add-to-list").forEach(button => {
+                button.addEventListener("click", function () {
+                    addToShoppingList(this);
+                });
+            });
+        
+            // アイテム削除ボタン
+            document.querySelectorAll(".delete-item").forEach(button => {
+                button.addEventListener("click", function () {
+                    const itemId = this.dataset.itemId;
+                    if (confirm("このアイテムを削除してもよろしいですか？")) {
+                        deleteItem(itemId).then(success => {
+                            if (success) {
+                                document.querySelector(`#item-${itemId}`).remove();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        
+        // 在庫更新関数
+        async function updateStock(itemId, delta) {
+            try {
+                const response = await fetch(`/update-stock/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                    body: JSON.stringify({ item_id: itemId, delta: delta }),
+                });
+        
+                const data = await response.json();
+                if (!data.success) {
+                    alert("在庫更新に失敗しました。");
+                }
+            } catch (error) {
+                console.error("在庫更新エラー:", error);
+                alert("ネットワークエラーが発生しました。");
+            }
+        }
+        
+        // 買い物リストに追加
+        async function addToShoppingList(button) {
+            const itemId = button.dataset.itemId;
+        
+            try {
+                const response = await fetch("/add-to-shopping-list/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                    body: JSON.stringify({ item_id: itemId }),
+                });
+        
+                const data = await response.json();
+                console.log("サーバーレスポンス:", data);
+        
+                if (data.success) {
+                    button.textContent = "追加済";
+                    button.disabled = true;
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error("買い物リスト追加エラー:", error);
+                alert("ネットワークエラーが発生しました。");
+            }
+        }
+        
+        
+        // アイテム削除
+        async function deleteItem(itemId) {
+            try {
+                const response = await fetch(`/items/${itemId}/delete/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCSRFToken(),
+                    },
+                });
+        
+                const data = await response.json();
+                return data.success;
+            } catch (error) {
+                console.error("アイテム削除エラー:", error);
+                return false;
+            }
+        }
+        
+        // CSRFトークン取得（Djangoのmetaタグから取得）
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]').content;
+        }
+    </script>
+        
+        
 </body>
 {% endblock %}
 </html>

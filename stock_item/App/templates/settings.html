@@ -78,6 +78,13 @@
             <li class="no-store">店舗が登録されていません。</li>
             {% endfor %}
         </ul>
+
+        <div class="button-container">
+            <a href="{% url 'store_add' %}" class="btn btn-primary">店舗追加</a>
+        </div>
+    </div>
+
+
     </div>
     
 
@@ -87,7 +94,7 @@
 
     <!-- アカウント編集 -->
     <div id="account-edit-section">
-        <h2>アカウント編集（{{ user.email }}様）</h2>
+        <h2>アカウント編集（{{ user.name }} 様 / {{ user.email }}）</h2>
         <ul class="account-edit-list">
             <li class="account-edit-item">
                 <a href="{% url 'email_change' %}">メールアドレス変更</a>

@@ -15,9 +15,17 @@
 {% block content %}
 <body>
     <h1>買い物リスト</h1>
+    <div class="button-container">
+        <a href="{% url 'add_shopping_item' %}" class="btn btn-success">アイテム追加</a>
+    </div>
+     <!-- デバッグ出力: shopping_list_items -->
+    <p>DEBUG: shopping_list_items = {{ shopping_list_items }}</p>
+    {% for item in shopping_list_items %}
+        <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p>
+    {% endfor %}
 
-    <!-- 在庫更新用フォーム -->
-    <form method="post" action="{% url 'update_stock_and_check' %}">
+    <!-- 在庫更新および提案用フォーム -->
+    <form method="post" action="{% url 'shopping_list' %}">
         {% csrf_token %}
         <table>
             <thead>
@@ -28,18 +36,18 @@
                     <th>購入済み</th>
                     <th>購入した数</th>
                     <th>購入日</th>
-                    <th>更新</th>
+                    <th>削除</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td><input type="checkbox" class="select-item" name="item_ids" value="{{ item.id }}"></td>
+                    <td>
+                        <input type="checkbox" class="select-item" name="item_ids" value="{{ item.id }}">
+                    </td>
                     <td>{{ item.name }} (現在：{{ item.stock_quantity }}個)</td>
                     <td>
-                        <button type="button" class="decrement">−</button>
-                        <input type="number" class="planned-quantity" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity }}" min="0">
-                        <button type="button" class="increment">＋</button>
+                        <input type="number" class="planned-quantity" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity|default_if_none:'' }}" min="0">
                     </td>
                     <td>
                         <input type="checkbox" name="purchased_{{ item.id }}">購入済
@@ -51,18 +59,18 @@
                         <input type="date" name="purchased_date_{{ item.id }}">
                     </td>
                     <td>
-                        <button type="submit" name="action" value="update_{{ item.id }}">更新</button>
+                        <button type="submit" name="delete_item" value="{{ item.id }}" class="btn btn-warning">削除</button>
                     </td>
+                    </td>                 
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </form>
-
-    <!-- 買い回り提案用フォーム -->
-    <form method="post" action="{% url 'shopping_list' %}">
-        {% csrf_token %}
-        <button type="submit" name="action" value="suggest">買い回り提案</button>
+    
+        <div class="button-container">
+            <button type="submit" name="action" value="suggest" class="btn btn-primary">買い回り提案</button>
+            <button type="submit" name="action" value="update" class="btn btn-secondary">在庫更新</button>
+        </div>
     </form>
 
     <h2>選択アイテム: {{ selected_items|length }}点</h2>
@@ -74,31 +82,27 @@
             {% for suggestion in suggestions %}
                 <details>
                     <summary>
-                        ▼ {{ suggestion.type }}
+                        {{ suggestion.type }}
+                        ◇お店：
                         {% if suggestion.route|length == 1 %}
                             {{ suggestion.route.0 }}
                         {% else %}
                             {{ suggestion.route|join:" ➡ " }}
                         {% endif %}
                         {% if suggestion.total_price %}
-                            合計金額 {{ suggestion.total_price|floatformat:2 }}円 (単価合計 {{ suggestion.unit_total_price|floatformat:2 }}円)
+                            ◇合計金額 {{ suggestion.total_price|floatformat:2 }}円 (単価合計 {{ suggestion.unit_total_price|floatformat:2 }}円)
                         {% endif %}
                         {% if suggestion.total_time %}
-                            移動時間 {{ suggestion.total_time }}分
+                            ◇移動時間 {{ suggestion.total_time }}分
                         {% endif %}
                     </summary>
                     <ul>
                         {% for store, items in suggestion.store_details.items %}
-                            <li>
-                                <strong>{{ store }}</strong>:
-                                <ul>
-                                    {% for item in items %}
-                                        <li>
-                                            {{ item.name }}: {{ item.quantity }}個
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </li>
+                        <strong>◇店舗：{{ store }}</strong><br>
+                        購入するもの：
+                        {% for item in items %}
+                            <li>{{ item.name }}: {{ item.quantity }}個</li>
+                        {% endfor %}
                         {% endfor %}
                         {% if suggestion.missing_items %}
                             <li style="color:red;">取扱いの有無及び価格不明: {{ suggestion.missing_items|join:", " }}</li>
@@ -119,7 +123,8 @@
             {% endfor %}
         </ul>
     {% endif %}
+    <script src="{% static 'js/shopping_list.js' %}"></script>
 </body>
-<script src="{% static 'js/shopping_list.js' %}"></script>
+
 {% endblock %}
 </html>

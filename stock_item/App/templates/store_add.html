@@ -4,34 +4,45 @@
 {% block head %}
 <head>
     <meta charset="UTF-8">
-    <title>新規店舗登録</title>
+    <title>店舗追加</title>
 </head>
 {% endblock head %}
 {% block content %}
 <body>
-    <h1>新規店舗登録</h1>
-
-    <form method="POST">
+    <h1>新規店舗追加</h1>
+    
+    <!-- 店舗追加フォーム -->
+    <form method="post">
         {% csrf_token %}
-        
-        <h2>店舗情報</h2>
-        {{ store_form.as_p }}  <!-- 店舗情報フォーム -->
+        <fieldset>
+            <legend><h3>店舗情報</h3></legend>
+            {{ store_form.as_p }}
+        </fieldset>
 
-        <h2>他店舗との移動時間設定</h2>
-
-        <div class="store-list">
-            {% for store in stores %}
-                <div class="store-row">
-                    <label for="travel_time_{{ store.id }}">店舗「{{ store.name }}」への移動時間:</label>
-                    <input type="number" name="travel_time_{{ store.id }}" id="travel_time_{{ store.id }}" placeholder="移動時間 (分)" required>
-                </div>
-            {% endfor %}
-        </div>
+        <fieldset>
+            <legend><h3>他店舗との移動時間設定</h3></legend>
+            <table>
+                <thead>
+                    <tr>
+                        <th>他店舗</th>
+                        <th>移動時間 (分)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                        <tr>
+                            <td>{{ store.name }}</td>
+                            <td>
+                                <input type="number" name="travel_time_{{ store.id }}" placeholder="分数を入力" min="0">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </fieldset>
 
         <button type="submit">保存</button>
-        <a href="{% url 'home' %}">戻る</a>
     </form>
-
 </body>
 {% endblock %}
 </html>

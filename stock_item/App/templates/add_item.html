@@ -64,6 +64,13 @@
             {% csrf_token %}
             <h2>基本情報</h2>
             {{ item_form.as_p }}
+            {% if item_form.errors %}
+                <div class="error-messages">
+                    {% for error in item_form.name.errors %}
+                        <p class="error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
 
             
             <!-- 店舗情報 -->

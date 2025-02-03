@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete,reset_hidden_items,add_to_shopping_list
 from App import views  
 
 
@@ -51,6 +51,9 @@ urlpatterns = [
     path("shopping-list/update/", views.update_stock_and_check, name="update_stock_and_check"),
     path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     path('settings/', views.settings_view, name='settings'),
+    path("reset-hidden-items/", reset_hidden_items, name="reset_hidden_items"),
+    path("shopping-list/add/", views.add_shopping_item, name="add_shopping_item"),
+    path('add-to-shopping-list/', add_to_shopping_list, name='add_to_shopping_list'),
     # path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     # path("shopping-list/delete/<int:item_id>/", views.delete_item_from_list, name="delete_item_from_list"),
 ]

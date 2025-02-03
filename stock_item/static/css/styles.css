@@ -401,6 +401,21 @@ button.increment:hover {
 .btn-delete:hover {
     background-color: #c82333;
 }
+/* 買い回り */
+.button-container {
+    display: flex;
+    justify-content: center; 
+    gap: 16px; 
+    margin-top: 16px; 
+}
+
+/* .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+} */
 
 /* 保存ボタン */
 .save-button {
@@ -578,3 +593,118 @@ button.increment:hover {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     width: 80%; /* 各店舗の幅 */
 }
+/* 以下3つ店舗登録ボタン */
+.button-container {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.button-container .btn-primary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.button-container .btn-primary:hover {
+    background-color: #0056b3;
+}
+
+
+
+/* アイテム一覧カテゴリボタン共通スタイル */
+.category-buttons .category-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin: 5px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+/* アイテム一覧ホバー時のスタイル */
+.category-buttons .category-btn:hover {
+    background-color: #ddd;
+}
+
+/* アイテム一覧アクティブなボタンのスタイル */
+.category-buttons .category-btn.active {
+    background-color: #333;
+    color: #fff;
+    border-color: #333;
+    cursor: default;
+}
+
+/* ？マークツールチップのベース */
+.tooltip-container {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+}
+/* ？マークツールチップ */
+.tooltip-icon {
+    background-color: #ddd;
+    color: #333;
+    border-radius: 50%;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    margin-left: 5px;
+}
+/* ？マークツールチップ文言 */
+.tooltip-text {
+    display: none;
+    position: absolute;
+    top: 20px;
+    left: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* ？マークツールチップ表示時 */
+.tooltip-container:hover .tooltip-text,
+.tooltip-container:focus-within .tooltip-text {
+    display: block;
+}
+
+
+.reminder-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* チェックボックスとONの間のスペース */
+}
+
+.reminder-status {
+    font-size: 16px;
+    color: #333;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 要素間のスペース */
+}
+
+.form-group label {
+    margin-bottom: 0; /* ラベルのデフォルトの改行を防ぐ */
+}
+
+.reminder-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* チェックボックスとONの間のスペース */
+}
+
