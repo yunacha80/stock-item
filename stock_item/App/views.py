@@ -1,7 +1,9 @@
 import json
+import itertools
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.db import transaction,models
+from django.db.models import Min, Sum, F
 from django.http import JsonResponse,HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -662,8 +664,6 @@ def settings_view(request):
 
 
 
-
-
 @login_required
 @require_POST
 def update_stock_min_threshold(request):
@@ -692,30 +692,55 @@ def update_stock_min_threshold(request):
     return redirect("settings")
 
 
-
-
-
 @login_required
-def reset_hidden_items(request):
+@require_POST
+def update_stock(request):
     """
-    非表示リストをリセットして全アイテムを再表示、または特定のアイテムを非表示にする
+    在庫数を更新するエンドポイント（リロード後も反映）
     """
-    if request.method == "POST":
-        item_id = request.POST.get("item_id")  # 非表示にしたいアイテムIDを取得
+    try:
+        data = json.loads(request.body)  # リクエストボディの JSON を解析
+        item_id = data.get("item_id")
+        delta = int(data.get("delta", 0))  # 増減数
 
-        if item_id:  # 特定のアイテムを非表示
-            hidden_items = request.session.get("hidden_items", [])
-            if item_id not in hidden_items:
-                hidden_items.append(item_id)  # 非表示リストに追加
-                request.session["hidden_items"] = hidden_items
-                messages.success(request, f"アイテムID {item_id} を買い物リストから非表示にしました。")
-            else:
-                messages.info(request, "このアイテムはすでに非表示リストに追加されています。")
-        else:  # 非表示リストをリセット（すべて再表示）
-            request.session["hidden_items"] = []
-            messages.success(request, "非表示リストがリセットされました。")
+        if not item_id or delta == 0:
+            return JsonResponse({"success": False, "message": "不正なリクエスト"}, status=400)
 
-    return redirect("shopping_list")
+        # `Item` モデルの `stock_quantity` を更新
+        item = get_object_or_404(Item, id=item_id, user=request.user)
+        item.stock_quantity = max(0, item.stock_quantity + delta)  # マイナスにならないよう制限
+        item.save()  # 変更をデータベースに保存
+
+        return JsonResponse({"success": True, "new_stock": item.stock_quantity})
+
+    except Item.DoesNotExist:
+        return JsonResponse({"success": False, "message": "アイテムが見つかりません"}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
+# @login_required
+# def reset_hidden_items(request):
+#     """
+#     非表示リストをリセットして全アイテムを再表示、または特定のアイテムを非表示にする
+#     """
+#     if request.method == "POST":
+#         item_id = request.POST.get("item_id")  # 非表示にしたいアイテムIDを取得
+
+#         if item_id:  # 特定のアイテムを非表示
+#             hidden_items = request.session.get("hidden_items", [])
+#             if item_id not in hidden_items:
+#                 hidden_items.append(item_id)  # 非表示リストに追加
+#                 request.session["hidden_items"] = hidden_items
+#                 messages.success(request, f"アイテムID {item_id} を買い物リストから非表示にしました。")
+#             else:
+#                 messages.info(request, "このアイテムはすでに非表示リストに追加されています。")
+#         else:  # 非表示リストをリセット（すべて再表示）
+#             request.session["hidden_items"] = []
+#             messages.success(request, "非表示リストがリセットされました。")
+
+#     return redirect("shopping_list")
 
 
 
@@ -772,7 +797,8 @@ def calculate_lowest_price_route(purchase_items):
                 travel_times[(store1, store2)] = travel_time.travel_time_min if travel_time else None
                 print(f"DEBUG: Travel time between {store1.name} and {store2.name}: {travel_times[(store1, store2)]}")
 
-    for item in purchase_items:
+    for purchase_item in purchase_items:
+        item = purchase_item.item
         references = StoreItemReference.objects.filter(item=item).exclude(price=None, price_per_unit=None)
         print(f"DEBUG: References for item '{item.name}': {[{'store': ref.store.name, 'price': ref.price, 'ppu': ref.price_per_unit} for ref in references]}")
 
@@ -787,7 +813,7 @@ def calculate_lowest_price_route(purchase_items):
 
         store = best_reference.store
         unit_price = best_reference.price / best_reference.price_per_unit
-        item_total_price = best_reference.price * item.planned_purchase_quantity
+        item_total_price = best_reference.price * purchase_item.planned_purchase_quantity
         print(f"DEBUG: Calculated item_total_price for '{item.name}': {item_total_price} (unit_price: {unit_price}, planned_quantity: {item.planned_purchase_quantity})")
 
         # 結果に追加
@@ -994,18 +1020,18 @@ def clean_route(route):
 
 
 @login_required
+@require_POST
 def remove_from_shopping_list(request, item_id):
-    if request.method == "POST":
-        print(f"削除リクエスト: item_id={item_id}")  # デバッグ
-        try:
-            purchase_item = get_object_or_404(PurchaseItem, item__id=item_id, item__user=request.user)
-            purchase_item.delete()
-            print(f"削除成功: {purchase_item}")
-            messages.success(request, "買い物リストから削除しました。")
-        except Exception as e:
-            print(f"削除エラー: {e}")
-            messages.error(request, "削除中にエラーが発生しました。")
-    return HttpResponseRedirect(reverse('shopping_list'))
+    """
+    買い物リストからアイテムを削除（PurchaseItem を削除）
+    """
+    try:
+        purchase_item = get_object_or_404(PurchaseItem, item__id=item_id, item__user=request.user)
+        purchase_item.delete()
+        return JsonResponse({"success": True, "message": f"{purchase_item.item.name} を削除しました。"})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": f"削除に失敗しました: {e}"}, status=500)
+
 
 
 
@@ -1037,8 +1063,6 @@ def add_to_shopping_list(request):
     ✅ 在庫不足のアイテムを自動追加
     ✅ 手動で追加するアイテムを処理
     """
-    print("DEBUG: add_to_shopping_list called")
-
     try:
         raw_body = request.body
         print(f"DEBUG: Raw Request Body: {raw_body}")
@@ -1059,23 +1083,19 @@ def add_to_shopping_list(request):
             item = get_object_or_404(Item, id=item_id, user=request.user)
             print(f"DEBUG: item={item.name}, stock_quantity={item.stock_quantity}, stock_min_threshold={item.stock_min_threshold}")
 
-            if not PurchaseItem.objects.filter(item=item).exists():
-                purchase_item = PurchaseItem.objects.create(
-                    item=item,
-                    planned_purchase_quantity=1  # None の代わりに 1 をデフォルト値にする
-                )
-                purchase_item.save()
+            # 🔹 get_or_create を使用して重複登録を防ぐ
+            purchase_item, created = PurchaseItem.objects.get_or_create(
+                item=item,
+                defaults={"planned_purchase_quantity": 1}  # デフォルトの購入予定数
+            )
+
+            if created:
                 added_items.append(item.name)
                 print(f"DEBUG: 手動追加成功 {item.name} (item_id={item_id})")
-
-            # `hidden_items` に含まれていた場合は解除
-            hidden_items = request.session.get("hidden_items", [])
-            if item.id in hidden_items:
-                hidden_items.remove(item.id)
-                request.session["hidden_items"] = hidden_items
-                print(f"DEBUG: {item.name} を hidden_items から解除")
-            
-            return JsonResponse({"message": f"{item.name} を買い物リストに追加しました。", "success": True})
+                return JsonResponse({"message": f"{item.name} を買い物リストに追加しました。", "success": True})
+            else:
+                print(f"DEBUG: {item.name} はすでに買い物リストに追加済み")
+                return JsonResponse({"message": f"{item.name} はすでに買い物リストに追加されています。", "success": False})
 
         except Exception as e:
             print(f"DEBUG: 手動追加中にエラー発生: {e}")
@@ -1139,44 +1159,26 @@ def add_shopping_item(request):
 def shopping_list_view(request):
     """
     買い物リストの表示、購入済み処理、提案生成を管理。
-    """
-    print(f"DEBUG (shopping_list_view - PurchaseItem count BEFORE): {PurchaseItem.objects.filter(item__user=request.user).count()}")
-    
-
-    hidden_items = set(request.session.get("hidden_items", []))  # 非表示リストをセッションから取得
-
-    print(f"DEBUG (session): request.session.get('shopping_list_items', 'No session data')")
-    
-
-    manually_added_items = PurchaseItem.objects.filter(item__user=request.user)
+    """  
+    manually_added_items = PurchaseItem.objects.filter(item__user=request.user).distinct()
     manually_added_item_ids = set(manually_added_items.values_list("item_id", flat=True))
 
-    # 🔹 自動追加アイテムを取得（hidden_items を除外）
+    # 🔹 自動追加アイテムを取得
     low_stock_items = Item.objects.filter(
         user=request.user, stock_quantity__lt=models.F('stock_min_threshold')
-        ).annotate(
-            planned_purchase_quantity=models.F('stock_min_threshold') - models.F('stock_quantity')
-        )
+    ).annotate(
+        planned_purchase_quantity=models.F('stock_min_threshold') - models.F('stock_quantity')
+    )
     low_stock_item_ids = set(low_stock_items.values_list("id", flat=True))
-    
-    # 🔹 追加済みのアイテムIDを取得
+
+    # 🔹 買い物リストに追加されているアイテム
     shopping_list_items = manually_added_item_ids | low_stock_item_ids
 
-    # 🔹 手動追加アイテムをリストに追加（hidden_items 関係なし）
-    final_items = list(low_stock_items)  # まずは自動追加分をリストに入れる
+    # 🔹 アイテムのリストを作成
+    final_items_set = set(low_stock_items)  # まず自動追加分を追加
+    
     for purchase_item in manually_added_items:
-        if purchase_item.item.id not in low_stock_item_ids:  # 既にリストにある場合は除外
-            purchase_item.item.planned_purchase_quantity = None  # 手動追加分は None
-            final_items.append(purchase_item.item)
-
-   
-    # **デバッグ出力**
-    print(f"DEBUG: 最終 shopping_list_items = {shopping_list_items}")
-    print(f"DEBUG: 手動追加アイテム IDs = {manually_added_item_ids}")
-    print(f"DEBUG: 自動追加アイテム IDs = {low_stock_item_ids}")
-    print(f"DEBUG: hidden_items = {hidden_items}")
-    print(f"DEBUG: shopping_list_items = {shopping_list_items}, type = {type(shopping_list_items)}")
-
+        final_items_set.add(purchase_item.item)
     
     final_items = list(low_stock_items)  # まずは自動追加分を追加
     
@@ -1203,7 +1205,7 @@ def shopping_list_view(request):
                 feedback_messages.append("アイテムを選択してください。")
             else:
                 # 選択されたアイテムのみを取得
-                purchase_items = Item.objects.filter(id__in=selected_item_ids, user=request.user)
+                purchase_items = PurchaseItem.objects.filter(item__id__in=selected_item_ids, item__user=request.user)
                 # **planned_purchase_quantity がない場合は None を設定**
                 for item in purchase_items:
                     if not hasattr(item, 'planned_purchase_quantity'):
@@ -1282,7 +1284,7 @@ def shopping_list_view(request):
 
                         # 在庫が最低在庫数を満たした場合、リストから削除
                         if item.stock_quantity >= item.stock_min_threshold:
-                            hidden_items.append(item.id)
+                            PurchaseItem.objects.filter(item=item).delete()
 
                         messages.success(request, f"{item.name} の在庫を更新しました。")
 
@@ -1290,25 +1292,14 @@ def shopping_list_view(request):
                         messages.error(request, f"{item.name} の在庫更新中にエラーが発生しました: {e}")
                         print(f"DEBUG: Error: {e}")
                     return redirect("shopping_list")
-                print(f"DEBUG (before processing suggest) - PurchaseItem count: {PurchaseItem.objects.filter(item__user=request.user).count()}")
-            print(f"DEBUG (before hidden_items update): {request.session.get('hidden_items', 'No session data')}")
 
-
-            # セッションに更新された非表示リストを保存
-            request.session["hidden_items"] = list(set(hidden_items))
-
-        # **アイテムの非表示（削除）**
-        if "delete_item" in request.POST:
+        elif "delete_item" in request.POST:
             delete_item_id = request.POST.get("delete_item")
             if delete_item_id:
-                print(f"DEBUG (before hidden_items update): {request.session.get('hidden_items', 'No session data')}")
-                hidden_items.append(int(delete_item_id))
-                request.session["hidden_items"] = list(set(hidden_items))
-                print(f"DEBUG (hidden_items updated): {request.session['hidden_items']}")  # 追加
+                PurchaseItem.objects.filter(item_id=delete_item_id, item__user=request.user).delete()
                 return redirect("shopping_list")
+    print(f"DEBUG: 最終 items (final_items) = {[item.id for item in final_items]}")
             
-    print(f"DEBUG (before processing suggest) - PurchaseItem count: {PurchaseItem.objects.filter(item__user=request.user).count()}")
-    print(f"DEBUG (before render): shopping_list_items = {shopping_list_items}")
     return render(request, "shopping_list.html", {
         "items": final_items,
         "suggestions": suggestions,

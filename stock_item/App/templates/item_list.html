@@ -99,7 +99,8 @@
                         {% if entry.item.id in shopping_list_items %}
                             <button class="add-to-list" data-item-id="{{ entry.item.id }}" disabled>追加済</button>
                         {% else %}
-                            <button class="add-to-list" data-item-id="{{ entry.item.id }}" onclick="addToShoppingList(this)">追加</button>
+                            <button class="add-to-list" data-item-id="{{ entry.item.id }}">追加</button>
+                            <p>DEBUG: item.id = {{ item.id }}</p>
                         {% endif %}
                     </td>
                     <td class="actions">    
@@ -155,8 +156,9 @@
             document.querySelectorAll(".add-to-list").forEach(button => {
                 button.addEventListener("click", function () {
                     addToShoppingList(this);
-                });
+                }, { once: true }); 
             });
+        
         
             // アイテム削除ボタン
             document.querySelectorAll(".delete-item").forEach(button => {
@@ -176,7 +178,7 @@
         // 在庫更新関数
         async function updateStock(itemId, delta) {
             try {
-                const response = await fetch(`/update-stock/`, {
+                const response = await fetch("/update-stock/", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -186,7 +188,15 @@
                 });
         
                 const data = await response.json();
-                if (!data.success) {
+                if (data.success) {
+                    console.log(`DEBUG: 在庫更新成功 - 新しい在庫数: ${data.new_stock}`);
+                    
+                    // 在庫数の表示を更新
+                    const stockSpan = document.querySelector(`#item-${itemId} .stock-quantity`);
+                    if (stockSpan) {
+                        stockSpan.textContent = data.new_stock;
+                    }
+                } else {
                     alert("在庫更新に失敗しました。");
                 }
             } catch (error) {
@@ -196,8 +206,26 @@
         }
         
         // 買い物リストに追加
+        let isProcessing = false; 
+
         async function addToShoppingList(button) {
+            if (isProcessing) {
+                console.log("DEBUG: すでに処理中のためスキップ");
+                return;
+            }
+            isProcessing = true; // フラグを設定して二重クリックを防ぐ
+        
+            console.log("DEBUG: クリックされたボタン →", button);
+            console.log("DEBUG: 取得した itemId =", button.dataset.itemId);
+            console.log("DEBUG: ボタンの data-item-id =", button.getAttribute("data-item-id"));
+        
             const itemId = button.dataset.itemId;
+        
+            if (!itemId || itemId.trim() === "") {
+                alert("エラー: itemId が取得できませんでした。");
+                isProcessing = false; // フラグを解除
+                return;
+            }
         
             try {
                 const response = await fetch("/add-to-shopping-list/", {
@@ -221,6 +249,8 @@
             } catch (error) {
                 console.error("買い物リスト追加エラー:", error);
                 alert("ネットワークエラーが発生しました。");
+            } finally {
+                setTimeout(() => { isProcessing = false; }, 500); // フラグを遅延リセット（500ms）
             }
         }
         

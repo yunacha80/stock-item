@@ -41,7 +41,8 @@
             </thead>
             <tbody>
                 {% for item in items %}
-                <tr>
+                <tr id="item-{{ item.id }}">
+                
                     <td>
                         <input type="checkbox" class="select-item" name="item_ids" value="{{ item.id }}">
                     </td>
@@ -123,7 +124,42 @@
             {% endfor %}
         </ul>
     {% endif %}
-    <script src="{% static 'js/shopping_list.js' %}"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".delete-item").forEach(button => {
+                button.addEventListener("click", async function () {
+                    const itemId = this.dataset.itemId;
+                    if (!confirm("本当に削除しますか？")) {
+                        return;
+                    }
+        
+                    try {
+                        const response = await fetch(`/remove-from-shopping-list/${itemId}/`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": getCSRFToken(),
+                            },
+                        });
+        
+                        const data = await response.json();
+                        if (data.success) {
+                            document.querySelector(`#item-${itemId}`).remove(); // アイテムを画面から削除
+                        } else {
+                            alert("削除に失敗しました: " + data.message);
+                        }
+                    } catch (error) {
+                        console.error("削除エラー:", error);
+                        alert("ネットワークエラーが発生しました。");
+                    }
+                });
+            });
+        
+            function getCSRFToken() {
+                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+            }
+        });
+        </script>
 </body>
 
 {% endblock %}
