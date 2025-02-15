@@ -54,6 +54,7 @@ urlpatterns = [
     path("shopping-list/add/", views.add_shopping_item, name="add_shopping_item"),
     path('add-to-shopping-list/', add_to_shopping_list, name='add_to_shopping_list'),
     path("update-stock/", update_stock, name="update_stock"),
+    path("remove-from-shopping-list/<int:item_id>/", views.remove_from_shopping_list, name="remove_from_shopping_list"),
     # path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     # path("shopping-list/delete/<int:item_id>/", views.delete_item_from_list, name="delete_item_from_list"),
 ]

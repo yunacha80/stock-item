@@ -120,9 +120,18 @@ def item_list(request):
     # 現在のユーザーを取得
     user = request.user
 
-    print("DEBUG (before query - all PurchaseItem):", list(PurchaseItem.objects.filter(item__user=user).values_list('item_id', flat=True)))
-    shopping_list_items = set(PurchaseItem.objects.filter(item__user=user).values_list('item_id', flat=True))
-    print(f"DEBUG (after fix - shopping_list_items from PurchaseItem): {shopping_list_items}")
+     # 🔹 ① 手動追加されたアイテムのIDを取得
+    manually_added_items = set(PurchaseItem.objects.filter(item__user=user).values_list('item_id', flat=True))
+    print(f"DEBUG (after fix - manually_added_items from PurchaseItem): {manually_added_items}")
+
+    # 🔹 ② 在庫不足のアイテムのIDを取得
+    low_stock_items = set(Item.objects.filter(user=user, stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
+    print(f"DEBUG (after fix - low_stock_items): {low_stock_items}")
+
+    # 🔹 ③ 手動追加 & 在庫不足の両方を `shopping_list_items` に入れる
+    shopping_list_items = manually_added_items | low_stock_items  # `set` の和集合で統合
+    print(f"DEBUG (before item_list processing): shopping_list_items (calculated) = {shopping_list_items}")
+
     
     # 全アイテムとカテゴリを取得
     items = Item.objects.filter(user=user)
@@ -146,10 +155,6 @@ def item_list(request):
     elif sort_by == 'stock_desc':
         displayed_items = displayed_items.order_by('-stock_quantity')
 
-    # 買い物リストに追加されているアイテムのIDを取得
-    shopping_list_items = set(items.filter(stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
-
-    print(f"DEBUG (before item_list processing): shopping_list_items (calculated) = {shopping_list_items}")
 
     # アイテムデータとリマインダー条件
     item_data = []
@@ -1021,15 +1026,31 @@ def clean_route(route):
 
 @login_required
 @require_POST
+@csrf_exempt
 def remove_from_shopping_list(request, item_id):
     """
     買い物リストからアイテムを削除（PurchaseItem を削除）
     """
     try:
-        purchase_item = get_object_or_404(PurchaseItem, item__id=item_id, item__user=request.user)
-        purchase_item.delete()
-        return JsonResponse({"success": True, "message": f"{purchase_item.item.name} を削除しました。"})
+        print(f"DEBUG: remove_from_shopping_list called with item_id={item_id}")
+
+        # 1. 手動追加されたアイテムを削除
+        purchase_item = PurchaseItem.objects.filter(item__id=item_id, item__user=request.user)
+        if purchase_item.exists():
+            purchase_item.delete()
+            print(f"DEBUG: 手動追加アイテム {item_id} を削除")
+            return JsonResponse({"success": True, "message": "手動追加アイテムを削除しました。"})
+
+        # 2. 自動追加アイテムの場合、stock_min_threshold を調整して削除
+        item = get_object_or_404(Item, id=item_id, user=request.user)
+        item.stock_min_threshold = item.stock_quantity  # 在庫数と同じにすることでリストから削除
+        item.save()
+
+        print(f"DEBUG: 自動追加アイテム {item_id} の stock_min_threshold を変更し、リストから削除")
+        return JsonResponse({"success": True, "message": "自動追加アイテムを削除しました。"})
+
     except Exception as e:
+        print(f"DEBUG: 削除エラー - {e}")
         return JsonResponse({"success": False, "message": f"削除に失敗しました: {e}"}, status=500)
 
 
@@ -1171,21 +1192,19 @@ def shopping_list_view(request):
     )
     low_stock_item_ids = set(low_stock_items.values_list("id", flat=True))
 
-    # 🔹 買い物リストに追加されているアイテム
-    shopping_list_items = manually_added_item_ids | low_stock_item_ids
+    shopping_list_items = set(map(int, manually_added_item_ids.union(low_stock_item_ids)))
 
-    # 🔹 アイテムのリストを作成
-    final_items_set = set(low_stock_items)  # まず自動追加分を追加
-    
-    for purchase_item in manually_added_items:
-        final_items_set.add(purchase_item.item)
-    
-    final_items = list(low_stock_items)  # まずは自動追加分を追加
-    
+    # 🔹 手動追加と自動追加の両方を含める
+    shopping_list_items = manually_added_item_ids.union(low_stock_item_ids)
+
+    final_items = list(low_stock_items)  # まず自動追加分を追加
     for purchase_item in manually_added_items:
         if purchase_item.item.id not in low_stock_item_ids:  # 既にリストにある場合は除外
             purchase_item.item.planned_purchase_quantity = None  # 手動追加分は None
             final_items.append(purchase_item.item)
+
+    print(f"DEBUG: shopping_list_items = {shopping_list_items}")
+
 
     # 提案結果、メッセージ、選択アイテム
     suggestions = []
@@ -1305,7 +1324,7 @@ def shopping_list_view(request):
         "suggestions": suggestions,
         "messages": feedback_messages,
         "selected_items": selected_items,
-        "shopping_list_items":  shopping_list_items,
+        "shopping_list_items":  list(shopping_list_items),
     })
 
 

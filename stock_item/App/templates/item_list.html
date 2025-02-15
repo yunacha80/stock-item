@@ -13,10 +13,10 @@
 {% block content %}
 <body class="item-list-page">
     <h1>ストックアイテム一覧</h1>
-    <p>DEBUG (テンプレート受け取り時): shopping_list_items = {{ shopping_list_items }}</p>
+    {% comment %} <p>DEBUG (テンプレート受け取り時): shopping_list_items = {{ shopping_list_items }}</p> {% endcomment %}
 
     {% for item in shopping_list_items %}
-        <p>DEBUG (ループ内): {{ item }} (type: {{ item|slugify }})</p>
+        {% comment %} <p>DEBUG (ループ内): {{ item }} (type: {{ item|slugify }})</p> {% endcomment %}
     {% endfor %}
 
     
@@ -50,10 +50,10 @@
         <p class="no-items">まだアイテムが登録されていません。</p>
     {% else %}
         <!-- アイテム一覧 -->
-        <p>DEBUG: shopping_list_items (ビューから) = {{ shopping_list_items }}</p>
+        {% comment %} <p>DEBUG: shopping_list_items (ビューから) = {{ shopping_list_items }}</p> {% endcomment %}
 
         {% for item in shopping_list_items %}
-            <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p>
+            {% comment %} <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p> {% endcomment %}
         {% endfor %}
         <table>
             <thead>
@@ -96,12 +96,18 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if entry.item.id in shopping_list_items %}
-                            <button class="add-to-list" data-item-id="{{ entry.item.id }}" disabled>追加済</button>
-                        {% else %}
-                            <button class="add-to-list" data-item-id="{{ entry.item.id }}">追加</button>
-                            <p>DEBUG: item.id = {{ item.id }}</p>
-                        {% endif %}
+                        <!-- デバッグ出力 -->
+                        {% comment %} <p>DEBUG: item.id = {{ entry.item.id }}</p>
+                        <p>DEBUG: shopping_list_items = {{ shopping_list_items }}</p>
+                        <p>DEBUG: item.id (type: {{ entry.item.id|slugify }})</p> {% endcomment %}
+                    
+                        {% with item_id=entry.item.id|stringformat:"s" %}
+                            {% if item_id in shopping_list_items|join:"," %}
+                                <button class="add-to-list" data-item-id="{{ entry.item.id }}" disabled>追加済</button>
+                            {% else %}
+                                <button class="add-to-list" data-item-id="{{ entry.item.id }}">追加</button>
+                            {% endif %}
+                        {% endwith %}
                     </td>
                     <td class="actions">    
                         <div class="action-box">

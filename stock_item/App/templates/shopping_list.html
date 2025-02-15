@@ -126,9 +126,10 @@
     {% endif %}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll(".delete-item").forEach(button => {
-                button.addEventListener("click", async function () {
-                    const itemId = this.dataset.itemId;
+            document.querySelectorAll(".btn-warning").forEach(button => {
+                button.addEventListener("click", async function (event) {
+                    event.preventDefault(); // フォームの送信を防ぐ
+                    const itemId = this.value; // name="delete_item" の value から取得
                     if (!confirm("本当に削除しますか？")) {
                         return;
                     }
