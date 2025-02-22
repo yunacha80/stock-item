@@ -3,8 +3,9 @@ from django.contrib.auth.forms import UserCreationForm,PasswordChangeForm
 from App.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
+from django.utils.safestring import mark_safe
 from django.db import models
-from django.forms import inlineformset_factory,modelformset_factory,BaseInlineFormSet
+from django.forms import inlineformset_factory,modelformset_factory,BaseInlineFormSet,ModelForm
 from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
 
 
@@ -87,6 +88,7 @@ class ItemForm(forms.ModelForm):
         }
         help_texts = {
             'stock_min_threshold': 'この値を下回るとアイテムが買い物リストに自動追加されます。',
+            'reminder': '購入頻度を分析し、買い忘れ防ぐためのリマインダー機能',
         }
 
     last_purchase_date = forms.DateField(
@@ -95,25 +97,47 @@ class ItemForm(forms.ModelForm):
         required=True
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, store_forms=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # CSSを追加
-        self.fields['name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['category'].widget.attrs.update({'class': 'form-control'})
-        self.fields['stock_quantity'].widget.attrs.update({'class': 'form-control'})
-        self.fields['memo'].widget.attrs.update({'class': 'form-control'})
-        self.fields['stock_min_threshold'].widget.attrs.update({'class': 'form-control'})
-        self.fields['last_purchase_date'].widget.attrs.update({'class': 'form-control'})
-        self.fields['reminder'].widget.attrs.update({'class': 'form-control'})
+        self.store_forms = store_forms  # 店舗価格のバリデーション用に受け取る
+
+        # `form-control` を適用するフィールド
+        form_control_fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date']
+        for field in form_control_fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+
+        # チェックボックスには `form-control` を適用しない
+        self.fields['reminder'].widget.attrs.update({'class': 'form-check-input'})
 
     def clean_name(self):
+        """ アイテム名の重複チェック """
         name = self.cleaned_data.get('name')
+        item_id = self.instance.id
 
-        # すでに同じ名前のアイテムが存在するか確認
-        if Item.objects.filter(name=name).exists():
-            raise forms.ValidationError("このアイテム名はすでに登録されています。")
+        if Item.objects.filter(name=name).exclude(id=item_id).exists():
+            raise ValidationError("このアイテム名はすでに登録されています。")
 
         return name
+
+    def clean(self):
+        """ 店舗価格が未入力ならエラー """
+        cleaned_data = super().clean()
+        store_forms = self.store_forms  # `views.py` から渡されたフォームリスト
+        has_valid_price = False
+
+        if store_forms:
+            for store_form in store_forms:
+                price = store_form.cleaned_data.get('price')
+                no_price = store_form.cleaned_data.get('no_price')
+
+                # 価格か「取り扱いなし」がチェックされている場合 OK
+                if price or no_price:
+                    has_valid_price = True
+
+            if not has_valid_price:
+                raise ValidationError("少なくとも1店舗の価格を入力するか、「取り扱いなし」にチェックを入れてください。")
+
+        return cleaned_data
 
 
 

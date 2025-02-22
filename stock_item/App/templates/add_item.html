@@ -57,85 +57,125 @@
 {% endblock head %}
 
 <body>
-{% block content %}
-    <div class="container">
-        <h1>アイテム追加</h1>
-        <form method="post">
-            {% csrf_token %}
-            <h2>基本情報</h2>
-            {{ item_form.as_p }}
-            {% if item_form.errors %}
-                <div class="error-messages">
-                    {% for error in item_form.name.errors %}
-                        <p class="error">{{ error }}</p>
-                    {% endfor %}
+    {% block content %}
+        <div class="container">
+            <h1>アイテム追加</h1>
+            <form method="post">
+                {% csrf_token %}
+                {% if error_messages %}
+                    <div class="error-container">
+                        <ul>
+                            {% for error in error_messages %}
+                                <li class="error">{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <h2>基本情報</h2>
+                {% for field in item_form %}
+                    {% if field.name != "reminder" %}
+                        <p>
+                            {{ field.label_tag }} {{ field }}
+                            {% if field.help_text %}
+                                <small>{{ field.help_text }}</small>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                {% endfor %}
+
+                <div class="reminder-checkbox-container">
+                    <label for="{{ item_form.reminder.id_for_label }}">{{ item_form.reminder.label }}</label>
+                    {{ item_form.reminder }}
+                    <span class="reminder-status">ON</span>
                 </div>
-            {% endif %}
+                <p>{{ item_form.reminder.help_text }}</p>
 
-            
-            <!-- 店舗情報 -->
-            <h2>店舗情報</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>店舗名</th>
-                        <th>価格</th>
-                        <th>入数</th>
-                        <th>メモ</th>
-                        <th>価格不明</th>
-                        <th>取り扱いなし</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for store_form in store_forms %}
-                    <tr>
-                        <!-- 店舗名を表示 -->
-                        <td>{{ store_form.instance.store.name }}</td>
+                {% if item_form.errors %}
+                    <div class="error-messages">
+                        {% for error in item_form.name.errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-                        <!-- 入力フィールド -->
-                        <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price" 
-                                   value="{{ store_form.initial.price }}">
-                        </td>
-                        <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price_per_unit" 
-                                   value="{{ store_form.initial.price_per_unit }}">
-                        </td>
-                        <td>
-                            <input type="text" 
-                                   name="{{ store_form.prefix }}-memo" 
-                                   value="{{ store_form.initial.memo }}">
-                        </td>
+                <h2>店舗情報</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>店舗名</th>
+                            <th>価格</th>
+                            <th>入数</th>
+                            <th>メモ</th>
+                            <th>価格不明</th>
+                            <th>取り扱いなし</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for store_form in store_forms %}
+                        <tr>
+                            <td>{{ store_form.instance.store.name }}</td>
+                            <td>
+                                <input type="number" 
+                                       name="{{ store_form.prefix }}-price" 
+                                       value="{{ store_form.initial.price|default_if_none:'' }}">
+                            </td>
+                            <td>
+                                <input type="number" 
+                                       name="{{ store_form.prefix }}-price_per_unit" 
+                                       value="{{ store_form.initial.price_per_unit|default_if_none:'' }}">
+                            </td>
+                            <td>
+                                <input type="text" 
+                                       name="{{ store_form.prefix }}-memo" 
+                                       value="{{ store_form.initial.memo|default_if_none:'' }}">
+                            </td>
+                            <td>
+                                <input type="checkbox" 
+                                       name="{{ store_form.prefix }}-price_unknown" 
+                                       {% if store_form.initial.price_unknown %}checked{% endif %}>
+                                価格不明
+                            </td>
+                            <td>
+                                <input type="checkbox" 
+                                       name="{{ store_form.prefix }}-no_price" 
+                                       {% if store_form.initial.no_price %}checked{% endif %}>
+                                取り扱いなし
+                            </td>
+                        </tr>
+                        <input type="hidden" name="{{ store_form.prefix }}-store" value="{{ store_form.instance.store.id }}">
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                        <!-- 価格不明 チェックボックス -->
-                        <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-price_unknown" 
-                                   {% if store_form.initial.price_unknown %}checked{% endif %}>
-                            価格不明
-                        </td>
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{% url 'item_list' %}">一覧に戻る</a>
+            </form>
+        </div>
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('tbody tr').forEach(row => {
+                    const priceField = row.querySelector('input[name$="-price"]');
+                    const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
+                    const noPriceCheckbox = row.querySelector('input[name$="-no_price"]');
+    
+                    priceUnknownCheckbox.addEventListener('change', () => {
+                        if (priceUnknownCheckbox.checked) {
+                            noPriceCheckbox.checked = false;
+                            priceField.value = ""; 
+                        }
+                    });
 
-                        <!-- 取り扱いなし チェックボックス -->
-                        <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-no_price" 
-                                   {% if store_form.initial.no_price %}checked{% endif %}>
-                            取り扱いなし
-                        </td>
-                    </tr>
-                    <!-- 隠しフィールド -->
-                    {{ store_form.store.as_hidden }}
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- 保存ボタン -->
-            <button type="submit" class="btn btn-primary">保存</button>
-            <a href="{% url 'item_list' %}">一覧に戻る</a>
-        </form>
-    </div>
-{% endblock %}
+                    noPriceCheckbox.addEventListener('change', () => {
+                        if (noPriceCheckbox.checked) {
+                            priceUnknownCheckbox.checked = false;
+                            priceField.value = ""; 
+                        }
+                    });
+                });
+            });
+        </script>
+    {% endblock %}
 </body>
 </html>

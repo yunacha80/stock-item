@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete,add_to_shopping_list,update_stock
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete,add_to_shopping_list,update_stock,update_purchase_quantity
 from App import views  
 
 
@@ -48,13 +48,14 @@ urlpatterns = [
     path('stores/add/', views.store_add, name='store_add'),
     path('stores/<int:pk>/edit/', views.store_edit, name='store_edit'),
     path("shopping-list/", views.shopping_list_view, name="shopping_list"),
-    path("shopping-list/update/", views.update_stock_and_check, name="update_stock_and_check"),
-    path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
+    # path("shopping-list/update/", views.update_stock_and_check, name="update_stock_and_check"),
+    # path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     path('settings/', views.settings_view, name='settings'),
     path("shopping-list/add/", views.add_shopping_item, name="add_shopping_item"),
     path('add-to-shopping-list/', add_to_shopping_list, name='add_to_shopping_list'),
     path("update-stock/", update_stock, name="update_stock"),
     path("remove-from-shopping-list/<int:item_id>/", views.remove_from_shopping_list, name="remove_from_shopping_list"),
+    path("update-purchase-quantity/", update_purchase_quantity, name="update_purchase_quantity"),
     # path('settings/update-stock-min-threshold/', views.update_stock_min_threshold, name='update_stock_min_threshold'),
     # path("shopping-list/delete/<int:item_id>/", views.delete_item_from_list, name="delete_item_from_list"),
 ]

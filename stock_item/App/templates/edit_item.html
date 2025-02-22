@@ -15,7 +15,15 @@
             <h1>アイテム編集</h1>
             <form method="post">
                 {% csrf_token %}
-                
+                {% if error_messages %}
+                    <div class="error-container">
+                        <ul>
+                            {% for error in error_messages %}
+                                <li class="error">{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
                 <!-- アイテム情報 -->
                 <section class="item-info">
                     <h2>アイテム編集</h2>
@@ -58,6 +66,7 @@
                     </div>
                 </section>
 
+                
                 <!-- 店舗情報 -->
                 <section class="store-info">
                     <h2>店舗ごとのアイテム価格登録</h2>
@@ -82,34 +91,31 @@
                                 <td>
                                     <input type="number" 
                                            name="{{ store_form.prefix }}-price" 
-                                           value="{{ store_form.initial.price }}">
+                                           value="{{ store_form.price.value }}">
                                 </td>
                                 <td>
                                     <input type="number" 
                                            name="{{ store_form.prefix }}-price_per_unit" 
-                                           value="{{ store_form.initial.price_per_unit }}">
+                                           value="{{ store_form.price_per_unit.value }}">
                                 </td>
                                 <td>
                                     <input type="text" 
                                            name="{{ store_form.prefix }}-memo" 
-                                           value="{{ store_form.initial.memo }}">
+                                           value="{{ store_form.memo.value }}">
                                 </td>
-
-                                <!-- 価格不明 チェックボックス -->
                                 <td>
                                     <input type="checkbox" 
                                            name="{{ store_form.prefix }}-price_unknown" 
-                                           {% if store_form.initial.price_unknown %}checked{% endif %}>
+                                           {% if store_form.price_unknown.value %}checked{% endif %}>
                                     価格不明
                                 </td>
-
-                                <!-- 取り扱いなし チェックボックス -->
                                 <td>
                                     <input type="checkbox" 
                                            name="{{ store_form.prefix }}-no_price" 
-                                           {% if store_form.initial.no_price %}checked{% endif %}>
+                                           {% if store_form.no_price.value %}checked{% endif %}>
                                     取り扱いなし
                                 </td>
+                                
                             </tr>
                             <!-- 隠しフィールド -->
                             {{ store_form.store.as_hidden }}
@@ -130,18 +136,21 @@
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('tbody tr').forEach(row => {
+                    const priceField = row.querySelector('input[name$="-price"]');
                     const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
                     const noPriceCheckbox = row.querySelector('input[name$="-no_price"]');
-
+        
                     priceUnknownCheckbox.addEventListener('change', () => {
                         if (priceUnknownCheckbox.checked) {
                             noPriceCheckbox.checked = false;
+                            priceField.value = "";  // 価格をリセット
                         }
                     });
-
+        
                     noPriceCheckbox.addEventListener('change', () => {
                         if (noPriceCheckbox.checked) {
                             priceUnknownCheckbox.checked = false;
+                            priceField.value = "";  // 価格をリセット
                         }
                     });
                 });

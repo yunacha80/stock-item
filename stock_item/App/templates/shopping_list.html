@@ -16,12 +16,12 @@
 <body>
     <h1>買い物リスト</h1>
     <div class="button-container">
-        <a href="{% url 'add_shopping_item' %}" class="btn btn-success">アイテム追加</a>
+        <a href="{% url 'add_shopping_item' %}" class="btn-add-item">買い物リストへアイテム追加</a>
     </div>
      <!-- デバッグ出力: shopping_list_items -->
-    <p>DEBUG: shopping_list_items = {{ shopping_list_items }}</p>
+    {% comment %} <p>DEBUG: shopping_list_items = {{ shopping_list_items }}</p> {% endcomment %}
     {% for item in shopping_list_items %}
-        <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p>
+        {% comment %} <p>DEBUG: {{ item }} (type: {{ item|slugify }})</p> {% endcomment %}
     {% endfor %}
 
     <!-- 在庫更新および提案用フォーム -->
@@ -48,8 +48,12 @@
                     </td>
                     <td>{{ item.name }} (現在：{{ item.stock_quantity }}個)</td>
                     <td>
-                        <input type="number" class="planned-quantity" name="planned_quantity_{{ item.id }}" value="{{ item.planned_purchase_quantity|default_if_none:'' }}" min="0">
-                    </td>
+                        <div class="quantity-control">
+                            <button type="button" class="decrement" data-item-id="{{ item.id }}">-</button>
+                            <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.planned_purchase_quantity|default:1 }}</span>
+                            <button type="button" class="increment" data-item-id="{{ item.id }}">+</button>
+                        </div>
+                    </td>                                        
                     <td>
                         <input type="checkbox" name="purchased_{{ item.id }}">購入済
                     </td>
@@ -99,22 +103,34 @@
                     </summary>
                     <ul>
                         {% for store, items in suggestion.store_details.items %}
-                        <strong>◇店舗：{{ store }}</strong><br>
-                        購入するもの：
-                        {% for item in items %}
-                            <li>{{ item.name }}: {{ item.quantity }}個</li>
+                            <strong>◇店舗：{{ store }}</strong><br>
+                            購入するもの：
+                            {% for item in items %}
+                                <li>
+                                    {{ item.name }}: {{ item.quantity }}個
+                                    {% if item.price_unknown %} <span style="color:red;">(価格不明)</span> {% endif %}
+                                    {% if item.no_price %} <span style="color:red;">(取扱いなし)</span> {% endif %}
+                                </li>
+                            {% endfor %}
                         {% endfor %}
-                        {% endfor %}
-                        {% if suggestion.missing_items %}
-                            <li style="color:red;">取扱いの有無及び価格不明: {{ suggestion.missing_items|join:", " }}</li>
+                        {% if suggestion.missing_items and suggestion.missing_items|length > 0 %}
+                            <li style="color:red; font-weight:bold;">
+                                ⚠ 取扱いの有無及び価格不明: {{ suggestion.missing_items|join:", " }}
+                            </li>
                         {% endif %}
                     </ul>
                 </details>
             {% endfor %}
         </div>
-    {% else %}
-        <p>提案が見つかりませんでした。</p>
-    {% endif %}
+        {% endif %}
+
+        {% if not suggestions or suggestions.0.no_suggestions %}
+            <p style="color:red; font-weight:bold;">⚠ 提案が見つかりませんでした。</p>
+            {% if suggestions.0.missing_items %}
+                <p style="color:red;">⚠ 取扱いの有無及び価格不明: {{ suggestions.0.missing_items|join:", " }}</p>
+            {% endif %}
+        {% endif %}
+
 
     <!-- メッセージ表示部分 -->
     {% if messages %}
@@ -126,6 +142,46 @@
     {% endif %}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".decrement, .increment").forEach(button => {
+                button.addEventListener("click", async function () {
+                    const itemId = this.dataset.itemId;
+                    if (!itemId) {
+                        console.error("エラー: itemId が取得できません");
+                        return;
+                    }
+        
+                    const isIncrement = this.classList.contains("increment");
+                    const quantityDisplay = document.getElementById(`quantity-${itemId}`);
+                    let newQuantity = parseInt(quantityDisplay.textContent) || 0;
+        
+                    newQuantity = isIncrement ? newQuantity + 1 : Math.max(0, newQuantity - 1); // 0未満にならないよう制限
+        
+                    console.log(`更新: itemId=${itemId}, newQuantity=${newQuantity}`);
+        
+                    try {
+                        const response = await fetch("{% url 'update_purchase_quantity' %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": getCSRFToken(),
+                            },
+                            body: JSON.stringify({ item_id: itemId, new_quantity: newQuantity })
+                        });
+        
+                        const data = await response.json();
+                        if (data.success) {
+                            quantityDisplay.textContent = data.planned_purchase_quantity; // 成功時に数値を更新
+                        } else {
+                            console.error("エラー：" + data.message);
+                            alert("エラー：" + data.message);
+                        }
+                    } catch (error) {
+                        console.error("更新エラー:", error);
+                        alert("ネットワークエラーが発生しました。");
+                    }
+                });
+            });
+
             document.querySelectorAll(".btn-warning").forEach(button => {
                 button.addEventListener("click", async function (event) {
                     event.preventDefault(); // フォームの送信を防ぐ
@@ -155,12 +211,16 @@
                     }
                 });
             });
-        
+
+            function getCSRFToken() {
+                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+            }       
+
             function getCSRFToken() {
                 return document.querySelector("[name=csrfmiddlewaretoken]").value;
             }
         });
-        </script>
+    </script>
 </body>
 
 {% endblock %}

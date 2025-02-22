@@ -78,10 +78,12 @@ form {
 
 form button {
     display: block;
-    width: 100%;
+    width: auto; /* 幅を調整 */
+    min-width: 200px;
     background-color: #494a4b;
     color: #fff;
     padding: 10px;
+    margin-bottom: 20px;
     border: none;
     border-radius: 5px;
     font-size: 1rem;
@@ -236,7 +238,8 @@ button.increment:hover {
     font-size: 1.1em;
 }
 
-/* 購入履歴ページ専用のスタイル */.purchase-history-page select[multiple] {
+/* 購入履歴ページ専用のスタイル */
+.purchase-history-page select[multiple] {
     width: 100%;
     height: 200px; 
     border: 1px solid #ccc;
@@ -253,6 +256,7 @@ button.increment:hover {
     background-color: #333;
     color: white;
     padding: 10px;
+    margin: 20px auto 0;
     border: none;
 }
 
@@ -462,6 +466,88 @@ button.increment:hover {
     height: 50px;
 }
 
+/* 購入予定数 */
+.quantity-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* ボタンと数字の間隔 */
+}
+
+.quantity-control .decrement,
+.quantity-control .increment {
+    display: inline-block;
+    width: 20px; 
+    height: 40px; 
+    font-size: 1.2rem;
+    padding: 8px 0;;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background-color: #55adec;
+    color: #fff;
+    cursor: pointer;
+    text-align: center;
+}
+
+.quantity-control .decrement:hover,
+.quantity-control .increment:hover {
+    background-color: #b0bbc2;
+}
+
+
+.quantity-control button {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2em;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #55adec;
+    color: white;
+}
+
+.quantity-control button:hover {
+    background-color: #b0bbc2;
+}
+
+.quantity-display {
+    min-width: 25px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+
+
+/* 新規アイテム追加ボタン */
+.btn-add-item {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 0px 0px 2px 5px ;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #4e4e4e, #353334);
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    cursor: pointer;
+}
+
+/* .btn-add-item:hover {
+    background: linear-gradient(135deg, #ff5f7e, #ff3c6e);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+} */
+
+.btn-add-item:active {
+    transform: scale(0.95);
+}
+
 /* 数字のスタイル */
 .stock-adjuster input[type="number"] {
     width: 80px;
@@ -526,7 +612,7 @@ button.increment:hover {
     margin: 20px auto 0;
     padding: 10px;
     font-size: 1rem;
-    background-color: #28a745;
+    background-color: #464747;
     color: white;
     border: none;
     border-radius: 8px;
@@ -535,7 +621,7 @@ button.increment:hover {
 }
 
 .btn-add:hover {
-    background-color: #218838;
+    background-color: #3c3d3c;
 }
 
 .btn-add::before {
@@ -606,12 +692,31 @@ button.increment:hover {
     padding: 10px 20px;
     border-radius: 5px;
     text-decoration: none;
-    font-size: 16px;
+    font-size: 20px;
 }
 
 .button-container .btn-primary:hover {
-    background-color: #0056b3;
+    background-color: #0274ee;
 }
+
+.button-container .btn-secondary {
+    background-color: #6c757d; /* 灰色 */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.button-container .btn-secondary:hover {
+    background-color: #5a6268; /* ホバー時の色 */
+}
+
+
+
+
 
 
 
@@ -624,6 +729,7 @@ button.increment:hover {
     cursor: pointer;
     margin: 5px;
     border-radius: 4px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     transition: background-color 0.3s;
 }
 
@@ -708,3 +814,14 @@ button.increment:hover {
     gap: 8px; /* チェックボックスとONの間のスペース */
 }
 
+.error-container {
+    background-color: #ffdddd;
+    border-left: 4px solid #ff5555;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.error {
+    color: #d60000;
+    font-weight: bold;
+}

@@ -51,13 +51,15 @@
     <h2>在庫最低値のデフォルト数値変更</h2>
     <div id="settings-page">
         <div class="stock-default-container">
-            <h2>在庫最低値の一括変更</h2>
-            <form method="POST" action="{% url 'update_stock_min_threshold' %}">
+            <h2>アイテムの最低在庫値を一括変更</h2>
+            <p>※個別で在庫最低値設定したアイテムを除く</P>
+            <form method="POST" action="">
                 {% csrf_token %}
-                {% comment %} <label for="stock_min_threshold">在庫最低値</label> {% endcomment %}
-                <input id="stock_min_threshold" type="number" name="stock_min_threshold" value="1" min="1" required><br><br>
+                <input type="hidden" name="update_stock_threshold">
+                <input id="stock_min_threshold" type="number" name="stock_min_threshold" 
+                        value="{{ stock_min_threshold_default }}" min="1" required><br><br>
                 <button type="submit">変更</button>
-           </form>
+            </form>
         </div>
     </div>
 

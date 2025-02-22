@@ -105,7 +105,7 @@ class Item(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - 在庫最低値: {self.stock_min_threshold}"
 
     def update_purchase_frequency(self):
         """
@@ -189,6 +189,10 @@ class Item(models.Model):
             purchased_quantity=purchased_quantity,
             purchased_date=now().date()
         )
+
+    
+
+
 
 class StoreItemReference(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
