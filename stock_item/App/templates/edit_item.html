@@ -127,13 +127,41 @@
                 <!-- 保存ボタン -->
                 <div class="form-actions mt-4">
                     <button type="submit" class="btn btn-primary">保存</button><br>
-                    <button type="submit" name="delete" class="btn btn-danger">削除</button>
+                    <button type="button" id="delete-button" class="btn btn-danger">削除</button>
                     <a href="{% url 'item_list' %}" class="btn btn-secondary">一覧に戻る</a>
                 </div>
             </form>
         </div>
         
         <script>
+            document.getElementById("delete-button").addEventListener("click", function() {
+                if (!confirm("本当に削除しますか？")) {
+                    return;
+                }
+            
+                fetch("{% url 'item_delete' item.id %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}", // CSRFトークンを送信
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "same-origin"
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("アイテムが削除されました。");
+                        window.location.href = "{% url 'item_list' %}"; // アイテム一覧へリダイレクト
+                    } else {
+                        alert("削除に失敗しました: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("エラーが発生しました。");
+                });
+            });
+            
             document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('tbody tr').forEach(row => {
                     const priceField = row.querySelector('input[name$="-price"]');
