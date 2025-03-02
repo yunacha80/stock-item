@@ -266,9 +266,9 @@ def add_item(request):
                     # 価格、価格不明、取り扱いなしのバリデーションチェック
                     price = form.cleaned_data.get('price')
                     price_unknown = form.cleaned_data.get('price_unknown', False)
-                    no_price = form.cleaned_data.get('no_price', False)
+                    no_handling = form.cleaned_data.get('no_handling', False)
 
-                    if not price and not price_unknown and not no_price:
+                    if not price and not price_unknown and not no_handling:
                         form.add_error('price', '価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。')
                         has_error = True
                         error_messages.append(f"{store.name}: 価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。")
@@ -323,7 +323,7 @@ def edit_item(request, item_id):
                 'price_per_unit': store_item_reference.price_per_unit if store_item_reference.price_per_unit is not None else '',
                 'memo': store_item_reference.memo or '',
                 'price_unknown': store_item_reference.price_unknown or False,
-                'no_price': store_item_reference.no_price or False,
+                'no_handling': store_item_reference.no_handling or False,
             }
         )
         store_forms.append(form)
@@ -355,9 +355,9 @@ def edit_item(request, item_id):
             if form.is_valid():
                 price = form.cleaned_data.get('price')
                 price_unknown = form.cleaned_data.get('price_unknown', False)
-                no_price = form.cleaned_data.get('no_price', False)
+                no_handling = form.cleaned_data.get('no_handling', False)
 
-                if not price and not price_unknown and not no_price:
+                if not price and not price_unknown and not no_handling:
                     form.add_error('price', '価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。')
                     has_error = True
                     error_messages.append(f"{form.instance.store.name}: 価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。")
@@ -1137,12 +1137,14 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         # 価格情報がある `StoreItemReference` を取得（更新日時が最新のものを優先）
         references = StoreItemReference.objects.filter(item=item).order_by('-updated_at')
 
-        # 🔹 `price` または `price_per_unit` が `None` の場合は `missing_items` に追加
-        if any(ref.price is None or ref.price_per_unit is None for ref in references):
-            print(f"DEBUG: {item.name} の価格情報が不足 → missing_items に追加")
+        # すべての店舗で `price` または `price_per_unit` が `None` の場合のみ `missing_items` に追加
+        if all(ref.price is None or ref.price_per_unit is None for ref in references):
+            print(f"DEBUG: {item.name} の価格情報がすべての店舗で不足 → missing_items に追加")
             missing_items.add(item.name)
+            if not consider_missing:
+                continue  # 価格がない商品をスキップ
 
-        # 🔹 `None` を除外して `valid_references` を作成
+        # `None` を除外して `valid_references` を作成
         valid_references = references.exclude(price=None).exclude(price_per_unit=None)
 
         if not valid_references.exists():
@@ -1151,7 +1153,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
             if not consider_missing:
                 continue  # 価格がない商品をスキップ
         
-        # 🔹 提案ルート戦略ごとに最適なリファレンスを選択
+        # 提案ルート戦略ごとに最適なリファレンスを選択
         if strategy == "price":
             best_reference = min(valid_references, key=lambda ref: ref.price / ref.price_per_unit)
         elif strategy == "time":
@@ -1190,7 +1192,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
 
     selected_stores = list(store_item_map.keys())
 
-    # 🔹 **選択された店舗がない場合、エラーメッセージを返す**
+    # **選択された店舗がない場合、エラーメッセージを返す**
     if not selected_stores:
         print("DEBUG: 選択された店舗がありません。ルート計算をスキップします。")
         return {
@@ -1233,6 +1235,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         "no_suggestions": False,
     }
 
+
 # def calculate_route(purchase_items, strategy, consider_missing=True):
 #     """
 #     買い回りルートの計算 (自宅↔店舗の移動時間も考慮)
@@ -1258,7 +1261,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
 
 #         # デバッグ出力: 各店舗の価格情報
 #         for ref in references:
-#             print(f"Store: {ref.store.name}, Item: {item.name}, Price: {ref.price}, Price Per Unit: {ref.price_per_unit}, Price Unknown: {ref.price_unknown}, No Price: {ref.no_price}")
+#             print(f"Store: {ref.store.name}, Item: {item.name}, Price: {ref.price}, Price Per Unit: {ref.price_per_unit}, Price Unknown: {ref.price_unknown}, No Price: {ref.no_handling}")
 
 #         # **すべての店舗で price / price_per_unit が NULL の場合 → missing_items に追加**
 #         if all(ref.price is None and ref.price_per_unit is None for ref in references):

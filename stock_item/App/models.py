@@ -200,7 +200,7 @@ class StoreItemReference(models.Model):
     price = models.IntegerField(null=True, blank=True, verbose_name="価格")
     price_per_unit = models.IntegerField(null=True, blank=True, verbose_name="単位数")
     price_unknown = models.BooleanField(default=False, verbose_name="価格不明")  
-    no_price = models.BooleanField(default=False, verbose_name="取り扱いなし")
+    no_handling = models.BooleanField(default=False, verbose_name="取り扱いなし")
     memo = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
