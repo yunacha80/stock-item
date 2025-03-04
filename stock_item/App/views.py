@@ -1141,8 +1141,8 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         if all(ref.price is None or ref.price_per_unit is None for ref in references):
             print(f"DEBUG: {item.name} の価格情報がすべての店舗で不足 → missing_items に追加")
             missing_items.add(item.name)
-            if not consider_missing:
-                continue  # 価格がない商品をスキップ
+            #if not consider_missing:
+            continue  # 価格がない商品をスキップ
 
         # `None` を除外して `valid_references` を作成
         valid_references = references.exclude(price=None).exclude(price_per_unit=None)
@@ -1617,7 +1617,7 @@ def shopping_list_view(request):
 
     suggestions = []
     feedback_messages = []
-    selected_items = []
+    #selected_items = []
 
     if request.method == "POST":
         action = request.POST.get("action", "")
