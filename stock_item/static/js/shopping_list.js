@@ -74,7 +74,7 @@
 // document.addEventListener('DOMContentLoaded', () => {
 //     document.querySelectorAll('tbody tr').forEach(row => {
 //         const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
-//         const noPriceCheckbox = row.querySelector('input[name$="-no_price"]');
+//         const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
 
 //         priceUnknownCheckbox.addEventListener('change', () => {
 //             if (priceUnknownCheckbox.checked) {

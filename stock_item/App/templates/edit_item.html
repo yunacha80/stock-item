@@ -26,7 +26,7 @@
                 {% endif %}
                 <!-- アイテム情報 -->
                 <section class="item-info">
-                    <h2>アイテム編集</h2>
+                    <h2>アイテム詳細</h2>
                     <div class="form-group">
                         {{ item_form.name.label_tag }}
                         {{ item_form.name }}
@@ -111,8 +111,8 @@
                                 </td>
                                 <td>
                                     <input type="checkbox" 
-                                           name="{{ store_form.prefix }}-no_price" 
-                                           {% if store_form.no_price.value %}checked{% endif %}>
+                                           name="{{ store_form.prefix }}-no_handling" 
+                                           {% if store_form.no_handling.value %}checked{% endif %}>
                                     取り扱いなし
                                 </td>
                                 
@@ -166,7 +166,7 @@
                 document.querySelectorAll('tbody tr').forEach(row => {
                     const priceField = row.querySelector('input[name$="-price"]');
                     const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
-                    const noPriceCheckbox = row.querySelector('input[name$="-no_price"]');
+                    const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
         
                     priceUnknownCheckbox.addEventListener('change', () => {
                         if (priceUnknownCheckbox.checked) {

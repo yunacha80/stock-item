@@ -49,9 +49,9 @@
                     <td>{{ item.name }} (現在：{{ item.stock_quantity }}個)</td>
                     <td>
                         <div class="quantity-control">
-                            <button type="button" class="decrement" data-item-id="{{ item.id }}">-</button>
+                            <button type="button" class="decrement" data-item-id="{{ item.id }}">－</button>
                             <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.planned_purchase_quantity|default:1 }}</span>
-                            <button type="button" class="increment" data-item-id="{{ item.id }}">+</button>
+                            <button type="button" class="increment" data-item-id="{{ item.id }}">＋</button>
                         </div>
                     </td>                                        
                     <td>
@@ -110,7 +110,7 @@
                                 <li>
                                     {{ item.name }}: {{ item.quantity }}個
                                     {% if item.price_unknown %} <span style="color:red;">(価格不明)</span> {% endif %}
-                                    {% if item.no_price %} <span style="color:red;">(取扱いなし)</span> {% endif %}
+                                    {% if item.no_handling %} <span style="color:red;">(取扱いなし)</span> {% endif %}
                                 </li>
                             {% endfor %}
                         {% endfor %}

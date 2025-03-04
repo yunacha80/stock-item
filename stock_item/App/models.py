@@ -229,6 +229,8 @@ class StoreTravelTime(models.Model):
     store1 = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store1_travel_times')
     store2 = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='store2_travel_times')
     travel_time_min = models.IntegerField(verbose_name="移動時間（分）")  # 移動時間（分）
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.store1.name} to {self.store2.name} : {self.travel_time_min}分"

@@ -138,8 +138,8 @@
                             </td>
                             <td>
                                 <input type="checkbox" 
-                                       name="{{ store_form.prefix }}-no_price" 
-                                       {% if store_form.initial.no_price %}checked{% endif %}>
+                                       name="{{ store_form.prefix }}-no_handling" 
+                                       {% if store_form.initial.no_handling %}checked{% endif %}>
                                 取り扱いなし
                             </td>
                         </tr>
@@ -158,7 +158,7 @@
                 document.querySelectorAll('tbody tr').forEach(row => {
                     const priceField = row.querySelector('input[name$="-price"]');
                     const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
-                    const noPriceCheckbox = row.querySelector('input[name$="-no_price"]');
+                    const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
     
                     priceUnknownCheckbox.addEventListener('change', () => {
                         if (priceUnknownCheckbox.checked) {

@@ -16,8 +16,7 @@ h1, h2 {
 
 h1 {
     font-size: 2rem;
-    border-bottom: 2px solid #e6e6e7;
-    padding-bottom: 10px;
+    padding-bottom: 10px; /* 下線を削除 */
 }
 
 h2 {
@@ -25,20 +24,22 @@ h2 {
     margin-top: 30px;
 }
 
+
 /* テーブルのスタイル */
 table {
     width: 100%;
     margin: 20px auto;
     border-collapse: collapse;
     background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 立体感を強化 */
     border-radius: 8px;
+    overflow: hidden;
 }
 
 thead th {
     background-color: #5f5e5f;
     color: #fff;
-    padding: 10px;
+    padding: 12px;
     text-align: left;
 }
 
@@ -47,9 +48,10 @@ tbody tr:nth-child(odd) {
 }
 
 tbody td {
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
 }
+
 
 tfoot td {
     font-weight: bold;
@@ -452,7 +454,7 @@ button.increment:hover {
 }
 
 /* - ボタン */
-.stock-adjuster .decrement,
+/* .stock-adjuster .decrement,
 .stock-adjuster .increment {
     background-color: #007bff;
     color: white;
@@ -464,29 +466,29 @@ button.increment:hover {
     text-align: center;
     width: 50px;
     height: 50px;
-}
+} */
 
 /* 購入予定数 */
 .quantity-control {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px; /* ボタンと数字の間隔 */
+    gap: 5px; 
+    width: auto;
 }
 
 .quantity-control .decrement,
 .quantity-control .increment {
-    display: inline-block;
-    width: 20px; 
-    height: 40px; 
-    font-size: 1.2rem;
-    padding: 10px 20px;;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    background-color: #55adec;
-    color: #fff;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    min-width: 30px;
+    height: 30px;
     cursor: pointer;
-    text-align: center;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .quantity-control .decrement:hover,
@@ -494,29 +496,14 @@ button.increment:hover {
     background-color: #b0bbc2;
 }
 
-
-.quantity-control button {
-    width: 30px;
-    height: 30px;
-    font-size: 1.2em;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: #55adec;
-    color: white;
-}
-
-.quantity-control button:hover {
-    background-color: #b0bbc2;
-}
-
+/* 数値表示部分 */
 .quantity-display {
     min-width: 25px;
     text-align: center;
     font-size: 1.2em;
     font-weight: bold;
 }
+
 
 
 
@@ -686,7 +673,7 @@ button.increment:hover {
 }
 
 .button-container .btn-primary {
-    background-color: #007bff;
+    background-color: #3498db;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -746,6 +733,41 @@ button.increment:hover {
     cursor: default;
 }
 
+
+
+.reminder-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* チェックボックスとONの間のスペース */
+}
+
+.reminder-status {
+    font-size: 16px;
+    color: #333;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    margin-bottom: 0;
+    font-size: 1.2em;
+    color: #34495e; 
+}
+/* 
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    margin-top: 5px;
+} */
+
 /* ？マークツールチップのベース */
 .tooltip-container {
     display: inline-block;
@@ -780,6 +802,8 @@ button.increment:hover {
     z-index: 1000;
 }
 
+
+
 /* ？マークツールチップ表示時 */
 .tooltip-container:hover .tooltip-text,
 .tooltip-container:focus-within .tooltip-text {
@@ -787,26 +811,7 @@ button.increment:hover {
 }
 
 
-.reminder-checkbox-container {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* チェックボックスとONの間のスペース */
-}
 
-.reminder-status {
-    font-size: 16px;
-    color: #333;
-}
-
-.form-group {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* 要素間のスペース */
-}
-
-.form-group label {
-    margin-bottom: 0; /* ラベルのデフォルトの改行を防ぐ */
-}
 
 .reminder-checkbox-container {
     display: flex;

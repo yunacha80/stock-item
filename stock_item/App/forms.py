@@ -128,10 +128,10 @@ class ItemForm(forms.ModelForm):
         if store_forms:
             for store_form in store_forms:
                 price = store_form.cleaned_data.get('price')
-                no_price = store_form.cleaned_data.get('no_price')
+                no_handling = store_form.cleaned_data.get('no_handling')
 
                 # 価格か「取り扱いなし」がチェックされている場合 OK
-                if price or no_price:
+                if price or no_handling:
                     has_valid_price = True
 
             if not has_valid_price:
@@ -155,7 +155,7 @@ class PurchaseHistoryForm(forms.ModelForm):
 
 class StoreItemReferenceForm(forms.ModelForm):
     price_unknown = forms.BooleanField(required=False, label='価格不明')
-    no_price = forms.BooleanField(required=False, label='取り扱いなし')
+    no_handling = forms.BooleanField(required=False, label='取り扱いなし')
 
     item_label = forms.CharField(
         required=False,
@@ -165,7 +165,7 @@ class StoreItemReferenceForm(forms.ModelForm):
 
     class Meta:
         model = StoreItemReference
-        fields = ['item_label','price', 'price_per_unit', 'memo', 'price_unknown', 'no_price']
+        fields = ['item_label','price', 'price_per_unit', 'memo', 'price_unknown', 'no_handling']
         labels = {
             'price': '価格',
             'price_per_unit': '入数',
@@ -187,21 +187,21 @@ class StoreItemReferenceForm(forms.ModelForm):
         # 初期値の設定（インスタンスの値をフォームに反映）
         if self.instance and self.instance.pk:  # インスタンスが存在する場合
             self.fields['price_unknown'].initial = self.instance.price_unknown
-            self.fields['no_price'].initial = self.instance.no_price
+            self.fields['no_handling'].initial = self.instance.no_handling
 
     def clean(self):
         cleaned_data = super().clean()
         price_unknown = cleaned_data.get('price_unknown')
-        no_price = cleaned_data.get('no_price')
+        no_handling = cleaned_data.get('no_handling')
         price = cleaned_data.get('price')
         price_per_unit = cleaned_data.get('price_per_unit')
 
         # 「価格不明」と「取り扱いなし」が同時に選択されている場合はエラー
-        if price_unknown and no_price:
+        if price_unknown and no_handling:
             raise forms.ValidationError("「価格不明」と「取り扱いなし」は同時に選択できません。")
 
         # 価格不明または取り扱いなしの場合、価格と入数をクリア
-        if price_unknown or no_price:
+        if price_unknown or no_handling:
             cleaned_data['price'] = None
             cleaned_data['price_per_unit'] = None
         else:

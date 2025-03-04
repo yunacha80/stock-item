@@ -84,22 +84,41 @@ tbody tr:nth-child(odd) {
 .stock-control {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px; 
 }
 
 .stock-control button {
-    background-color: #3498db;
+    background-color: #3498db; 
     color: white;
     border: none;
     border-radius: 5px;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; 
+    line-height: 1; 
 }
 
 .stock-control button:hover {
     background-color: #2980b9;
+}
+
+.stock-control .decrement {
+    font-family: Arial, sans-serif; 
+    font-size: 1.3rem; 
+}
+
+
+.quantity-display {
+    min-width: 30px; 
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    display: inline-block;
 }
 
 /* アクションボタン */
