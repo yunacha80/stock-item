@@ -1,0 +1,10 @@
+<div class="item-list">
+    {% for group, options, index in widget.optgroups %}
+        {% for option in options %}
+            <div class="item-checkbox">
+                <input type="checkbox" name="{{ widget.name }}" value="{{ option.value }}" id="{{ option.attrs.id }}">
+                <label for="{{ option.attrs.id }}">{{ option.label }}</label>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>

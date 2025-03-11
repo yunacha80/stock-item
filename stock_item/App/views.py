@@ -1417,20 +1417,29 @@ def remove_from_shopping_list(request, item_id):
     try:
         print(f"DEBUG: remove_from_shopping_list called with item_id={item_id}")
 
-        # 1. 手動追加されたアイテムを削除
+         # 1. 手動追加されたアイテムを削除
         purchase_item = PurchaseItem.objects.filter(item__id=item_id, item__user=request.user)
         if purchase_item.exists():
             purchase_item.delete()
             print(f"DEBUG: 手動追加アイテム {item_id} を削除")
-            return JsonResponse({"success": True, "message": "手動追加アイテムを削除しました。"})
 
-        # 2. 自動追加アイテムの場合、stock_min_threshold を調整して削除
-        item = get_object_or_404(Item, id=item_id, user=request.user)
-        item.stock_min_threshold = item.stock_quantity  # 在庫数と同じにすることでリストから削除
-        item.save()
+        else:
+            # 2. 自動追加アイテムの場合、stock_min_threshold を調整して削除
+            item = get_object_or_404(Item, id=item_id, user=request.user)
+            item.stock_min_threshold = item.stock_quantity  # 在庫数と同じにすることでリストから削除
+            item.save()
+            print(f"DEBUG: 自動追加アイテム {item_id} の stock_min_threshold を変更し、リストから削除")
 
-        print(f"DEBUG: 自動追加アイテム {item_id} の stock_min_threshold を変更し、リストから削除")
-        return JsonResponse({"success": True, "message": "自動追加アイテムを削除しました。"})
+        # **最新の shopping_list_items を取得 (定義を追加)**
+        manually_added_items = set(PurchaseItem.objects.filter(item__user=request.user).values_list('item_id', flat=True))
+        low_stock_items = set(Item.objects.filter(user=request.user, stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
+        shopping_list_items = manually_added_items | low_stock_items  # 🔹 ここで定義
+
+        return JsonResponse({
+            "success": True,
+            "message": "アイテムを買い物リストから削除しました。",
+            "updated_shopping_list_items": list(shopping_list_items)  # ここでエラーが出ないようにする
+        })
 
     except Exception as e:
         print(f"DEBUG: 削除エラー - {e}")

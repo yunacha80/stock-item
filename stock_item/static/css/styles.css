@@ -1086,3 +1086,28 @@ button.increment:hover {
 .purchase-history-page .item-checkbox:hover {
     background-color: #e9ecef;
 }
+
+.purchase-history-page .item-list ul {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    list-style: none;  /* 🔹 デフォルトのリストスタイルを削除 */
+}
+
+/* 各アイテムのチェックボックス */
+.purchase-history-page .item-list ul li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s;
+}
+
+.purchase-history-page .item-list ul li:hover {
+    background-color: #e9ecef;
+}

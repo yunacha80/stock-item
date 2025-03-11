@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <title>購入履歴</title>
+    
 </head>
 {% endblock head %}
 {% block content %}
@@ -16,16 +17,16 @@
         <div class="purchase-form-group">
             <label for="item-selection">アイテムを選択:</label>
             <div class="item-list">
-                {% for field in form.items %}
+                {% for field in form.fields.items.queryset %}
                     <div class="item-checkbox">
-                        {{ field }} <label for="{{ field.id_for_label }}">{{ field.choice_item_name }}</label>
+                        <input type="checkbox" name="items" value="{{ field.id }}" id="item-{{ field.id }}">
+                        <label for="item-{{ field.id }}">{{ field.name }} - 在庫最低値: {{ field.stock_min_threshold }}</label>
                     </div>
                 {% endfor %}
             </div>
         </div>
         <button type="submit" class="search-button">検索</button>
     </form>
-    
 
     <h2>検索結果</h2>
     {% if grouped_histories %}
@@ -47,7 +48,6 @@
     {% else %}
         <p>該当する購入履歴がありません。</p>
     {% endif %}
-
 
 </body>
 {% endblock %}

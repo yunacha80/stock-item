@@ -15,12 +15,12 @@
     <form method="post">
         {% csrf_token %}
         <fieldset>
-            <legend><h3>店舗情報</h3></legend>
+            <legend><h2>店舗情報</h2></legend>
             {{ store_form.as_p }}
         </fieldset>
 
         <fieldset>
-            <legend><h3>他店舗との移動時間設定</h3></legend>
+            <legend><h2>他店舗との移動時間設定</h2></legend>
             <table>
                 <thead>
                     <tr>
@@ -41,6 +41,7 @@
             </table>
         </fieldset>
 
+        <br>
         <button type="submit">保存</button>
     </form>
 </body>

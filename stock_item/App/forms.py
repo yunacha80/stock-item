@@ -241,23 +241,26 @@ StoreItemReferenceFormSet = modelformset_factory(
 )
     
 
-
+class CustomCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
+    template_name = 'widgets/custom_checkbox_select.html'
 
 
 
 class PurchaseHistoryFilterForm(forms.Form):
+    items = forms.ModelMultipleChoiceField(
+        queryset=Item.objects.none(),  # デフォルトで空
+        required=False,
+        widget=forms.CheckboxSelectMultiple, 
+        label="アイテムを選択"
+    )
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user:
             self.fields['items'].queryset = Item.objects.filter(user=user)
 
-    items = forms.ModelMultipleChoiceField(
-        queryset=Item.objects.none(),  # デフォルトで空
-        required=False,
-        widget=forms.CheckboxSelectMultiple,  # 複数選択用のウィジェット（選択スタイルに応じて変更可）
-        label="アイテムを選択"
-    )
+    
         
 
 
