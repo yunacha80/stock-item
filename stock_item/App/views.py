@@ -120,15 +120,15 @@ def item_list(request):
     # 現在のユーザーを取得
     user = request.user
 
-     # 🔹 ① 手動追加されたアイテムのIDを取得
+     # 手動追加されたアイテムのIDを取得
     manually_added_items = set(PurchaseItem.objects.filter(item__user=user).values_list('item_id', flat=True))
     print(f"DEBUG (after fix - manually_added_items from PurchaseItem): {manually_added_items}")
 
-    # 🔹 ② 在庫不足のアイテムのIDを取得
+    # ② 在庫不足のアイテムのIDを取得
     low_stock_items = set(Item.objects.filter(user=user, stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
     print(f"DEBUG (after fix - low_stock_items): {low_stock_items}")
 
-    # 🔹 ③ 手動追加 & 在庫不足の両方を `shopping_list_items` に入れる
+    # ③ 手動追加 & 在庫不足の両方を `shopping_list_items` に入れる
     shopping_list_items = manually_added_items | low_stock_items  # `set` の和集合で統合
     print(f"DEBUG (before item_list processing): shopping_list_items (calculated) = {shopping_list_items}")
 
@@ -497,13 +497,13 @@ def category_edit(request, category_id):
     return render(request, 'category_form.html', {'form': form})
 
 
+@csrf_exempt  # フロントエンドでCSRFトークンを送るなら不要
 def category_delete(request, category_id):
-    category = get_object_or_404(ItemCategory, id=category_id)
     if request.method == "POST":
+        category = get_object_or_404(ItemCategory, id=category_id)
         category.delete()
-        return redirect('settings')
-    return render(request, 'category_confirm_delete.html', {'category': category})
-
+        return JsonResponse({"message": "カテゴリが削除されました"}, status=200)
+    return JsonResponse({"error": "無効なリクエスト"}, status=400)
 
 
 # 購入履歴
@@ -705,15 +705,6 @@ def store_edit(request, pk):
     )
 
 
-
-
-
-
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Item, ItemCategory, Store
 
 @login_required
 def settings_view(request):
@@ -1117,7 +1108,8 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
     """
     買い回りルートの計算 (自宅↔店舗の移動時間も考慮)
     """
-    results, missing_items, total_price, unit_total_price = {}, set(), 0, 0
+    results, missing_items, total_price, unit_total_price = {}, [], 0, 0
+    missing_items = set()
     store_details, travel_times = {}, {}
 
     # 1. 店舗間の移動時間を取得
@@ -1136,33 +1128,68 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
 
         # 価格情報がある `StoreItemReference` を取得（更新日時が最新のものを優先）
         references = StoreItemReference.objects.filter(item=item).order_by('-updated_at')
-
-        # すべての店舗で `price` または `price_per_unit` が `None` の場合のみ `missing_items` に追加
-        if all(ref.price is None or ref.price_per_unit is None for ref in references):
-            print(f"DEBUG: {item.name} の価格情報がすべての店舗で不足 → missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue  # 価格がない商品をスキップ
-
-        # `None` を除外して `valid_references` を作成
-        valid_references = references.exclude(price=None).exclude(price_per_unit=None)
-
-        if not valid_references.exists():
-            print(f"DEBUG: {item.name} は価格情報がないため missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue  # 価格がない商品をスキップ
+        print(f"DEBUG: {item.name} の取得リファレンス = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit}, price_unknown={ref.price_unknown}, no_handling={ref.no_handling})' for ref in references]}")
         
-        # 提案ルート戦略ごとに最適なリファレンスを選択
-        if strategy == "price":
-            best_reference = min(valid_references, key=lambda ref: ref.price / ref.price_per_unit)
-        elif strategy == "time":
-            best_reference = min(valid_references, key=lambda ref: ref.store.travel_time_home_min + min(travel_times.get((ref.store, other), float("inf")) for other in stores))
-        elif strategy == "balance":
-            best_reference = min(valid_references, key=lambda ref: 0.6 * (ref.price / ref.price_per_unit) + 0.4 * (ref.store.travel_time_home_min + min(travel_times.get((ref.store, other), float("inf")) for other in stores)))
-        else:
+        if not references.exists():
+            print(f"DEBUG: {item.name} は全店舗でリファレンスがないため missing_items に追加")
+            missing_items.add(item.name)
+            if not consider_missing:
+                continue
+
+        # **価格が1つもない場合に missing_items に追加**
+        has_valid_price = references.filter(price__isnull=False, price_per_unit__isnull=False).exists()
+        # **全店舗で price_unknown=True または no_handling=True または price=None の場合 missing_items に追加**
+        all_unknown_or_no_handling = all(
+            (ref.price_unknown or ref.no_handling or ref.price is None) for ref in references
+        )
+
+        print(f"DEBUG: {item.name} の all_unknown_or_no_handling 判定 = {all_unknown_or_no_handling}")
+        print(f"DEBUG: {item.name} の has_valid_price = {has_valid_price}")
+
+        if not has_valid_price and all_unknown_or_no_handling:
+            print(f"DEBUG: {item.name} は全店舗で価格不明または取扱いなしのため missing_items に追加")
+            missing_items.add(item.name)
+            if not consider_missing:
+                continue
+
+        # **有効な `StoreItemReference` を取得**
+        valid_references = references.filter(price__isnull=False, price_per_unit__isnull=False)
+        
+        print(f"DEBUG: {item.name} の valid_references.count() = {valid_references.count()}")
+        print(f"DEBUG: {item.name} の valid_references = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit})' for ref in valid_references]}")
+        
+        if not valid_references.exists():
+            print(f"DEBUG: {item.name} は価格情報なしのため missing_items に追加")
+            missing_items.add(item.name)
+            if not consider_missing:
+                continue
+
+        print(f"DEBUG: {item.name} の valid_references = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit})' for ref in valid_references]}")
+
+        if item.name in missing_items:
+            print(f"DEBUG: {item.name} は missing_items に含まれているためスキップ")
             continue
 
+        # **最適なリファレンスを選択**
+        try:
+            if strategy == "price":
+                best_reference = min(valid_references, key=lambda ref: ref.price / ref.price_per_unit)
+            elif strategy == "time":
+                best_reference = min(valid_references, key=lambda ref: ref.store.travel_time_home_min + min(
+                    travel_times.get((ref.store, other), float("inf")) for other in stores))
+            elif strategy == "balance":
+                best_reference = min(valid_references, key=lambda ref: 0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
+                        ref.store.travel_time_home_min + min(
+                    travel_times.get((ref.store, other), float("inf")) for other in stores)))
+            else:
+                continue
+        except ValueError:
+            print(f"DEBUG: {item.name} は有効な価格情報なし (ValueError) のため missing_items に追加")
+            missing_items.add(item.name)
+            if not consider_missing:
+                continue
+
+        # **計算結果を保存**
         store = best_reference.store
         unit_price = best_reference.price / best_reference.price_per_unit
         quantity = purchase_item.planned_purchase_quantity or 1
@@ -1192,9 +1219,9 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
 
     selected_stores = list(store_item_map.keys())
 
-    # **選択された店舗がない場合、エラーメッセージを返す**
     if not selected_stores:
         print("DEBUG: 選択された店舗がありません。ルート計算をスキップします。")
+
         return {
             "details": {},
             "route": [],
@@ -1203,10 +1230,12 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
             "total_time": 0,
             "store_details": {},
             "missing_items": list(missing_items) if consider_missing else [],
-            "no_suggestions": True,  # 価格不明・取扱いなしのみの場合のフラグを追加
+            "no_suggestions": True,  
         }
 
     print(f"DEBUG: selected_stores = {[store.name for store in selected_stores]}")
+    print(f"DEBUG: missing_items (修正後) = {list(missing_items)}")
+
 
     best_route = min(
         permutations(selected_stores),
@@ -1222,8 +1251,9 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         + (best_route[0].travel_time_home_min if best_route else 0)  
         + (best_route[-1].travel_time_home_min if best_route else 0)  
     )
-    print(f"DEBUG: missing_items = {list(missing_items)}")
+    print(f"DEBUG: missing_items = {missing_items}")
 
+    
     return {
         "details": results,
         "route": best_route,
@@ -1234,6 +1264,9 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         "missing_items": list(missing_items) if consider_missing else [],
         "no_suggestions": False,
     }
+
+
+
 
 
 # def calculate_route(purchase_items, strategy, consider_missing=True):
@@ -1610,14 +1643,14 @@ def shopping_list_view(request):
 
     print(f"DEBUG: shopping_list_items = {shopping_list_items}")
 
-
+    print(f"DEBUG: shopping_list_items (初期) = {[item for item in shopping_list_items]}")
     # 提案結果、メッセージ、選択アイテム
     selected_item_ids = request.POST.getlist("item_ids") if request.method == "POST" else []
     selected_items = [item for item in final_items if str(item.id) in selected_item_ids]    
 
     suggestions = []
     feedback_messages = []
-    selected_items = []
+    
 
     if request.method == "POST":
         action = request.POST.get("action", "")
@@ -1626,6 +1659,8 @@ def shopping_list_view(request):
             selected_item_ids = request.POST.getlist("item_ids")
             if selected_item_ids:
                 purchase_items = PurchaseItem.objects.filter(item__id__in=selected_item_ids, item__user=request.user)
+
+                print(f"DEBUG: purchase_items に渡される items = {[item.item.name for item in purchase_items]}")
 
                 #  取り扱いなし含む（通常の最安値計算）
                 price_suggestion = calculate_route(purchase_items, "price", consider_missing=True)
@@ -1643,10 +1678,6 @@ def shopping_list_view(request):
                         **price_suggestion,
                     },
                     {
-                        "type": "最安値 (取扱なし無視)",
-                        **price_suggestion_ignore,
-                    },
-                    {
                         "type": "最短時間",
                         **time_suggestion,
                     },
@@ -1656,6 +1687,8 @@ def shopping_list_view(request):
                     },
             ]
             print(f"DEBUG: 取扱いなし無視 (price_suggestion_ignore): {price_suggestion_ignore['missing_items']}")
+
+            print(f"DEBUG: 最終 items (final_items) = {[item.id for item in final_items]}")
 
         # **在庫更新**
         elif action == "update":

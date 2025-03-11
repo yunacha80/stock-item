@@ -9,17 +9,18 @@ body {
 }
 
 h1, h2 {
-    text-align: center;
     margin-bottom: 20px;
     color: #2c3e50;
 }
 
 h1 {
+    text-align: center;
     font-size: 2rem;
     padding-bottom: 10px; /* 下線を削除 */
 }
 
 h2 {
+    text-align: left;
     font-size: 1.5rem;
     margin-top: 30px;
 }
@@ -72,7 +73,7 @@ tfoot td {
 form {
     background-color: transparent; 
     box-shadow: none; 
-    padding: 0; 
+    padding: 20px; 
     border-radius: 0;
 }
 
@@ -282,131 +283,7 @@ button.increment:hover {
     padding-left: 20px;
 }
 
-#settings-page div {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    align-items: center;
-}
 
-#settings-page ul li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 10px 0;
-    padding: 20px; /* 内側の余白を追加 */
-    border: 1px solid #ccc; /* 枠線を追加（必要なら） */
-    border-radius: 8px; /* 角丸 */
-    background-color: #fff; /* 背景を白に */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を追加 */
-    font-size: 1rem;
-}
-
-
-/* 編集ボタン */
-/* 全体の中央揃え */
-.stock-default-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* 水平方向中央揃え */
-    justify-content: center; /* 垂直方向中央揃え */
-    text-align: center;
-    margin: 20px auto; /* 上下の余白 */
-    padding: 20px; /* 内側余白 */
-    background-color: #fff; /* 背景色を白に */
-    border-radius: 8px; /* 角丸 */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を追加 */
-    max-width: 500px; /* コンテンツの幅を制限 */
-}
-/* 共通のセクションスタイル */
-.section-container {
-    max-width: 800px;
-    margin: 20px auto;
-    /* padding: 20px;
-    background-color: #fff;
-    border-radius: 8px; */
-    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
-}
-
-/* セクションタイトル */
-.section-title {
-    font-size: 1.5rem;
-    color: #2c3e50;
-    margin-bottom: 20px;
-    text-align: center;
-    border-bottom: 2px solid #e6e6e7;
-    padding-bottom: 10px;
-}
-
-/* 共通のリストスタイル */
-.section-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-/* 各リストアイテム */
-.section-list-item, .store-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    margin: 10px 0;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    font-size: 1rem;
-}
-
-/* リストアイテムのテキスト */
-.section-list-item span, .store-name {
-    color: #333;
-    font-weight: bold;
-    text-align: left;
-    flex: 1;
-}
-
-/* ボタンコンテナ */
-.btn-container, .store-actions {
-    display: flex;
-    gap: 10px;
-}
-
-/* 編集ボタン */
-.btn-edit {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 20px;
-    font-size: 0.9rem;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-}
-
-.btn-edit:hover {
-    background-color: #0056b3;
-}
-
-/* 削除ボタン */
-.btn-delete {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 20px;
-    font-size: 0.9rem;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.btn-delete:hover {
-    background-color: #c82333;
-}
 /* 買い回り */
 .button-container {
     display: flex;
@@ -535,6 +412,189 @@ button.increment:hover {
     transform: scale(0.95);
 }
 
+#settings-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 600px; 
+    margin: 0 auto;
+}
+
+#settings-page div {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+#settings-page ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    gap: 10px;
+}
+
+#settings-page ul li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    padding: 15px;
+    border: 1px solid #ccc; 
+    border-radius: 8px; /* 角丸 */
+    background-color: #fff; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+    font-size: 1rem;
+}
+
+#settings-page ul li span {
+    flex: 1; 
+    text-align: left;
+}
+
+#settings-page  > h2 {
+    display: block;
+    width: 100%;
+    text-align: center !important;
+    font-size: 1.5rem;
+    margin-top: 30px;
+}
+
+.btn-account-settings {
+    background-color: #fff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 20px;
+
+}
+
+
+/* 編集ボタン */
+/* 全体の中央揃え */
+.stock-default-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 水平方向中央揃え */
+    justify-content: center; /* 垂直方向中央揃え */
+    text-align: center;
+    margin: 20px auto; /* 上下の余白 */
+    padding: 20px; /* 内側余白 */
+    background-color: #fff; /* 背景色を白に */
+    border-radius: 8px; /* 角丸 */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を追加 */
+    max-width: 500px; /* コンテンツの幅を制限 */
+}
+/* 共通のセクションスタイル */
+/* .section-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: block;
+}
+
+.section-container h2 {
+    text-align: center; 
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    padding-bottom: 0; 
+    border-bottom: none; 
+} */
+
+/* セクションタイトル */
+.section-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #e6e6e7;
+    padding-bottom: 10px;
+}
+
+/* 共通のリストスタイル */
+.section-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 各リストアイテム */
+.section-list-item, .store-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    font-size: 1rem;
+}
+
+/* リストアイテムのテキスト */
+.section-list-item span, .store-name {
+    color: #333;
+    font-weight: bold;
+    text-align: left;
+    flex: 1;
+}
+
+/* ボタンコンテナ */
+.btn-container, .store-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 編集ボタン */
+.btn-edit {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+}
+
+.btn-edit:hover {
+    background-color: #0056b3;
+}
+
+/* 削除ボタン */
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+
 /* 数字のスタイル */
 .stock-adjuster input[type="number"] {
     width: 80px;
@@ -550,8 +610,8 @@ button.increment:hover {
 #account-edit-section {
     display: flex;
     flex-direction: column;
-    align-items: center; /* 水平方向中央揃え */
-    justify-content: center; /* 垂直方向中央揃え */
+    align-items: center; 
+    justify-content: center; 
     margin: 20px auto;
     padding: 20px;
     /* background-color: #fff;
@@ -560,51 +620,155 @@ button.increment:hover {
     max-width: 600px; /* コンテンツの幅を制限 */
 }
 
-/* アカウント編集リスト */
+/* アカウント編集リスト全体のスタイル */
 .account-edit-list {
     list-style-type: none;
     padding: 0;
     margin: 0;
-    width: 100%; /* コンテンツ幅を広げる */
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center; /* 子要素を中央揃え */
-    gap: 10px; /* 各アイテムの間隔 */
+    align-items: center;
+    gap: 10px;
 }
 
-/* アカウント編集アイテム */
+/* アカウント編集のアイテム  */
 .account-edit-item {
-    padding: 10px 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    width: 80%; /* 各アイテムの幅 */
+    width: 100%;
     text-align: center;
     font-size: 1rem;
     color: #333;
     cursor: pointer;
+    border: none; 
+    background: none; 
+    box-shadow: none; 
+    padding: 0; 
 }
 
-.account-edit-item:hover {
-    background-color: #f1f1f1;
+/* ボタン風に見せるためのリンクスタイル */
+.account-edit-item a {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.3s, border-color 0.3s;
 }
+
+/* ホバー時のスタイル */
+.account-edit-item a:hover {
+    background-color: #e9ecef;
+    border-color: #bbb;
+}
+
+/* settingカテゴリのリスト */
+.category-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ストックアイテムカテゴリの各アイテム */
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 80%; 
+    padding: 30px 20px!important;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* カテゴリ名 */
+.category-name {
+    flex: 1;
+    text-align: left;
+    font-weight: bold;
+    color: #333;
+}
+
+/* ボタンの配置 */
+.category-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* 編集・削除ボタンの統一スタイル */
+/* .category-actions  form .btn-delete {
+    all: unset !important; 
+    background-color: #dc3545 !important;
+    color: white !important;
+    border-radius: 4px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9rem !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    min-width: 80px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.category-actions .btn-edit {
+    all: unset !important; 
+    background-color: #007bff !important;
+    color: white !important;
+    border-radius: 4px !important;
+    padding: 8px 20px !important;
+    font-size: 0.9rem !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+    min-width: 80px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+}
+
+.category-actions .btn-edit:hover {
+    background-color: #0056b3 !important;
+}
+
+.category-actions .btn-edit:hover {
+    background-color: #0056b3;
+}
+
+.category-actions .btn-delete:hover {
+    background-color: #c82333;
+} */
+
 
 /* カテゴリ追加ボタン */
 .btn-add {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 80%;
+    /* width: 30%; */
     margin: 20px auto 0;
-    padding: 10px;
-    font-size: 1rem;
+    padding: 15px 40px;
+    font-size: 20px;
     background-color: #464747;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     box-shadow: none;
+    border: none;
+    text-decoration: none;
 }
 
 .btn-add:hover {
@@ -612,10 +776,52 @@ button.increment:hover {
 }
 
 .btn-add::before {
-    content: "+ ";
+    /* content: "+ "; */
     font-weight: bold;
     font-size: 1.2rem;
 }
+
+/* アカウント編集リスト */
+#account-edit-section .account-edit-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* アカウント編集アイテムをリンク化 */
+#account-edit-section .account-edit-item {
+    width: 100%;
+    max-width: 400px;
+}
+
+#account-edit-section .account-edit-item a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 12px 0;
+    background-color: #ffffff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* ホバー時のスタイル */
+#account-edit-section .account-edit-item a:hover {
+    background-color: #f0f0f0;
+    border-color: #999;
+}
+
+
 
 /* 登録店舗がない場合のメッセージ */
 .no-store {
@@ -632,58 +838,67 @@ button.increment:hover {
 #store-edit-section {
     display: flex;
     flex-direction: column;
-    align-items: center; /* 水平方向中央揃え */
-    justify-content: center; /* 垂直方向中央揃え */
+    align-items: center;
+    justify-content: center; 
     margin: 20px auto;
     padding: 20px;
     /* background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
-    max-width: 600px; /* コンテンツの幅を制限 */
+    border-radius: 8px; */
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
+    max-width: 600px; 
 }
 
 /* 店舗リスト */
 .store-list {
     list-style-type: none;
-    padding: 0;
+    padding: 20px;
     margin: 0;
-    width: 100%; /* コンテンツ幅を広げる */
+    width: 100%; 
     display: flex;
     flex-direction: column;
-    align-items: center; /* 子要素を中央揃え */
-    gap: 10px; /* 各店舗の間隔 */
+    align-items: center; 
+    gap: 10px; 
+    background-color: #f9f9f9;
 }
 
 /* 店舗アイテム */
 .store-item {
     display: flex;
-    justify-content: space-between; /* 左右に配置 */
+    justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    width: 80%; 
+    padding: 30px 20px!important;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    width: 80%; /* 各店舗の幅 */
 }
 /* 以下3つ店舗登録ボタン */
 .button-container {
-    margin-top: 10px;
-    text-align: right;
+    margin-top: 20px;
+    text-align: center;
 }
 
 .button-container .btn-primary {
-    background-color: #3498db;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* width: 80%; */
+    /* margin: 10px auto 0; */
+    padding: 15px 40px;
+    font-size: 20px;
+    background-color: #464747;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: none;
+    border: none;
     text-decoration: none;
-    font-size: 20px;
 }
 
 .button-container .btn-primary:hover {
-    background-color: #0274ee;
+    background-color:  #2c3135;
 }
 
 .button-container .btn-secondary {
@@ -829,4 +1044,45 @@ button.increment:hover {
 .error {
     color: #d60000;
     font-weight: bold;
+}
+
+.purchase-history-page .purchase-form-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* max-width: 500px; */
+}
+
+.purchase-history-page .purchase-form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+/* アイテムリスト専用 */
+.purchase-history-page .item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 各アイテムのチェックボックス */
+.purchase-history-page .item-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    transition: background-color 0.3s;
+}
+
+.purchase-history-page .item-checkbox:hover {
+    background-color: #e9ecef;
 }

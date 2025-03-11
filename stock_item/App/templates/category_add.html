@@ -4,25 +4,38 @@
 {% block title %}カテゴリ追加{% endblock title %}
 
 {% block content %}
-<h1>新しいカテゴリを追加</h1>
-<form method="POST" action="{% url 'add_category' %}">
-    {% csrf_token %}
-    <div>
-        <label for="id_name">カテゴリ名:</label>
-        {{ form.name }}
+<div class="container">
+    <div class="form-container">
+        <h1>新規カテゴリ追加</h1>
+
+        <!-- エラーメッセージがある場合に表示 -->
+        {% if form.errors %}
+        <div class="error-messages">
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="id_name">カテゴリ名 <span class="required">※必須</span>:</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label for="id_display_order">表示順:</label>
+                {{ form.display_order }}
+            </div>
+            <button type="submit" class="btn">保存</button>
+        </form>
+        
+        <a href="{% url 'settings' %}" class="btn-secondary">戻る</a>
     </div>
-    <div>
-        <label for="id_display_order">表示順:</label>
-        {{ form.display_order }}
-    </div>
-    <button type="submit">追加</button>
-</form>
-{% if messages %}
-    <ul>
-        {% for message in messages %}
-            <li>{{ message }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
-<a href="{% url 'settings' %}">戻る</a>
+</div>
 {% endblock content %}
+</html>

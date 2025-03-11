@@ -59,7 +59,7 @@
 <body>
     {% block content %}
         <div class="container">
-            <h1>アイテム追加</h1>
+            <h1>新規アイテム追加</h1>
             <form method="post">
                 {% csrf_token %}
                 {% if error_messages %}
@@ -72,25 +72,46 @@
                     </div>
                 {% endif %}
                 
-                <h2>基本情報</h2>
+                <h2>■アイテム詳細</h2>
                 {% for field in item_form %}
                     {% if field.name != "reminder" %}
                         <p>
                             {{ field.label_tag }} {{ field }}
+                        
                             {% if field.help_text %}
-                                <small>{{ field.help_text }}</small>
+                                <span class="tooltip-container">
+                                    <span class="tooltip-icon">?</span>
+                                    <span class="tooltip-text">{{ field.help_text }}</span>
+                                </span>
                             {% endif %}
                         </p>
                     {% endif %}
                 {% endfor %}
 
                 <div class="reminder-checkbox-container">
-                    <label for="{{ item_form.reminder.id_for_label }}">{{ item_form.reminder.label }}</label>
+                    <label for="{{ item_form.reminder.id_for_label }}">
+                        {{ item_form.reminder.label }}:
+                        
+                    </label>
                     {{ item_form.reminder }}
                     <span class="reminder-status">ON</span>
+                    {% if item_form.reminder.help_text %}
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon">?</span>
+                                <span class="tooltip-text">{{ item_form.reminder.help_text }}</span>
+                            </span>
+                    {% endif %}
                 </div>
-                <p>{{ item_form.reminder.help_text }}</p>
 
+                {% comment %} <p>
+                    {% if item_form.reminder.help_text %}
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon">?</span>
+                                <span class="tooltip-text">{{ item_form.reminder.help_text }}</span>
+                        </span>
+                    {% endif %}
+                </p> {% endcomment %}
+                
                 {% if item_form.errors %}
                     <div class="error-messages">
                         {% for error in item_form.name.errors %}
@@ -99,7 +120,7 @@
                     </div>
                 {% endif %}
 
-                <h2>店舗情報</h2>
+                <h2>■店舗情報</h2>
                 <table class="table">
                     <thead>
                         <tr>

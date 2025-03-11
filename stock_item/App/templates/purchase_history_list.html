@@ -13,10 +13,18 @@
 
     <!-- 検索フォーム -->
     <form method="get" action="{% url 'purchase_history_Search' %}">
-        {{ form.as_p }}
-        <button type="submit">検索</button>
+        <div class="purchase-form-group">
+            <label for="item-selection">アイテムを選択:</label>
+            <div class="item-list">
+                {% for field in form.items %}
+                    <div class="item-checkbox">
+                        {{ field }} <label for="{{ field.id_for_label }}">{{ field.choice_item_name }}</label>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <button type="submit" class="search-button">検索</button>
     </form>
-
     
 
     <h2>検索結果</h2>

@@ -142,6 +142,12 @@ class ItemForm(forms.ModelForm):
 
 
 class PurchaseHistoryForm(forms.ModelForm):
+    item = forms.ModelChoiceField(
+        queryset=Item.objects.all(),
+        widget=forms.CheckboxSelectMultiple,  # チェックボックスに変更
+        label="アイテムを選択"
+    )
+
     class Meta:
         model = PurchaseHistory
         fields = ['item', 'purchased_date', 'purchased_quantity']
@@ -150,6 +156,10 @@ class PurchaseHistoryForm(forms.ModelForm):
             'purchased_date': '購入日',
             'purchased_quantity': '購入数量',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['item'].label_from_instance = lambda obj: obj.name
 
 
 

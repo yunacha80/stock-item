@@ -17,38 +17,41 @@
     <h1>設定</h1>
 
     <!-- ストックアイテムカテゴリ編集 -->
-    <h2>ストックアイテムカテゴリ編集</h2>
-    <hr>
-    <ul>
-        {% for category in categories %}
-        <li>
-            <span>{{ category.name }}</span>
-            <div>
-                <!-- 編集ボタン -->
-                <a href="{% url 'category_edit' category.id %}" class="btn-edit">編集</a>
+    {% comment %} <div class="section-container"> {% endcomment %}
+        <h2>ストックアイテムカテゴリ編集</h2>
+        <hr>
+        <ul class="category-list">
+            {% for category in categories %}
+            <li class="category-item">
+                <span>{{ category.name }}</span>
+                <div class="category-actions">
+                    <!-- 編集ボタン -->
+                    <a href="{% url 'category_edit' category.id %}" class="btn-edit">編集</a>
                 
                 <!-- 削除ボタン -->
-                <form action="{% url 'category_delete' category.id %}" method="post" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn-delete">削除</button>
-                </form>
-            </div>
-        </li>
-        {% empty %}
-        <li>カテゴリが登録されていません。</li>
-        {% endfor %}
-    </ul>
+                    <button class="btn-delete" onclick="deleteCategory(this)" data-id="{{ category.id }}" data-name="{{ category.name }}" data-url="{% url 'category_delete' category.id %}">削除</button>
+                </div>
+            </li>
+            {% empty %}
+            <li>カテゴリが登録されていません。</li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <!-- +カテゴリ追加ボタン -->
     <form method="POST" action="{% url 'category_add' %}">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit" class="btn-add">カテゴリ追加</button>
+        <button type="submit" class="btn-add">＋カテゴリ追加</button>
     </form>
 
     <br>
     <hr>
+    <div id="settings-page">
+        <div style="text-align: center;">
     <h2>在庫最低値のデフォルト数値変更</h2>
+        </div>
+    </div>
     <div id="settings-page">
         <div class="stock-default-container">
             <h2>アイテムの最低在庫値を一括変更</h2>
@@ -58,7 +61,7 @@
                 <input type="hidden" name="update_stock_threshold">
                 <input id="stock_min_threshold" type="number" name="stock_min_threshold" 
                         value="{{ stock_min_threshold_default }}" min="1" required><br><br>
-                <button type="submit">変更</button>
+                <button type="submit" class="btn-add">変更</button>
             </form>
         </div>
     </div>
@@ -82,7 +85,7 @@
         </ul>
 
         <div class="button-container">
-            <a href="{% url 'store_add' %}" class="btn btn-primary">店舗追加</a>
+            <a href="{% url 'store_add' %}" class="btn btn-primary">＋店舗追加</a>
         </div>
     </div>
 
@@ -99,20 +102,59 @@
         <h2>アカウント編集（{{ user.name }} 様 / {{ user.email }}）</h2>
         <ul class="account-edit-list">
             <li class="account-edit-item">
-                <a href="{% url 'email_change' %}">メールアドレス変更</a>
+                <a href="{% url 'email_change' %}"class="btn-account-settings">メールアドレス変更</a>
             </li>
             <li class="account-edit-item">
-                <a href="{% url 'password_change' %}">パスワード変更</a>
+                <a href="{% url 'password_change' %}" class="btn-account-settings">パスワード変更</a>
             </li>
             <li class="account-edit-item">
-                <a href="{% url 'logout' %}">ログアウト</a>
+                <a href="{% url 'logout' %} " class="btn-account-settings" >ログアウト</a>
             </li>
         </ul>
     </div>
-    
+    <br><br><br><br><br>
 
-<script src="{% static 'js/shopping_list.js' %}"></script>
+
 </div>
+<script>
+    function deleteCategory(button) {
+        const categoryId = button.getAttribute("data-id");
+        const categoryName = button.getAttribute("data-name");  // カテゴリ名を取得
+        const deleteUrl = button.getAttribute("data-url");
+    
+        if (!confirm(`カテゴリ「${categoryName}」を削除しますか？`)) {
+            return;  // キャンセルされた場合は処理しない
+        }
+    
+        fetch(deleteUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken(),  // CSRFトークンを取得
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("削除に失敗しました");
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert(`カテゴリ「${categoryName}」が削除されました`);
+            location.reload(); // ページをリロードして更新
+        })
+        .catch(error => {
+            console.error("エラー:", error);
+            alert("エラーが発生しました");
+        });
+    }
+    
+    // CSRFトークンを取得する関数
+    function getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+    </script>
 {% endblock %}
 </body>
 </html>

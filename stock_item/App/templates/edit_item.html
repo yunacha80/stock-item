@@ -41,13 +41,14 @@
                     </div>
                     <div class="form-group">
                         {{ item_form.stock_min_threshold.label_tag }}
+                        
+                        {{ item_form.stock_min_threshold }}
                         <div class="tooltip-container">
                             <span class="tooltip-icon">?</span>
                             <div class="tooltip-text">
                                 {{ item_form.stock_min_threshold.help_text }}
                             </div>
                         </div>
-                        {{ item_form.stock_min_threshold }}
                     </div>
                     <div class="form-group">
                         {{ item_form.memo.label_tag }}
@@ -58,10 +59,16 @@
                         {{ item_form.last_purchase_date }}
                     </div>
                     <div class="form-group">
-                        <label for="{{ item_form.reminder.id_for_label }}">{{ item_form.reminder.label }}</label>
+                        <label for="{{ item_form.reminder.id_for_label }}">{{ item_form.reminder.label }}:</label>
                         <div class="reminder-checkbox-container">
                             {{ item_form.reminder }}
                             <span class="reminder-status">ON</span>
+                            {% if item_form.reminder.help_text %}
+                                <span class="tooltip-container">
+                                    <span class="tooltip-icon">?</span>
+                                    <span class="tooltip-text">{{ item_form.reminder.help_text }}</span>
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                 </section>
