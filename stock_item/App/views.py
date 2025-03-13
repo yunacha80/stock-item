@@ -448,13 +448,13 @@ def item_delete(request, item_id):
 
 
 def category_list(request):
-    categories = ItemCategory.objects.filter(user=request.user)
+    categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
     if not categories:
         print("現在、カテゴリは存在しません。")  # デバッグ用の出力
     return render(request, 'category_list.html', {'categories': categories})
 
 def categorized_item_list(request):
-    items = Item.objects.filter(user=request.user)
+    items = Item.objects.filter(user=request.user).order_by('display_order')
     items_by_category = defaultdict(list)
     for item in items:
         items_by_category[item.category.name].append(item)
@@ -467,12 +467,21 @@ def category_add(request):
         if form.is_valid():
             category = form.save(commit=False)
             category.user = request.user
+            new_order = category.display_order
+
+            # カテゴリの表示順
+            if not category.display_order:
+                max_order = ItemCategory.objects.filter(user=request.user).aggregate(models.Max('display_order'))['display_order__max'] or 0
+                category.display_order = max_order + 1
+
+            ItemCategory.objects.filter(user=request.user, display_order__gte=new_order).update(display_order=models.F('display_order') + 1)
+
             # カテゴリ数をチェック
             if ItemCategory.objects.filter(user=request.user).count() >= 10:
                 messages.error(request, "カテゴリは最大10個まで登録可能です。")
                 return render(request, 'category_form.html', {'form': form})
             category.save()
-            messages.success(request, "カテゴリが追加されました。")
+            # messages.success(request, "カテゴリが追加されました。")
             return redirect('settings')
         else:
             messages.error(request, "入力内容に誤りがあります。")
@@ -487,17 +496,51 @@ def category_add(request):
 # カテゴリ編集
 def category_edit(request, category_id):
     category = get_object_or_404(ItemCategory, id=category_id)
+    old_order = category.display_order
+
     if request.method == "POST":
         form = ItemCategoryForm(request.POST, instance=category)
         if form.is_valid():
-            form.save()
+            new_order = form.cleaned_data['display_order']
+
+            if new_order != old_order:
+                # 変更前の `display_order` のカテゴリを全体でずらす
+                if new_order > old_order:
+                    # 例: 3 → 5 に変更なら、4,5 のカテゴリは 1 ずつ下がる
+                    ItemCategory.objects.filter(
+                        user=request.user,
+                        display_order__gt=old_order, 
+                        display_order__lte=new_order
+                    ).update(display_order=models.F('display_order') - 1)
+
+                else:
+                    # 例: 5 → 2 に変更なら、2,3,4 のカテゴリは 1 ずつ上がる
+                    ItemCategory.objects.filter(
+                        user=request.user,
+                        display_order__gte=new_order, 
+                        display_order__lt=old_order
+                    ).update(display_order=models.F('display_order') + 1)
+
+            category.display_order = new_order
+            category.save()
+
+            # messages.success(request, "カテゴリの表示順を更新しました。")
             return redirect('settings')
     else:
         form = ItemCategoryForm(instance=category)
     return render(request, 'category_form.html', {'form': form})
 
+def reset_display_order(request):
+    categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
+    for i, category in enumerate(categories, start=1):
+        category.display_order = i
+        category.save()
+    messages.success(request, "カテゴリの表示順をリセットしました。")
+    return redirect('category_list')
 
-@csrf_exempt  # フロントエンドでCSRFトークンを送るなら不要
+
+
+@csrf_exempt  
 def category_delete(request, category_id):
     if request.method == "POST":
         category = get_object_or_404(ItemCategory, id=category_id)
@@ -507,7 +550,6 @@ def category_delete(request, category_id):
 
 
 # 購入履歴
-# 購入履歴をグループ化してデバッグ出力
 def purchase_history_list(request):
     histories = PurchaseHistory.objects.filter(item__user=request.user).order_by('-purchased_date')
 
