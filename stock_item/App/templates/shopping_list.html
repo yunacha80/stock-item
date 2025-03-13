@@ -125,7 +125,7 @@
         </div>
         {% endif %}
 
-        {% if not suggestions or suggestions.0.no_suggestions %}
+        {% if show_no_suggestion_message %}
             <p style="color:red; font-weight:bold;">⚠ 提案が見つかりませんでした。</p>
             {% if suggestions.0.missing_items %}
                 <p style="color:red;">⚠ 取扱いの有無及び価格不明: {{ suggestions.0.missing_items|join:", " }}</p>
