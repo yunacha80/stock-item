@@ -23,11 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-n%bg!m*so7lf0vu^jz(*@kq1v8a(qfa+ra_68_*4!8+th^*h17"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['localhost', '.pythonanywhere.com', 'Lifestock.pythonanywhere.com']
 
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
+from django.core.management.utils import get_random_secret_key
+SECRET_KEY = get_random_secret_key()  
 # Application definition
 
 INSTALLED_APPS = [
@@ -131,3 +135,8 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+try:
+    from .local_settings import *
+except:
+    pass
