@@ -9,25 +9,59 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
-    <nav class="navigation">
-        <ul>
-            <li class="nav-item {% if request.resolver_match.url_name == 'item_list' %}active{% endif %}">
-                <a href="{% url 'item_list' %}">ストックアイテム一覧</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match.url_name == 'shopping_list' %}active{% endif %}">
-                <a href="{% url 'shopping_list' %}">買い物リスト</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match.url_name == 'add_item' %}active{% endif %}">
-                <a href="{% url 'add_item' %}">新規ストックアイテム追加</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match.url_name == 'purchase_history_list' %}active{% endif %}">
-                <a href="{% url 'purchase_history_list' %}">購入履歴</a>
-            </li>
-            <li class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-                <a href="{% url 'settings' %}">設定</a>
-            </li>
-        </ul>
-    </nav>
+    <header class="wave-header">
+        <nav class="navigation">
+            <ul>
+                <li class="nav-item {% if request.resolver_match.url_name == 'item_list' %}active{% endif %}">
+                    <a href="{% url 'item_list' %}">ストックアイテム一覧</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'shopping_list' %}active{% endif %}">
+                    <a href="{% url 'shopping_list' %}">買い物リスト</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'add_item' %}active{% endif %}">
+                    <a href="{% url 'add_item' %}">新規ストックアイテム追加</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'purchase_history_list' %}active{% endif %}">
+                    <a href="{% url 'purchase_history_list' %}">購入履歴</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                    <a href="{% url 'settings' %}">設定</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="wave">
+            <div class="u-sp">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120">
+                    <path fill="#fcf2c3" fill-opacity="1" d="
+                        M0,90 
+                        C75,160 150,50 225,90 
+                        C300,160 375,50 450,90 
+                        C525,160 600,50 675,90 
+                        C750,160 825,50 900,90 
+                        C975,160 1050,50 1125,90 
+                        C1200,160 1275,50 1350,90 
+                        C1410,130 1440,90 1440,90 
+                        L1440,0 L0,0 Z">
+                    </path>
+                </svg>
+            </div>
+            <div class="u-pc">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120">
+                    <path fill="#fcf2c3" fill-opacity="1" d="
+                        M0,90 
+                        C75,160 150,50 225,90 
+                        C300,160 375,50 450,90 
+                        C525,160 600,50 675,90 
+                        C750,160 825,50 900,90 
+                        C975,160 1050,50 1125,90 
+                        C1200,160 1275,50 1350,90 
+                        C1410,130 1440,90 1440,90 
+                        L1440,0 L0,0 Z">
+                    </path>
+                </svg>
+            </div>
+        </div>
+    </header>
     <div class="content">
         {% block content %}
         {% endblock %}

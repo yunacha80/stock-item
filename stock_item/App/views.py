@@ -776,11 +776,14 @@ def settings_view(request):
                             for item in items_to_update:
                                 item.stock_min_threshold = new_value
                             Item.objects.bulk_update(items_to_update, ["stock_min_threshold"])
-                            messages.success(request, f"変更されていないアイテムの在庫最低値を {new_value} に更新しました。")
+                            messages.success(request, f"デフォルトの在庫最低値を {new_value} に更新しました。")
+                            return JsonResponse({"success": True, "new_value": new_value})  
                         else:
-                            messages.warning(request, "変更対象のアイテムがありません。")
+                            return JsonResponse({"success": False, "message": "変更対象のアイテムがありません。"})
+                    else:
+                        return JsonResponse({"success": False, "message": "1以上の数値を入力してください。"})
                 except ValueError:
-                    messages.error(request, "無効な値が入力されました。")
+                    return JsonResponse({"success": False, "message": "無効な値が入力されました。"})
 
         # カテゴリ追加処理
         if "add_category" in request.POST:

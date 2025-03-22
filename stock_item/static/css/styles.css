@@ -4,13 +4,13 @@ body {
     margin: 0;
     padding: 0;
     line-height: 1.6;
-    background-color: #f8f9fa;
-    color: #353434;
+    background-color: #fcfbeba1;
+    color: #5c5a5a;
 }
 
 h1, h2 {
     margin-bottom: 20px;
-    color: #2c3e50;
+    color: #5c5a5a;
 }
 
 h1 {
@@ -25,15 +25,28 @@ h2 {
     margin-top: 30px;
 }
 
+p {
+    width: 80%;
+    text-align: left;
+    margin: 30px auto;
+}
+
+header, header h1 {
+    background-color: #fcf2c3f1;
+    color: white;
+    padding: 10px 0 0;
+    text-align: center;
+}
 
 /* テーブルのスタイル */
 table {
-    width: 100%;
+    width: 90%;
+    max-width: 1200px;
     margin: 20px auto;
     border-collapse: collapse;
     background-color: #fff;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 立体感を強化 */
-    border-radius: 8px;
+    border-radius: 20px;
     overflow: hidden;
 }
 
@@ -61,21 +74,25 @@ tfoot td {
 
 
 /* フォーム要素 */
-/* form {
+form {
+    justify-content: center; 
     width: 90%;
+    max-width: 1200px;
     margin: 20px auto;
     background-color: #fff;
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 15px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-} */
-
-form {
-    background-color: transparent; 
-    box-shadow: none; 
-    padding: 20px; 
-    border-radius: 0;
 }
+
+.form-list {
+    background-color: transparent !important; /* 白枠を削除 */
+    padding: 0; /* 余白を削除 */
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+}
+
 
 
 
@@ -97,13 +114,70 @@ form button:hover {
     background-color: #c6c7c7;
 }
 
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #fcfbeba1; 
+}
+
+.login-box {
+    background-color: #ffffff; /* 白い枠 */
+    padding: 25px;
+    border-radius: 10px; /* 角を丸く */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 軽い影 */
+    text-align: center;
+    width: 300px;
+}
+
+.login-box form {
+    width: 100%; 
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    background: none;
+}
+
+
+.login-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-box button:hover {
+    background-color: #333;
+}
+
+
+.kaimawari-h2 {
+    display: flex;
+    justify-content: center;
+}
 /* 提案結果のスタイル */
 .suggestions {
+    width: 90%;
+    max-width: 1200px;
     margin: 20px auto;
     padding: 20px;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 25px;
 }
 
 .suggestions details {
@@ -128,7 +202,7 @@ form button:hover {
     padding: 10px;
     background-color: #fef8e6;
     border: 1px solid #f1c40f;
-    border-radius: 5px;
+    border-radius: 25px;
     color: #c0392b;
     font-size: 0.9rem;
 }
@@ -141,31 +215,45 @@ button.increment {
     font-size: 1rem;
     padding: 5px;
     margin: 0 5px;
-    border-radius: 4px;
+    border-radius: 30px;
     border: 1px solid #ddd;
     width: auto;
 }
 
 button.decrement,
 button.increment {
-    background-color: #55adec;
+    background-color: #3498db;
     color: #fff;
     border: none;
     cursor: pointer;
+    border-radius: 30px;
 }
 
 button.decrement:hover,
 button.increment:hover {
     background-color: #b0bbc2;
 }
+.wave-header {
+    background-color: #fcf2c3f1;
+    color: white;
+    padding: 10px 0 0;
+    text-align: center;
+    position: relative;
+    overflow: visible;
+    z-index: 10;
+}
 
-/* ナビゲーションメニューのスタイル */
+
+/* ナビゲーションのデザイン */
 .navigation {
-    background-color: #f8f9fa;
+    background-color: transparent;
     padding: 10px;
     display: flex;
-    justify-content: space-around;
-    border-bottom: 1px solid #ccc;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    z-index: 20;
+    margin-top: 20px;
 }
 
 .navigation ul {
@@ -178,8 +266,7 @@ button.increment:hover {
 
 .nav-item {
     padding: 10px 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 25px;
     background-color: white;
     text-align: center;
 }
@@ -190,9 +277,47 @@ button.increment:hover {
 }
 
 .nav-item.active {
-    background-color: #e9ecef; /* 薄いグレー */
+    background-color: #e9ecef;
     font-weight: bold;
     color: #000;
+}
+
+/* 波線の配置 */
+.wave {
+    position: absolute;
+    top: calc(100% - 60px);
+    left: 0;
+    width: 100%;
+    height: 120px;
+    z-index: 1;
+}
+
+.content {
+    margin-top: 100px; /* 波線と見出しの間隔を広げる */
+}
+
+/* PC用波線のデザイン */
+.u-pc {
+    display: none;
+}
+
+/* PC全画面時の調整 */
+@media screen and (min-width: 1200px) {
+    .wave {
+        height: 100px; 
+    }
+    .content {
+        margin-top: 180px; 
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .u-pc {
+        display: block;
+    }
+    .u-sp {
+        display: none;
+    }
 }
 
 /* .hidden {
@@ -216,7 +341,12 @@ button.increment:hover {
     font-weight: bold;
 }
 
-
+.sort-options {
+    display: flex;
+    justify-content: center; 
+    gap: 16px; 
+    margin-top: 16px; 
+}
 
 .stock-threshold-control {
     display: flex;
@@ -241,12 +371,25 @@ button.increment:hover {
     font-size: 1.1em;
 }
 
+.purchase-history {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    /* background-color: #fff; */
+    border-radius: 15px;
+}
+
+.purchase-history-page h2{
+    text-align: center;
+}
+
 /* 購入履歴ページ専用のスタイル */
 .purchase-history-page select[multiple] {
     width: 100%;
     height: 200px; 
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 25px;
     padding: 5px;
 }
 
@@ -269,13 +412,14 @@ button.increment:hover {
     padding: 10px;
     border: 1px solid #ddd;
     background-color: #f9f9f9;
-    border-radius: 5px;
+    border-radius: 25px;
 }
 
 .purchase-history summary {
     font-weight: bold;
     cursor: pointer;
     color: #333;
+    max-width: 500px;
 }
 
 .purchase-history ul {
@@ -305,7 +449,7 @@ button.increment:hover {
     background-color: #333;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 24px;
     padding: 10px 20px;
     cursor: pointer;
     font-size: 1rem;
@@ -358,7 +502,7 @@ button.increment:hover {
     background-color: #3498db;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 30px;
     min-width: 30px;
     height: 30px;
     cursor: pointer;
@@ -394,7 +538,7 @@ button.increment:hover {
     color: #fff;
     background: linear-gradient(135deg, #4e4e4e, #353334);
     border: none;
-    border-radius: 8px;
+    border-radius: 28px;
     text-decoration: none;
     transition: all 0.3s ease-in-out;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
@@ -402,11 +546,11 @@ button.increment:hover {
     cursor: pointer;
 }
 
-/* .btn-add-item:hover {
-    background: linear-gradient(135deg, #ff5f7e, #ff3c6e);
+.btn-add-item:hover {
+    background: linear-gradient(135deg, #292626, #332f30);
     box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
     transform: translateY(-2px);
-} */
+}
 
 .btn-add-item:active {
     transform: scale(0.95);
@@ -448,7 +592,7 @@ button.increment:hover {
     max-width: 800px;
     padding: 15px;
     border: 1px solid #ccc; 
-    border-radius: 8px; /* 角丸 */
+    border-radius: 28px; /* 角丸 */
     background-color: #fff; 
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
     font-size: 1rem;
@@ -472,10 +616,96 @@ button.increment:hover {
     color: white;
     border: none;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 25px;
     text-decoration: none;
     font-size: 20px;
 
+}
+
+
+
+.portfolio {
+    text-align: center;
+}
+
+.portfolio-list {
+    list-style: none;
+    justify-content: center;
+    padding: 0;
+    margin: 30px 0;
+    display: flex;
+    gap: 20px;
+}
+
+.portfolio-li {
+    width: 30%;
+    text-align: center;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    border: none; 
+    background: none; 
+    box-shadow: none; 
+    padding: 0; 
+}
+
+/* ボタン風に見せるためのリンクスタイル */
+.portfolio-li a {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    background-color: #ffffcc;
+    border: 1px solid #ccc;
+    border-radius: 28px;
+    text-decoration: none;
+    color: #5c5a5a;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* ホバー時のスタイル */
+.portfolio-li a:hover {
+    background-color: #e9ecef;
+    border-color: #bbb;
+}
+
+
+.btn-account-portfolio {
+    background-color: #fff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-size: 20px;
+
+}
+
+.portfolio-a {
+    display: inline-block;
+    padding: 12px 50px;
+    margin: 0px 0px 2px 5px ;
+    font-size: 25px;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #8490ffd2, #8491ff);
+    border: none;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    cursor: pointer;
+}
+
+.portfolio-a:hover {
+    color: #5c5a5a;
+    background: linear-gradient(135deg, #8490ffd2, #8491ff);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.portfolio-a:active {
+    transform: scale(0.95);
 }
 
 
@@ -484,14 +714,14 @@ button.increment:hover {
 .stock-default-container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* 水平方向中央揃え */
-    justify-content: center; /* 垂直方向中央揃え */
+    align-items: center; 
+    justify-content: center; 
     text-align: center;
-    margin: 20px auto; /* 上下の余白 */
-    padding: 20px; /* 内側余白 */
-    background-color: #fff; /* 背景色を白に */
-    border-radius: 8px; /* 角丸 */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を追加 */
+    margin: 20px auto;
+    padding: 20px; 
+    background-color: #fff;
+    border-radius: 28px; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
     max-width: 500px; /* コンテンツの幅を制限 */
 }
 /* 共通のセクションスタイル */
@@ -539,7 +769,7 @@ button.increment:hover {
     margin: 10px 0;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 28px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
     font-size: 1rem;
 }
@@ -563,7 +793,7 @@ button.increment:hover {
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 24px;
     padding: 8px 20px;
     font-size: 0.9rem;
     text-align: center;
@@ -581,7 +811,7 @@ button.increment:hover {
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 24px;
     padding: 8px 20px;
     font-size: 0.9rem;
     text-align: center;
@@ -620,17 +850,7 @@ button.increment:hover {
     max-width: 600px; /* コンテンツの幅を制限 */
 }
 
-/* アカウント編集リスト全体のスタイル */
-.account-edit-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
+
 
 /* アカウント編集のアイテム  */
 .account-edit-item {
@@ -652,7 +872,7 @@ button.increment:hover {
     padding: 12px;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 28px;
     text-decoration: none;
     color: #333;
     transition: background-color 0.3s, border-color 0.3s;
@@ -685,7 +905,7 @@ button.increment:hover {
     padding: 30px 20px!important;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 28px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
@@ -764,7 +984,7 @@ button.increment:hover {
     background-color: #464747;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 28px;
     cursor: pointer;
     box-shadow: none;
     border: none;
@@ -781,6 +1001,49 @@ button.increment:hover {
     font-size: 1.2rem;
 }
 
+.category-edit-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* background-color: #fff; */
+    padding: 30px;
+    border-radius: 20px;
+    /* box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); */
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.catebtn {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn,
+.btn-secondary1 {
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.btn {
+    background-color: #494a4b;
+    color: white;
+}
+
+.btn:hover {
+    background-color: #c6c7c7;
+}
+
+.btn-secondary1:hover {
+    background-color: #3f3f3f;
+}
+
 /* アカウント編集リスト */
 #account-edit-section .account-edit-list {
     list-style-type: none;
@@ -792,6 +1055,7 @@ button.increment:hover {
     align-items: center;
     gap: 10px;
 }
+
 
 /* アカウント編集アイテムをリンク化 */
 #account-edit-section .account-edit-item {
@@ -807,7 +1071,7 @@ button.increment:hover {
     padding: 12px 0;
     background-color: #ffffff;
     border: 2px solid #ccc;
-    border-radius: 8px;
+    border-radius: 28px;
     font-size: 1rem;
     color: #333;
     text-decoration: none;
@@ -858,7 +1122,7 @@ button.increment:hover {
     flex-direction: column;
     align-items: center; 
     gap: 10px; 
-    background-color: #f9f9f9;
+    /* background-color: #f9f9f9; */
 }
 
 /* 店舗アイテム */
@@ -870,7 +1134,7 @@ button.increment:hover {
     padding: 30px 20px!important;
     background-color: #f9f9f9;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 28px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 /* 以下3つ店舗登録ボタン */
@@ -887,10 +1151,10 @@ button.increment:hover {
     /* margin: 10px auto 0; */
     padding: 15px 40px;
     font-size: 20px;
-    background-color: #464747;
+    background-color: #3a3a3a;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 28px;
     cursor: pointer;
     box-shadow: none;
     border: none;
@@ -898,15 +1162,27 @@ button.increment:hover {
 }
 
 .button-container .btn-primary:hover {
-    background-color:  #2c3135;
+    background-color:  #050505;
 }
 
-.button-container .btn-secondary {
-    background-color: #6c757d; /* 灰色 */
+.button-container1 {
+    background-color: #454b50; /* 灰色 */
+    color: white;
+    border: none;
+    margin-top: 10px;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.btn-secondary1 {
+    background-color: #5e5f5f; /* 灰色 */
     color: white;
     border: none;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 25px;
     text-decoration: none;
     font-size: 20px;
     cursor: pointer;
@@ -916,9 +1192,19 @@ button.increment:hover {
     background-color: #5a6268; /* ホバー時の色 */
 }
 
+.itemlist-choice {
+    display: flex;
+    justify-content: center; 
+    gap: 16px; 
+    margin-top: 16px; 
+}
 
-
-
+.category-buttons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
 
 
 
@@ -933,7 +1219,7 @@ button.increment:hover {
     border-radius: 4px;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     transition: background-color 0.3s;
-}
+  }
 
 /* アイテム一覧ホバー時のスタイル */
 .category-buttons .category-btn:hover {
@@ -966,6 +1252,7 @@ button.increment:hover {
     align-items: center;
     gap: 8px; 
     margin-bottom: 15px;
+    padding-top: 20px;
 }
 
 .form-group label {
@@ -1026,14 +1313,6 @@ button.increment:hover {
 }
 
 
-
-
-.reminder-checkbox-container {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* チェックボックスとONの間のスペース */
-}
-
 .error-container {
     background-color: #ffdddd;
     border-left: 4px solid #ff5555;
@@ -1093,7 +1372,7 @@ button.increment:hover {
     gap: 10px;
     padding: 0;
     margin: 0;
-    list-style: none;  /* 🔹 デフォルトのリストスタイルを削除 */
+    list-style: none;  /* デフォルトのリストスタイルを削除 */
 }
 
 /* 各アイテムのチェックボックス */
@@ -1111,3 +1390,117 @@ button.increment:hover {
 .purchase-history-page .item-list ul li:hover {
     background-color: #e9ecef;
 }
+
+
+.purchase-status {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px; 
+}
+
+.purchase-quantity-input {
+    width: 60px;
+    padding: 6px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* ▼ 買い物リストテーブル専用の設定 ▼ */
+
+.shopping-list-table td:nth-child(2),
+.shopping-list-table th:nth-child(2) {
+    min-width: 200px;
+    width: 25%;
+}
+
+.shopping-list-table td:nth-child(1),
+.shopping-list-table th:nth-child(1),
+.shopping-list-table td:nth-child(4),
+.shopping-list-table th:nth-child(4),
+.shopping-list-table td:nth-child(7),
+.shopping-list-table th:nth-child(7) {
+    width: 60px;
+    text-align: center;
+}
+
+.shopping-list-table td:nth-child(5),
+.shopping-list-table th:nth-child(5) {
+    width: 30px !important;
+    text-align: center;
+}
+
+
+.portfolio-image-gallery {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+
+.image-wrapper {
+    width: 600px;
+    height: 500px;
+    background-color: white;
+    border: 12px solid white;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; 
+    overflow: hidden;
+}
+
+.image-wrapper img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+
+/* モーダル全体 */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 999;
+    padding-top: 60px;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.8);
+    text-align: center;
+}
+
+/* 拡大画像 */
+.modal-content {
+    max-width: 90%;
+    max-height: 80vh;
+    margin: auto;
+    border: 8px solid white;
+    border-radius: 12px;
+}
+
+/* 閉じるボタン */
+.close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+
+
+
+

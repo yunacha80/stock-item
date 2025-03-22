@@ -1,19 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Item</title>
+    <title>Stock Item</title> 
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
-    <h1>Login</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div>メールアドレス <input type="email" name="email"></div>
-        <div>パスワード <input type="password" name="password"></div>
-        <button type="submit">ログイン</button>
-    </form>
-    {{ form.errors }}
-    <a href="{% url 'signup' %}">新規アカウント登録</a>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>ライフストック管理</h1>
+            <form method="post">
+                {% csrf_token %}
+                <div>メールアドレス <input type="email" name="email"></div>
+                <div>パスワード <input type="password" name="password"></div>
+            <br>
+                <button type="submit" class="btn">ログイン</button>
+            </form>
+            {{ form.errors }}
+            <a href="{% url 'signup' %}">新規アカウント登録</a>
+        </div>
+    </div>
 </body>
 </html>

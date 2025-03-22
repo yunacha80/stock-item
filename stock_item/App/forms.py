@@ -87,7 +87,7 @@ class ItemForm(forms.ModelForm):
             'reminder': 'リマインダー',
         }
         help_texts = {
-            'stock_min_threshold': 'この値を下回るとアイテムが買い物リストに自動追加されます。',
+            'stock_min_threshold': '在庫数がこの値を下回るとアイテムが買い物リストに自動追加されます。',
             'reminder': '購入頻度を分析し、買い忘れ防ぐためのリマインダー機能',
         }
 

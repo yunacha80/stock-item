@@ -1,12 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Item</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
 </head>
 <body>
     <h1>Portfolio</h1>
-    <a href="{% url 'login' %}">アプリへ</a>
+    {% comment %} <div class="portfolio-slider-container">
+        <div class="arrow left" onclick="prevSlide()">&#10094;</div>
+        <div class="portfolio-images">
+            <img src="{% static 'images/portfolio_item.jpeg' %}" alt="Sample Image" onclick="openModal(this)">
+            <img src="{% static 'images/portfolio_kaimono.jpeg' %}" alt="Sample Image"  onclick="openModal(this)">
+        </div>
+        <div class="arrow right" onclick="nextSlide()">&#10095;</div>
+    </div> {% endcomment %}
+    <div class="portfolio-image-gallery">
+        <div class="image-wrapper">
+            <img src="{% static 'images/portfolio_item.jpeg' %}" alt="Sample Image" onclick="openModal(this)">
+        </div>
+        <div class="image-wrapper">
+            <img src="{% static 'images/portfolio_kaimono.jpeg' %}" alt="Sample Image"  onclick="openModal(this)">
+        </div>
+    </div>
+
+    <div id="image-modal" class="modal" onclick="closeModal()">
+        <span class="close" onclick="closeModal()">×</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <h1>アプリ概要</h1>
+    <p>ライフストック管理は、残りいくつあるかつい忘れがちな家の日用品などのストックアイテムの在庫管理が出来るアプリです。<br>
+    このアプリを利用することで、「買い物リスト」にて必要なもの・数を把握できるため余分な購入によるストック過剰になるのを防ぎ、更に買い忘れも防ぐことができます。<br>
+    また、アイテム毎に複数店舗の価格をメモできます。買いたいものを選択するとメモした価格等をもとに・最安値・最短時間・短時間+低価格の3パターンでの買い回り店舗を提案します。家計にも優しく行くお店もスムーズに決めることができ、お金と時間が節約できます。</p><br>
+
+    <h1>作品資料</h1>
+    <ul class="portfolio-list">
+        <li class="portfolio-li">
+            <a href="{% static 'portfolio/Project_proposal.pdf' %}" target="_blank" class="btn-account-portfolio">企画書・画面設計図</a><br>
+        </li>
+        <li class="portfolio-li">
+            <a href="{% static 'portfolio/Screen_transition.svg' %}" target="_blank" class="btn-account-portfolio">画面遷移図</a><br>
+        </li>
+        <li class="portfolio-li">
+            <a href="{% static 'portfolio/ER.svg' %}" target="_blank" class="btn-account-portfolio">ER図</a><br>
+        </li>
+    </ul>
+    <div class="portfolio">
+        <a href="{% url 'login' %}" class="portfolio-a">アプリへ</a>
+    </div>
+<br><br><br>
 </body>
+<script>
+    {% comment %} const slider = document.getElementById('slider');
+    const images = slider.querySelectorAll('img');
+    let currentIndex = 0;
+    const slideInterval = 10500; // 10.5秒
+
+    function updateSlider() {
+        const offset = currentIndex * -(images[0].offsetWidth + 30); // 30 = gap
+        slider.style.transform = `translateX(${offset}px)`;
+    }
+
+    function nextSlide() {
+        currentIndex = (currentIndex + 1) % images.length;
+        updateSlider();
+    }
+
+    function prevSlide() {
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+        updateSlider();
+    }
+
+    setInterval(nextSlide, slideInterval);
+    window.addEventListener('load', updateSlider); {% endcomment %}
+
+    // モーダル処理
+    function openModal(imgElement) {
+        const modal = document.getElementById("image-modal");
+        const modalImg = document.getElementById("modal-img");
+        modal.style.display = "block";
+        modalImg.src = imgElement.src;
+    }
+
+    function closeModal() {
+        const modal = document.getElementById("image-modal");
+        modal.style.display = "none";
+    }
+
+    // モーダル外クリックでも閉じる
+    window.addEventListener('click', function (event) {
+        const modal = document.getElementById("image-modal");
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+</script> 
 </html>

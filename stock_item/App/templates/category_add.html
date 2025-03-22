@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container">
-    <div class="form-container">
+    <div class="form-container category-edit-form">
         <h1>新規カテゴリ追加</h1>
 
         <!-- エラーメッセージがある場合に表示 -->
@@ -31,10 +31,12 @@
                 <label for="id_display_order">表示順:</label>
                 {{ form.display_order }}
             </div>
+            <div class="catebtn">
             <button type="submit" class="btn">保存</button>
+            <a href="{% url 'settings' %}" class="btn-secondary">戻る</a>
+            </div>
+
         </form>
-        
-        <a href="{% url 'settings' %}" class="btn-secondary">戻る</a>
     </div>
 </div>
 {% endblock content %}

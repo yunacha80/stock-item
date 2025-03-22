@@ -15,7 +15,7 @@
 
         <!-- 店舗情報編集 -->
         <fieldset>
-            <legend>店舗情報</legend>
+            <legend><h3>店舗情報</h3></legend>
             {{ form.as_p }}
             {% for error in form.non_field_errors %}
                 <div class="error">{{ error }}</div>
@@ -24,7 +24,7 @@
 
         <!-- 他店舗との移動時間設定 -->
         <fieldset>
-            <legend>他店舗との移動時間設定</legend>
+            <legend><h3>他店舗との移動時間設定</h3></legend>
             {{ travel_time_formset.management_form }}
             <table class="table table-bordered">
                 <thead>
@@ -50,7 +50,7 @@
 
         <!-- アイテム価格入力 -->
         <fieldset>
-            <legend>アイテム価格設定</legend>
+            <legend><h3>アイテム価格設定</h3></legend>
             {{ item_price_formset.management_form }}
             {% if no_items %}
                 <p>アイテムが登録されていません。</p>
@@ -101,9 +101,10 @@
             {% endif %}
         </fieldset>
 
-        <button type="submit" class="btn btn-primary">保存</button><br>
-        <button type="button" onclick="window.history.back();">戻る</button>
+        <button type="submit" class="button-container1">保存</button><br>
+        <button type="button" onclick="window.history.back();" class="btn-secondary1">戻る</button>
     </form>
+    <br><br><br><br>
 </body>
 {% endblock %}
 </html>

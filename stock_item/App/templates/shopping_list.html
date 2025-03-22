@@ -25,9 +25,9 @@
     {% endfor %}
 
     <!-- 在庫更新および提案用フォーム -->
-    <form method="post" action="{% url 'shopping_list' %}">
+    <form method="post" action="{% url 'shopping_list' %}" class="form-list">
         {% csrf_token %}
-        <table>
+        <table class="shopping-list-table">
             <thead>
                 <tr>
                     <th>選択</th>
@@ -55,10 +55,12 @@
                         </div>
                     </td>                                        
                     <td>
-                        <input type="checkbox" name="purchased_{{ item.id }}">購入済
+                        <div class="purchase-status">
+                            <input type="checkbox" name="purchased_{{ item.id }}">購入済
+                        </div>
                     </td>
                     <td>
-                        <input type="number" name="purchased_quantity_{{ item.id }}" min="1">
+                        <input type="number" name="purchased_quantity_{{ item.id }}" min="1" class="purchase-quantity-input">
                     </td>
                     <td>
                         <input type="date" name="purchased_date_{{ item.id }}">
@@ -74,16 +76,16 @@
     
         <div class="button-container">
             <button type="submit" name="action" value="suggest" class="btn btn-primary">買い回り提案</button>
-            <button type="submit" name="action" value="update" class="btn btn-secondary">在庫更新</button>
+            <button type="submit" name="action" value="update" class="btn btn-secondary1">在庫更新</button>
         </div>
     </form>
 
-    <h2>選択アイテム: <span id="selected-items-count">{{ selected_items|length }}</span>点</h2>
+    <h2 class="kaimawari-h2">選択アイテム: <span id="selected-items-count">{{ selected_items|length }}</span>点</h2>
 
 
     <!-- 提案結果表示 -->
     {% if suggestions %}
-        <h2>■ 買い回り提案</h2>
+        <h2 class="kaimawari-h2">■ 買い回り提案</h2>
         <div class="suggestions">
             {% for suggestion in suggestions %}
                 <details>
@@ -102,35 +104,36 @@
                             ◇移動時間 {{ suggestion.total_time }}分
                         {% endif %}
                     </summary>
-                    <ul>
+                    <ul style="list-style: none; padding-left: 0;">
                         {% for store, items in suggestion.store_details.items %}
-                            <strong>◇店舗：{{ store }}</strong><br>
-                            購入するもの：
+                            <li><b>◇店舗：{{ store }}</b></li>
                             {% for item in items %}
-                                <li>
-                                    {{ item.name }}: {{ item.quantity }}個
+                                <li style="padding-left: 20px;"> ・{{ item.name }}: {{ item.quantity }}個
                                     {% if item.price_unknown %} <span style="color:red;">(価格不明)</span> {% endif %}
                                     {% if item.no_handling %} <span style="color:red;">(取扱いなし)</span> {% endif %}
                                 </li>
                             {% endfor %}
                         {% endfor %}
                         {% if suggestion.missing_items and suggestion.missing_items|length > 0 %}
-                            <li style="color:red; font-weight:bold;">
+                            <li style="color:red; font-weight:bold; padding-left: 20px;">
                                 ⚠ 取扱い及び価格不明アイテム: {{ suggestion.missing_items|join:", " }}
                             </li>
                         {% endif %}
                     </ul>
+                    
                 </details>
             {% endfor %}
-        </div>
+        
         {% endif %}
+        </div>
 
         {% if show_no_suggestion_message %}
-            <p style="color:red; font-weight:bold;">⚠ 提案が見つかりませんでした。</p>
+            <p style="color:red; font-weight:bold;" class="kaimawari-h2">⚠ 提案が見つかりませんでした。</p>
             {% if suggestions.0.missing_items %}
-                <p style="color:red;">⚠ 取扱いの有無及び価格不明: {{ suggestions.0.missing_items|join:", " }}</p>
+                <p style="color:red;" class="kaimawari-h2">⚠ 取扱いの有無及び価格不明: {{ suggestions.0.missing_items|join:", " }}</p>
             {% endif %}
         {% endif %}
+        
 
 
     <!-- メッセージ表示部分 -->
@@ -241,6 +244,7 @@
             }
         });
     </script>
+    <br><br>
 </body>
 
 {% endblock %}

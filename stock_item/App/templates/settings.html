@@ -39,7 +39,7 @@
     </div>
 
     <!-- +カテゴリ追加ボタン -->
-    <form method="POST" action="{% url 'category_add' %}">
+    <form method="POST" action="{% url 'category_add' %}" class="form-list">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn-add">＋カテゴリ追加</button>
@@ -56,7 +56,7 @@
         <div class="stock-default-container">
             <h2>アイテムの最低在庫値を一括変更</h2>
             <p>※個別で在庫最低値設定したアイテムを除く</P>
-            <form method="POST" action="">
+            <form method="POST" action="{% url 'settings' %}" class="form-list" onsubmit="updateStockThreshold(event)">
                 {% csrf_token %}
                 <input type="hidden" name="update_stock_threshold">
                 <input id="stock_min_threshold" type="number" name="stock_min_threshold" 
@@ -65,7 +65,7 @@
             </form>
         </div>
     </div>
-
+    <hr>
     <!-- 店舗編集 -->
     
     <div id="store-edit-section">
@@ -85,7 +85,7 @@
         </ul>
 
         <div class="button-container">
-            <a href="{% url 'store_add' %}" class="btn btn-primary">＋店舗追加</a>
+            <a href="{% url 'store_add' %}" class="btn-primary">＋店舗追加</a>
         </div>
     </div>
 
@@ -151,10 +151,40 @@
     }
     
     // CSRFトークンを取得する関数
-    function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    function updateStockThreshold(event) {
+        event.preventDefault(); // ページリロードを防ぐ
+    
+        const form = event.target;
+        const inputField = document.getElementById("stock_min_threshold");
+        const newValue = inputField.value;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+        fetch(form.action, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrfToken,
+            },
+            body: new URLSearchParams({
+                "update_stock_threshold": true,
+                "stock_min_threshold": newValue
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                inputField.value = data.new_value; // ✅ 更新後の値を即時反映
+                alert("在庫最低値を変更しました");
+            } else {
+                alert("変更に失敗しました: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error("エラー:", error);
+            alert("エラーが発生しました");
+        });
     }
-    </script>
+</script>
 {% endblock %}
 </body>
 </html>

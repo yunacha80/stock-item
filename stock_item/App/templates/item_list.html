@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <title>ストックアイテム一覧</title>
-    <link rel="stylesheet" href="{% static 'css/item_list.css' %}">
+    {% comment %} <link rel="stylesheet" href="{% static 'css/item_list.css' %}"> {% endcomment %}
 </head>
 {% endblock head %}
 {% block content %}
@@ -22,17 +22,20 @@
     
 
 
-    <a href="{% url 'add_item' %}" class="btn-add-item">新規アイテム追加</a>
+    <div class="itemlist-choice">
+        <a href="{% url 'add_item' %}" class="btn-add-item">新規アイテム追加</a>
+    </div>
 
     <!-- カテゴリボタン -->
     <div class="category-buttons">
-        <button class="category-btn {% if selected_category == 'all' %}active{% endif %}" onclick="window.location.href='?category=all'">全て</button>
+            <button class="category-btn {% if selected_category == 'all' %}active{% endif %}" onclick="window.location.href='?category=all'">全て</button>
         {% for category in categories %}
             <button class="category-btn {% if selected_category == category.name %}active{% endif %}" onclick="window.location.href='?category={{ category.name }}'">
                 {{ category.name }}
             </button>
         {% endfor %}
     </div>
+    
 
     <div class="sort-options">
         <label for="sort-by">並び替え:</label>
