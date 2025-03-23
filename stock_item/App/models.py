@@ -50,7 +50,7 @@ class User(AbstractBaseUser):
 class ItemCategory(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE)
     name = models.CharField(max_length=50, blank=False, null=False)
-    display_order = models.IntegerField(default=0)
+    display_order = models.IntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

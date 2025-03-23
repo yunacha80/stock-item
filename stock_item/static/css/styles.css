@@ -168,12 +168,13 @@ form button:hover {
 .kaimawari-h2 {
     display: flex;
     justify-content: center;
+    margin-bottom: 3px;
 }
 /* 提案結果のスタイル */
 .suggestions {
     width: 90%;
     max-width: 1200px;
-    margin: 20px auto;
+    margin: 2px auto;
     padding: 20px;
     background-color: #f9f9f9;
     border: 1px solid #ddd;

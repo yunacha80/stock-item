@@ -117,6 +117,16 @@
 
 </div>
 <script>
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith('csrftoken=')) {
+                return cookie.substring('csrftoken='.length);
+            }
+        }
+        return '';
+    }
     function deleteCategory(button) {
         const categoryId = button.getAttribute("data-id");
         const categoryName = button.getAttribute("data-name");  // カテゴリ名を取得

@@ -3,7 +3,7 @@ from itertools import permutations
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.db import transaction,models
-from django.db.models import Min, Sum, F
+from django.db.models import Min, Sum, F, Max
 from django.http import JsonResponse,HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -465,70 +465,81 @@ def category_add(request):
     if request.method == "POST":
         form = ItemCategoryForm(request.POST)
         if form.is_valid():
+            if ItemCategory.objects.filter(user=request.user).count() >= 10:
+                messages.error(request, "カテゴリは最大10個まで登録可能です。")
+                return render(request, 'category_form.html', {'form': form})
+
             category = form.save(commit=False)
             category.user = request.user
             new_order = category.display_order
 
-            # カテゴリの表示順
-            if not category.display_order:
-                max_order = ItemCategory.objects.filter(user=request.user).aggregate(models.Max('display_order'))['display_order__max'] or 0
+            # display_order が未入力（None）の場合、最大＋1
+            if new_order is None:
+                max_order = ItemCategory.objects.filter(user=request.user).aggregate(Max('display_order'))['display_order__max'] or 0
                 category.display_order = max_order + 1
+            else:
+                # 他のカテゴリと重複する表示順は後ろにずらす
+                ItemCategory.objects.filter(
+                    user=request.user,
+                    display_order__gte=new_order
+                ).update(display_order=models.F('display_order') + 1)
 
-            ItemCategory.objects.filter(user=request.user, display_order__gte=new_order).update(display_order=models.F('display_order') + 1)
-
-            # カテゴリ数をチェック
-            if ItemCategory.objects.filter(user=request.user).count() >= 10:
-                messages.error(request, "カテゴリは最大10個まで登録可能です。")
-                return render(request, 'category_form.html', {'form': form})
             category.save()
-            # messages.success(request, "カテゴリが追加されました。")
             return redirect('settings')
         else:
             messages.error(request, "入力内容に誤りがあります。")
     else:
         form = ItemCategoryForm()
-    return render(request, 'category_form.html', {'form': form})
+    return render(request, 'category_form.html', {
+        'form': form,
+        'is_post': request.method == 'POST'
+    })
 
 
 
 
 
 # カテゴリ編集
+@login_required
 def category_edit(request, category_id):
-    category = get_object_or_404(ItemCategory, id=category_id)
+    category = get_object_or_404(ItemCategory, id=category_id, user=request.user)
     old_order = category.display_order
 
     if request.method == "POST":
         form = ItemCategoryForm(request.POST, instance=category)
         if form.is_valid():
-            new_order = form.cleaned_data['display_order']
+            updated_category = form.save(commit=False)
+
+            # 未入力なら表示順に「1」を自動設定
+            if updated_category.display_order is None:
+                updated_category.display_order = 1
+
+            new_order = updated_category.display_order
 
             if new_order != old_order:
-                # 変更前の `display_order` のカテゴリを全体でずらす
                 if new_order > old_order:
-                    # 例: 3 → 5 に変更なら、4,5 のカテゴリは 1 ずつ下がる
                     ItemCategory.objects.filter(
                         user=request.user,
-                        display_order__gt=old_order, 
+                        display_order__gt=old_order,
                         display_order__lte=new_order
                     ).update(display_order=models.F('display_order') - 1)
-
                 else:
-                    # 例: 5 → 2 に変更なら、2,3,4 のカテゴリは 1 ずつ上がる
                     ItemCategory.objects.filter(
                         user=request.user,
-                        display_order__gte=new_order, 
+                        display_order__gte=new_order,
                         display_order__lt=old_order
                     ).update(display_order=models.F('display_order') + 1)
 
-            category.display_order = new_order
-            category.save()
-
-            # messages.success(request, "カテゴリの表示順を更新しました。")
+            updated_category.save()
             return redirect('settings')
     else:
         form = ItemCategoryForm(instance=category)
-    return render(request, 'category_form.html', {'form': form})
+    return render(request, 'category_form.html', {
+        'form': form,
+        'is_post': request.method == 'POST'
+    })
+
+
 
 def reset_display_order(request):
     categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
@@ -540,12 +551,23 @@ def reset_display_order(request):
 
 
 
-@csrf_exempt  
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@csrf_exempt
 def category_delete(request, category_id):
     if request.method == "POST":
-        category = get_object_or_404(ItemCategory, id=category_id)
+        category = get_object_or_404(ItemCategory, id=category_id, user=request.user)
         category.delete()
+
+        # 表示順を詰める
+        categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
+        for i, c in enumerate(categories, start=1):
+            c.display_order = i
+            c.save()
+
         return JsonResponse({"message": "カテゴリが削除されました"}, status=200)
+
     return JsonResponse({"error": "無効なリクエスト"}, status=400)
 
 
@@ -1441,25 +1463,30 @@ def shopping_list_view(request):
 
     # 自動追加アイテムを取得
     low_stock_items = Item.objects.filter(
-        user=request.user, stock_quantity__lt=models.F('stock_min_threshold')
-    )
-
-    # すべてのアイテムに `planned_purchase_quantity` を適用
-    final_items = []
+        user=request.user,
+        stock_quantity__lt=models.F('stock_min_threshold')
+        )
+    
+    # 既存の PurchaseItem を取得（手動追加分）
+    manually_added_items = PurchaseItem.objects.filter(item__user=request.user)
+    # 自動追加アイテムで PurchaseItem が存在しないものは新規作成
     for item in low_stock_items:
-        purchase_item = manually_added_items.filter(item=item).first()
-        planned_quantity = purchase_item.planned_purchase_quantity if purchase_item else max(1, item.stock_min_threshold - item.stock_quantity)
+        purchase_item, created = PurchaseItem.objects.get_or_create(
+            item=item,
+            defaults={"planned_purchase_quantity": max(1, item.stock_min_threshold - item.stock_quantity)}
+        )
 
-        item.planned_purchase_quantity = planned_quantity
-        final_items.append(item)
+        if not created:
+           purchase_item.planned_purchase_quantity = max(1, item.stock_min_threshold - item.stock_quantity)
+           purchase_item.save()
+        pass
 
-    for purchase_item in manually_added_items:
-        if purchase_item.item.id not in [item.id for item in final_items]:
-            purchase_item.item.planned_purchase_quantity = purchase_item.planned_purchase_quantity
-            final_items.append(purchase_item.item)
+    # 結果として、全 PurchaseItem を統一的に取得
+    final_purchase_items = PurchaseItem.objects.filter(item__user=request.user)
+    # テンプレートで扱いやすいよう item として渡す（ただし注意点あり）
+    final_items = list(final_purchase_items)
 
-    shopping_list_items = manually_added_item_ids.union(low_stock_items.values_list("id", flat=True))
-
+    shopping_list_items = [p.item.id for p in final_items]
     print(f"DEBUG: shopping_list_items = {shopping_list_items}")
 
     # 提案結果、メッセージ、選択アイテム

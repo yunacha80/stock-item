@@ -72,7 +72,11 @@ class ItemCategoryForm(forms.ModelForm):
             'display_order': '表示順',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['display_order'].required = False
 
+        
 class ItemForm(forms.ModelForm):
     class Meta:
         model = Item

@@ -15,7 +15,7 @@
     <h1>{% if form.instance.id %}カテゴリ編集{% else %}新規カテゴリ追加{% endif %}</h1>
 
     <!-- エラーメッセージがある場合に表示 -->
-    {% if form.errors %}
+    {% if is_post and form.errors %}
     <div class="error-messages">
         <ul>
             {% for field, errors in form.errors.items %}
@@ -26,6 +26,7 @@
         </ul>
     </div>
     {% endif %}
+
 
     <form method="post">
         {% csrf_token %}

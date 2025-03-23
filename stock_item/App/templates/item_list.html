@@ -125,13 +125,13 @@
     {% endif %}
 
     <!-- メッセージ表示部分 -->
-    {% if messages %}
+    {% comment %} {% if messages %}
     <ul class="messages">
         {% for message in messages %}
             <li>{{ message }}</li>
         {% endfor %}
     </ul>
-    {% endif %}
+    {% endif %} {% endcomment %}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // 在庫増減ボタン
