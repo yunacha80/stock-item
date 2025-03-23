@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Item</title>
+    <title>Stock Item</title> 
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
@@ -20,14 +20,14 @@
             </form>
             {% if form.errors %}
                 <div class="error-messages">
-                    {% for field in form %}
-                        {% for error in field.errors %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <p class="error">{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
                             <p class="error">{{ error }}</p>
                         {% endfor %}
-                    {% endfor %}
-                    {% for error in form.non_field_errors %}
-                        <p class="error">{{ error }}</p>
-                    {% endfor %}
                 </div>
             {% endif %}
             <a href="{% url 'signup' %}">新規アカウント登録</a>
