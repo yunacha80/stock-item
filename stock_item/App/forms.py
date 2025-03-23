@@ -32,7 +32,7 @@ class LoginForm(forms.Form):
         print(email, password)
         self.user = authenticate(email=email, password=password)
         if self.user is None:
-            raise forms.ValidationError("認証に失敗しました")
+            raise forms.ValidationError("メールアドレスまたはパスワードが正しくありません。")
         return self.cleaned_data
     
 class CustomPasswordChangeForm(PasswordChangeForm):

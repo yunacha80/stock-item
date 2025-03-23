@@ -18,7 +18,18 @@
             <br>
                 <button type="submit" class="btn">ログイン</button>
             </form>
-            {{ form.errors }}
+            {% if form.errors %}
+                <div class="error-messages">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <p class="error">{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <p class="error">{{ error }}</p>
+                        {% endfor %}
+                </div>
+            {% endif %}
             <a href="{% url 'signup' %}">新規アカウント登録</a>
         </div>
     </div>
