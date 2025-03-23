@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,8 +32,8 @@ ALLOWED_HOSTS = ['localhost', '.pythonanywhere.com', 'Lifestock.pythonanywhere.c
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
-from django.core.management.utils import get_random_secret_key
-SECRET_KEY = get_random_secret_key()  
+# from django.core.management.utils import get_random_secret_key
+# SECRET_KEY = get_random_secret_key()
 # Application definition
 
 INSTALLED_APPS = [
@@ -130,11 +132,15 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",  # プロジェクトのルートディレクトリ内のstaticフォルダ
     ]
 
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGIN_REDIRECT_URL = '/items/'
+
 
 try:
     from .local_settings import *
