@@ -12,23 +12,34 @@
     <header class="wave-header">
         <nav class="navigation">
             <ul>
-                <li class="nav-item {% if request.resolver_match.url_name == 'item_list' %}active{% endif %}">
-                    <a href="{% url 'item_list' %}">ストックアイテム一覧</a>
+                <li>
+                    <a href="{% url 'item_list' %}" class="nav-item {% if request.resolver_match.url_name == 'item_list' %}active{% endif %}">
+                        ストックアイテム一覧
+                    </a>
                 </li>
-                <li class="nav-item {% if request.resolver_match.url_name == 'shopping_list' %}active{% endif %}">
-                    <a href="{% url 'shopping_list' %}">買い物リスト</a>
+                <li>
+                    <a href="{% url 'shopping_list' %}" class="nav-item {% if request.resolver_match.url_name == 'shopping_list' %}active{% endif %}">
+                        買い物リスト
+                    </a>
                 </li>
-                <li class="nav-item {% if request.resolver_match.url_name == 'add_item' %}active{% endif %}">
-                    <a href="{% url 'add_item' %}">新規ストックアイテム追加</a>
+                <li>
+                    <a href="{% url 'add_item' %}" class="nav-item {% if request.resolver_match.url_name == 'add_item' %}active{% endif %}">
+                        新規ストックアイテム追加
+                    </a>
                 </li>
-                <li class="nav-item {% if request.resolver_match.url_name == 'purchase_history_list' %}active{% endif %}">
-                    <a href="{% url 'purchase_history_list' %}">購入履歴</a>
+                <li>
+                    <a href="{% url 'purchase_history_list' %}" class="nav-item {% if request.resolver_match.url_name == 'purchase_history_list' %}active{% endif %}">
+                        購入履歴
+                    </a>
                 </li>
-                <li class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
-                    <a href="{% url 'settings' %}">設定</a>
+                <li>
+                    <a href="{% url 'settings' %}" class="nav-item {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                        設定
+                    </a>
                 </li>
             </ul>
         </nav>
+    
         <div class="wave">
             <div class="u-sp">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120">

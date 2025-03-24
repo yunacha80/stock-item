@@ -11,9 +11,34 @@ from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,Stor
 
 
 class SignupForm(UserCreationForm):
+    name = forms.CharField(
+        label='',
+        widget=forms.TextInput(attrs={'placeholder': '名前'}),
+        error_messages={'required': '名前は必須です。'}
+    )
+
+    email = forms.EmailField(
+        label='',
+        widget=forms.EmailInput(attrs={'placeholder': 'メールアドレス'}),
+        error_messages={'required': 'メールアドレスは必須です。'}
+    )
+
+    password1 = forms.CharField(
+        label='',
+        widget=forms.PasswordInput(attrs={'placeholder': 'パスワード'}),
+        error_messages={'required': 'パスワードは必須です。'}
+    )
+
+    password2 = forms.CharField(
+        label='',
+        widget=forms.PasswordInput(attrs={'placeholder': '確認用パスワード'}),
+        error_messages={'required': '確認用パスワードは必須です。'}
+    )
+
     class Meta:
         model = User
-        fields = ["name", "email", "password1","password2"]
+        fields = ["name", "email", "password1", "password2"]
+
     def clean_email(self):
         email =self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
@@ -22,8 +47,15 @@ class SignupForm(UserCreationForm):
     
 
 class LoginForm(forms.Form):
-    email = forms.EmailField()
-    password = forms.CharField()
+    email = forms.EmailField(
+        label='メールアドレス',
+        error_messages={'required': 'メールアドレスは必須です。'}
+    )
+    password = forms.CharField(
+        label='パスワード',
+        widget=forms.PasswordInput(),
+        error_messages={'required': 'パスワードは必須です。'}
+    )
 
     def clean(self):
         print("ログインフォームのクリーンが呼び出された")
@@ -146,10 +178,11 @@ class ItemForm(forms.ModelForm):
 
 
 class PurchaseHistoryForm(forms.ModelForm):
-    item = forms.ModelChoiceField(
-        queryset=Item.objects.all(),
+    item = forms.ModelMultipleChoiceField(
+        queryset=Item.objects.none(),
         widget=forms.CheckboxSelectMultiple,  # チェックボックスに変更
-        label="アイテムを選択"
+        label="アイテムを選択",
+        required=False
     )
 
     class Meta:
@@ -162,9 +195,11 @@ class PurchaseHistoryForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        if user:
+            self.fields['item'].queryset = Item.objects.filter(user=user)
         self.fields['item'].label_from_instance = lambda obj: obj.name
-
 
 
 class StoreItemReferenceForm(forms.ModelForm):

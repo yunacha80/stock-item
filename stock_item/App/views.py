@@ -299,7 +299,7 @@ def add_item(request):
 
 @login_required
 def edit_item(request, item_id):
-    item = get_object_or_404(Item, id=item_id)
+    item = get_object_or_404(Item, id=item_id, user=request.user)
     stores = Store.objects.all()
     store_forms = []
     error_messages = []
@@ -581,11 +581,14 @@ def purchase_history_list(request):
         dateStr = datetime.strftime(history.purchased_date, "%Y-%m-%d")
         grouped_histories[dateStr].append(history)
 
+    form = PurchaseHistoryFilterForm(user=request.user)
+
     return render(
         request,
         "purchase_history_list.html",
         {
             "grouped_histories": dict(grouped_histories),
+            "form": form,
         },
     )
 
@@ -633,7 +636,7 @@ def store_list(request):
     return render(request, 'store_list.html', {'stores': stores})
 
 
-
+@login_required
 def store_delete(request, store_id):
     store = get_object_or_404(Store, id=store_id, user=request.user)
     if request.method == "POST":
@@ -701,6 +704,9 @@ def store_add(request):
 
     return render(request, 'store_add.html', {'store_form': store_form, 'stores': stores})
 
+
+
+@login_required
 def store_edit(request, pk):
     """
     店舗編集ビュー: 店舗情報、移動時間、アイテム価格を編集

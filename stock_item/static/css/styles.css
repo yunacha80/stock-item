@@ -266,21 +266,25 @@ button.increment:hover {
 }
 
 .nav-item {
+    display: inline-block;
     padding: 10px 20px;
     border-radius: 25px;
     background-color: white;
     text-align: center;
-}
-
-.nav-item a {
-    text-decoration: none;
     color: #333;
+    text-decoration: none;
+    transition: background-color 0.3s;
 }
 
+.nav-item:hover {
+    background-color: #e9ecef;
+}
+
+/* 選択中のページ */
 .nav-item.active {
     background-color: #e9ecef;
     font-weight: bold;
-    color: #000;
+    color: #5c5a5a;
 }
 
 /* 波線の配置 */
