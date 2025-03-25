@@ -212,7 +212,7 @@ def add_item(request):
     error_messages = []
 
     if request.method == 'POST':
-        item_form = ItemForm(request.POST)
+        item_form = ItemForm(request.POST, user=request.user, store_forms=store_forms)
 
         if item_form.is_valid():
             # 先にアイテムを保存（これがないと item_id が NULL になる）
@@ -284,7 +284,11 @@ def add_item(request):
                 print("バリデーションエラー:", error_messages)
 
     else:
-        item_form = ItemForm(initial={"stock_min_threshold": stock_min_threshold_default})
+        item_form = ItemForm(
+            initial={"stock_min_threshold": stock_min_threshold_default},
+            user=request.user,
+            store_forms=store_forms
+        )
         for store in stores:
             store_item_reference = StoreItemReference(store=store)
             form = StoreItemReferenceForm(instance=store_item_reference, prefix=f"store_{store.id}")
@@ -417,7 +421,12 @@ def edit_item(request, item_id):
                 print(error)
 
     else:
-        item_form = ItemForm(instance=item, initial={'last_purchase_date': last_purchase_date})
+        item_form = ItemForm(
+            instance=item,
+            initial={'last_purchase_date': last_purchase_date},
+            user=request.user,
+            store_forms=store_forms
+        )
 
     return render(request, 'edit_item.html', {
         'item_form': item_form,
@@ -725,7 +734,7 @@ def store_edit(request, pk):
     # フォームセットデータを辞書で渡す
     travel_time_forms = []
     for other_store in other_stores:
-        form = StoreTravelTimeForm(
+        form = StoreTravelTimeForm(user=request.user)(
             initial={
                 "store2": other_store.id,
                 "travel_time_min": travel_times.get(other_store.id).travel_time_min if other_store.id in travel_times else "",

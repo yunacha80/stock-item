@@ -133,9 +133,13 @@ class ItemForm(forms.ModelForm):
         required=True
     )
 
-    def __init__(self, *args, store_forms=None, **kwargs):
+    def __init__(self, *args, store_forms=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.store_forms = store_forms  # 店舗価格のバリデーション用に受け取る
+        self.store_forms = store_forms
+
+
+        if user:
+            self.fields['category'].queryset = ItemCategory.objects.filter(user=user)
 
         # `form-control` を適用するフィールド
         form_control_fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date']
@@ -268,10 +272,6 @@ class StoreItemReferenceForm(forms.ModelForm):
             instance.save()
         return instance
 
-
-
-
-
 StoreItemReferenceFormSet = modelformset_factory(
     StoreItemReference,
     form=StoreItemReferenceForm,
@@ -326,6 +326,12 @@ StoreTravelTimeFormSet = inlineformset_factory(
 class StoreTravelTimeForm(forms.Form):
     store_2 = forms.ModelChoiceField(queryset=Store.objects.all(), label="他店舗")
     travel_time = forms.IntegerField(label="移動時間 (分)")
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['store_2'].queryset = Store.objects.filter(user=user).order_by('name')
 
 
 StoreTravelTimeFormSet = inlineformset_factory(
