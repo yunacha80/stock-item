@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from App.views import PortfolioView, SignupView, LoginView,LogoutView,HomeView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete,add_to_shopping_list,update_stock,update_purchase_quantity
+from App.views import PortfolioView, SignupView, LoginView,LogoutView,PasswordChangeView, EmailChangeView, update_stock_and_check,add_item,item_list,edit_item,item_delete,add_to_shopping_list,update_stock,update_purchase_quantity
 from App import views  
 
 
