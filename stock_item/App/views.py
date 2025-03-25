@@ -50,7 +50,7 @@ class SignupView(View):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("home")
+            return redirect("item_list")
         return render(request, "signup.html", context={
             "form":form 
         })
@@ -73,12 +73,12 @@ class LoginView(View):
 class LogoutView(View):
     def get(self, request):
         logout(request)  
-        return redirect("home")  
+        return redirect("login")  
     
 class PasswordChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
     template_name = 'password_change.html'
     form_class = CustomPasswordChangeForm
-    success_url = reverse_lazy('home')  # 成功時のリダイレクト先
+    success_url = reverse_lazy('item_list')  # 成功時のリダイレクト先
     success_message = "パスワードが正常に変更されました。"
 
     def get_form_kwargs(self):
@@ -95,7 +95,7 @@ class PasswordChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
 class EmailChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
     template_name = 'email_change.html'
     form_class = EmailChangeForm
-    success_url = reverse_lazy('home')  # 成功時のリダイレクト先
+    success_url = reverse_lazy('settings')  # 成功時のリダイレクト先
     success_message = "メールアドレスが正常に変更されました。"
 
     def get_form_kwargs(self):
@@ -110,10 +110,10 @@ class EmailChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
         return super().form_valid(form)
 
 
-class HomeView(LoginRequiredMixin, View):
-    login_url = "login"
-    def get(self, request):
-        return render(request, "home.html")
+# class HomeView(LoginRequiredMixin, View):
+#     login_url = "login"
+#     def get(self, request):
+#         return render(request, "home.html")
 
 
 def item_list(request):
