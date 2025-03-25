@@ -206,7 +206,7 @@ def add_item(request):
     oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
     stock_min_threshold_default = oldest_item.stock_min_threshold if oldest_item else 1
 
-    stores = Store.objects.all()  # 登録済みの全店舗を取得
+    stores = Store.objects.filter(user=request.user)  # 登録済みの全店舗を取得
     store_forms = []
     has_error = False
     error_messages = []
@@ -300,7 +300,7 @@ def add_item(request):
 @login_required
 def edit_item(request, item_id):
     item = get_object_or_404(Item, id=item_id, user=request.user)
-    stores = Store.objects.all()
+    stores = Store.objects.filter(user=request.user)
     store_forms = []
     error_messages = []
 
@@ -711,7 +711,7 @@ def store_edit(request, pk):
     """
     店舗編集ビュー: 店舗情報、移動時間、アイテム価格を編集
     """
-    store = get_object_or_404(Store, pk=pk)
+    store = get_object_or_404(Store, pk=pk, user=request.user)
 
     # 店舗情報フォーム
     store_form = StoreForm(instance=store)
@@ -735,7 +735,10 @@ def store_edit(request, pk):
 
     # アイテム価格フォームセット
     item_price_formset = StoreItemReferenceFormSet(
-        queryset=StoreItemReference.objects.filter(store=store).select_related("item")
+        queryset=StoreItemReference.objects.filter(
+            store=store,
+            store__user=request.user
+        ).select_related("item")
     )
 
     if request.method == "POST":
@@ -785,7 +788,7 @@ def settings_view(request):
     oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
     stock_min_threshold_default = oldest_item.stock_min_threshold if oldest_item else 1
 
-    stores = Store.objects.all()
+    stores = Store.objects.filter(user=request.user)
     categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
 
     if request.method == "POST":
@@ -1065,7 +1068,7 @@ def calculate_travel_time(cleaned_route, travel_times):
 #     }
 
 
-def calculate_route(purchase_items, strategy, consider_missing=True):
+def calculate_route(purchase_items, strategy,user, consider_missing=True):
     """
     買い回りルートの計算 (自宅↔店舗の移動時間も考慮)
     """
@@ -1088,7 +1091,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
     store_details, travel_times = {}, {}
 
     # 1. 店舗間の移動時間を取得
-    stores = Store.objects.all()
+    stores = Store.objects.filter(user=user)
     for store1 in stores:
         for store2 in stores:
             if store1 != store2:
@@ -1102,7 +1105,7 @@ def calculate_route(purchase_items, strategy, consider_missing=True):
         item = purchase_item.item
 
         # 価格情報がある `StoreItemReference` を取得（更新日時が最新のものを優先）
-        references = StoreItemReference.objects.filter(item=item).order_by('-updated_at')
+        references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
         
         if not references.exists():
             print(f"DEBUG: {item.name} は全店舗でリファレンスがないため missing_items に追加")
@@ -1516,7 +1519,7 @@ def shopping_list_view(request):
                 print(f"DEBUG: purchase_items に渡される items = {[item.item.name for item in purchase_items]}")
 
                 #  取り扱いなし含む（通常の最安値計算）
-                price_suggestion = calculate_route(purchase_items, "price", consider_missing=True)
+                price_suggestion = calculate_route(purchase_items, "price", user=request.user, consider_missing=True)
 
                 # 取り扱いなし無視（価格不明商品を無視する最安値計算）
                 price_suggestion_ignore = calculate_route(purchase_items, "price", consider_missing=False)
@@ -1711,7 +1714,7 @@ def mark_item_as_purchased(request, purchase_item_id):
 
 def add_store_item_reference(request, item_id, store_id):
     item = get_object_or_404(Item, id=item_id)
-    store = get_object_or_404(Store, id=store_id)
+    store = get_object_or_404(Store, id=store_id, user=request.user)
     price = request.POST.get("price")
     price_per_unit = request.POST.get("price_per_unit")
 
