@@ -1531,11 +1531,11 @@ def shopping_list_view(request):
                 price_suggestion = calculate_route(purchase_items, "price", user=request.user, consider_missing=True)
 
                 # 取り扱いなし無視（価格不明商品を無視する最安値計算）
-                price_suggestion_ignore = calculate_route(purchase_items, "price", consider_missing=False)
+                price_suggestion_ignore = calculate_route(purchase_items, "price", user=request.user, consider_missing=False)
 
                 #  最短時間・安値＋短時間も計算
-                time_suggestion = calculate_route(purchase_items, "time", consider_missing=True)
-                balance_suggestion = calculate_route(purchase_items, "balance", consider_missing=True)
+                time_suggestion = calculate_route(purchase_items, "time", user=request.user, consider_missing=True)
+                balance_suggestion = calculate_route(purchase_items, "balance", user=request.user, consider_missing=True)
 
                 suggestions = [
                     {
