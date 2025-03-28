@@ -42,7 +42,13 @@
     <form method="POST" action="{% url 'category_add' %}" class="form-list">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit" class="btn-add">＋カテゴリ追加</button>
+        {% if can_add_category %}
+            <button type="submit" class="btn-add">＋カテゴリ追加</button>
+        {% else %}
+            <p style="color: red; margin: 8px 0; font-weight: bold; font-size: 1.3rem; text-align:center ">
+                ※ これ以上カテゴリ登録はできません。
+            </p>
+        {% endif %}
     </form>
 
     <br>
@@ -90,8 +96,13 @@
         </ul>
 
         <div class="button-container">
-            <a href="{% url 'store_add' %}" class="btn-primary">＋店舗追加</a>
+            {% if can_add_store %}
+                <a href="{% url 'store_add' %}" class="btn-primary">＋店舗追加</a>
+            {% else %}
+                <p style="color: red; margin: 8px 0; font-weight: bold; font-size: 1.3rem; ">※ これ以上店舗登録はできません。</p>
+            {% endif %}
         </div>
+        
     </div>
 
 

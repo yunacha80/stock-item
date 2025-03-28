@@ -78,6 +78,7 @@
                     <tbody>
                         {% for subform in item_price_formset %}
                             <tr>
+                                <td style="display:none;">{{ subform.id }}</td>
                                 <td>{{ subform.instance.item.name }}</td>
                                 <td>
                                     {{ subform.price }}

@@ -11,6 +11,16 @@
     <form method="post">
         {% csrf_token %}
 
+        {% if store_form.non_field_errors %}
+            <div class="error-container">
+                <ul class="errorlist">
+                    {% for error in store_form.non_field_errors %}
+                        <li class="error">{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         {% if error_messages %}
             <div class="error-container">
                 <ul class="errorlist">
@@ -30,7 +40,13 @@
                 {{ store_form.name.label_tag }}<br>
                 {{ store_form.name }}
                 {% if store_form.name.errors %}
-                    <div class="error">{{ store_form.name.errors.0 }}</div>
+                    <div class="error">
+                        <ul class="errorlist">
+                            {% for error in store_form.name.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endif %}
             </p>
 
@@ -56,9 +72,7 @@
                 {% endif %}
             </p>
 
-            {% for error in store_form.non_field_errors %}
-                <div class="error">{{ error }}</div>
-            {% endfor %}
+            
         </fieldset>
 
         <fieldset>

@@ -26,9 +26,9 @@ h2 {
 }
 
 p {
-    width: 80%;
+    
     text-align: left;
-    margin: 30px auto;
+    margin: 10px auto;
 }
 
 header, header h1 {
@@ -1536,4 +1536,24 @@ table .errorlist li {
     text-align: center !important;
     font-size: 1.5rem;
     margin-top: 30px;
+}
+.name-field {
+    display: flex;
+    align-items: flex-start;  
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.name-field label {
+    white-space: nowrap;
+    margin-top: 0;  
+}
+
+.input-with-error {
+    display: flex;
+    flex-direction: column;
+}
+
+.error-space {
+    min-height: 1.4em; 
 }

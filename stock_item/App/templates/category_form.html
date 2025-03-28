@@ -13,23 +13,46 @@
 {% block content %}
 <div class="category-edit-form">
     <h1>{% if form.instance.id %}カテゴリ編集{% else %}新規カテゴリ追加{% endif %}</h1>
+
+    <!-- フォーム全体のエラー -->
     {% if form.non_field_errors %}
         <div class="alert alert-danger">
             {% for error in form.non_field_errors %}
-                <p>{{ error }}</p>
+                <p>{{ error|safe  }}</p>
             {% endfor %}
         </div>
     {% endif %}
-   
+
     <form method="post">
         {% csrf_token %}
-        <div class="form-group">
-            <label for="id_name">カテゴリ名 <span class="required">※必須</span>:</label>
-            {{ form.name.as_widget }}
+        <div class="form-group name-field">
+            <label for="id_name">カテゴリ名 :</label>
+            <div class="input-with-error">
+                {{ form.name }}
+                <div class="error-space">
+                    {% if form.name.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.name.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+        
+        
+
         <div class="form-group">
             <label for="id_display_order">表示順:</label>
-            {{ form.display_order.as_widget }}
+            {{ form.display_order }}
+            {% if form.display_order.errors %}
+                <div class="text-danger">
+                    {% for error in form.display_order.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
 
         <div class="catebtn">

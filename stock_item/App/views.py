@@ -540,11 +540,12 @@ def category_edit(request, category_id):
     old_order = category.display_order
 
     if request.method == "POST":
-        form = ItemCategoryForm(request.POST, instance=category, user=request.user) 
+        form = ItemCategoryForm(request.POST, instance=category, user=request.user)
+
         if form.is_valid():
             updated_category = form.save(commit=False)
 
-            # 未入力なら表示順に「1」を自動設定
+            # 表示順が未入力の場合は1を設定
             if updated_category.display_order is None:
                 updated_category.display_order = 1
 
@@ -566,12 +567,19 @@ def category_edit(request, category_id):
 
             updated_category.save()
             return redirect('settings')
+
+        else:
+            # ▼ バリデーションエラー時
+            messages.error(request, "このカテゴリ名は登録できません。")  
+
     else:
         form = ItemCategoryForm(instance=category, user=request.user)
+
     return render(request, 'category_form.html', {
         'form': form,
         'is_post': request.method == 'POST'
     })
+
 
 
 
@@ -665,9 +673,10 @@ def purchase_history_Search(request):
 # 店舗一覧
 def store_list(request):
     stores = Store.objects.filter(user=request.user)
+    can_add_store = stores.count() < 10
     if not stores.exists():
         messages.info(request, "登録された店舗がありません。")    
-    return render(request, 'store_list.html', {'stores': stores})
+    return render(request, 'store_list.html', {'stores': stores,"can_add_store": can_add_store})
 
 
 @login_required
@@ -698,11 +707,12 @@ def add_store_travel_time(request):
 # 新規店舗追加
 def store_add(request):
     stores = Store.objects.filter(user=request.user)
+    store_limit_reached = stores.count() >= 10
     error_messages = []
     other_stores = stores
 
     if request.method == 'POST':
-        store_form = StoreForm(request.POST)
+        store_form = StoreForm(request.POST, user=request.user)
 
         if store_form.is_valid():
             store = store_form.save(commit=False)
@@ -752,12 +762,13 @@ def store_add(request):
         })
 
     else:
-        store_form = StoreForm()
+        store_form = StoreForm(user=request.user)
 
     return render(request, 'store_add.html', {
         'store_form': store_form,
         'stores': stores,
-        'error_messages': [],
+        'error_messages': error_messages,
+        'store_limit_reached': store_limit_reached,
     })
 
 
@@ -765,76 +776,88 @@ def store_add(request):
 def store_edit(request, pk):
     store = get_object_or_404(Store, pk=pk, user=request.user)
     other_stores = Store.objects.filter(user=request.user).exclude(id=store.id)
-    store_form = StoreForm(instance=store)
-
-    # 既存の移動時間
-    travel_times = {
-        tt.store2.id: tt for tt in StoreTravelTime.objects.filter(store1=store)
-    }
-
-    travel_time_forms = []
     error_messages = []
 
-    for other_store in other_stores:
-        form = StoreTravelTimeForm(
-            user=request.user,
-            initial={
-                "store2": other_store.id,
-                "travel_time_min": travel_times.get(other_store.id).travel_time_min
-                if other_store.id in travel_times
-                else "",
-            },
-        )
-        travel_time_forms.append({"store": other_store, "form": form})
-
-    item_price_formset = StoreItemReferenceFormSet(
-        queryset=StoreItemReference.objects.filter(
-            store__user=request.user, store=store, item__user=request.user
-        ).select_related("item")
-    )
-
     if request.method == "POST":
-        store_form = StoreForm(request.POST, instance=store)
-        item_price_formset = StoreItemReferenceFormSet(
-            request.POST,
-            queryset=StoreItemReference.objects.filter(
-                store__user=request.user, store=store
-            ).select_related("item")
-        )
+        store_form = StoreForm(request.POST, instance=store, user=request.user)
 
-        # 移動時間の検証
-        for tf in travel_time_forms:
-            store_id = tf["store"].id
-            key = f"travel_time_{store_id}"
-            val = request.POST.get(key)
+        # POST時にtravel_time_formsを構築（POST値を初期値に）
+        travel_time_forms = []
+        for other_store in other_stores:
+            val = request.POST.get(f"travel_time_{other_store.id}", "").strip()
+            form = StoreTravelTimeForm(
+                user=request.user,
+                initial={"store2": other_store.id, "travel_time_min": val}
+            )
+            travel_time_forms.append({"store": other_store, "form": form})
 
-            if not val or val.strip() == "":
-                error_messages.append(f"{tf['store'].name} との移動時間は必須です。")
+            if not val:
+                error_messages.append(f"{other_store.name} の移動時間は必須です。")
             else:
                 try:
                     int(val)
                 except ValueError:
-                    error_messages.append(f"{tf['store'].name} の移動時間は数値で入力してください。")
+                    error_messages.append(f"{other_store.name} の移動時間は数値で入力してください。")
+
+        # 価格フォーム
+        item_price_formset = StoreItemReferenceFormSet(
+            queryset=StoreItemReference.objects.filter(store=store, store__user=request.user, item__user=request.user).select_related("item")
+        )
+        for form in item_price_formset:
+            item = getattr(form.instance, "item", None)
+            if item:
+                form.fields['item_label'].initial = item.name
+            form.fields['price_unknown'].initial = form.instance.price_unknown
+            form.fields['no_handling'].initial = form.instance.no_handling
+
+        store_form_valid = store_form.is_valid()
+        formset_valid = item_price_formset.is_valid()
 
         if store_form.is_valid() and item_price_formset.is_valid() and not error_messages:
             store_form.save()
-
-            # 移動時間保存
+            
             for tf in travel_time_forms:
                 store_id = tf["store"].id
                 val = int(request.POST.get(f"travel_time_{store_id}"))
-
-                travel_time_instance, created = StoreTravelTime.objects.get_or_create(
+                StoreTravelTime.objects.update_or_create(
                     store1=store,
                     store2=tf["store"],
                     defaults={"travel_time_min": val},
                 )
-                if not created:
-                    travel_time_instance.travel_time_min = val
-                    travel_time_instance.save()
 
-            item_price_formset.save()
+            for form in item_price_formset:
+                    instance = form.save(commit=False)
+                    instance.item = form.instance.item  
+                    instance.save()
+                
             return redirect("settings")
+        
+        print("store_form.is_valid():", store_form_valid)
+        print("item_price_formset.is_valid():", formset_valid)
+        print("error_messages:", error_messages)
+
+    else:
+        store_form = StoreForm(instance=store, user=request.user)
+
+        # GET時の移動時間フォーム
+        travel_times = {
+            tt.store2.id: tt for tt in StoreTravelTime.objects.filter(store1=store)
+        }
+        travel_time_forms = []
+        for other_store in other_stores:
+            val = travel_times.get(other_store.id).travel_time_min if other_store.id in travel_times else ""
+            form = StoreTravelTimeForm(
+                user=request.user,
+                initial={"store2": other_store.id, "travel_time_min": val}
+            )
+            travel_time_forms.append({"store": other_store, "form": form})
+
+        item_price_formset = StoreItemReferenceFormSet(
+            queryset=StoreItemReference.objects.filter(store=store, store__user=request.user, item__user=request.user).select_related("item")
+        )
+        for form in item_price_formset:
+            if form.instance.item:
+                form.fields['item_label'].initial = form.instance.item.name
 
     return render(
         request,
@@ -845,8 +868,9 @@ def store_edit(request, pk):
             "item_price_formset": item_price_formset,
             "no_items": not StoreItemReference.objects.filter(store=store).exists(),
             "error_messages": error_messages,
-        },
+        }
     )
+
 
 
 
@@ -861,7 +885,9 @@ def settings_view(request):
     stock_min_threshold_default = oldest_item.stock_min_threshold if oldest_item else 1
 
     stores = Store.objects.filter(user=request.user)
+    can_add_store = stores.count() < 10
     categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
+    can_add_category = ItemCategory.objects.filter(user=request.user).count() < 10
 
     if request.method == "POST":
         if "update_stock_threshold" in request.POST:
@@ -898,7 +924,9 @@ def settings_view(request):
     return render(request, "settings.html", {
         "stock_min_threshold_default": stock_min_threshold_default,
         "categories": categories,
-        "stores": stores
+        "stores": stores,
+        'can_add_store': can_add_store,
+        'can_add_category': can_add_category,
     })
 
 
@@ -1211,14 +1239,26 @@ def calculate_route(purchase_items, strategy,user, consider_missing=True):
         # **最適なリファレンスを選択**
         try:
             if strategy == "price":
-                best_reference = min(valid_references, key=lambda ref: ref.price / ref.price_per_unit)
+                best_reference = min(valid_references, key=lambda ref: (
+                    ref.price / ref.price_per_unit,  
+                    ref.store.travel_time_home_min  
+                ))
             elif strategy == "time":
-                best_reference = min(valid_references, key=lambda ref: ref.store.travel_time_home_min + min(
-                    travel_times.get((ref.store, other), float("inf")) for other in stores))
+                best_reference = min(valid_references, key=lambda ref: (
+                    ref.store.travel_time_home_min + min(
+                        travel_times.get((ref.store, other), float("inf")) for other in stores
+                    ),
+                    ref.price / ref.price_per_unit  
+                ))
             elif strategy == "balance":
-                best_reference = min(valid_references, key=lambda ref: 0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
+                best_reference = min(valid_references, key=lambda ref: (
+                    0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
                         ref.store.travel_time_home_min + min(
-                    travel_times.get((ref.store, other), float("inf")) for other in stores)))
+                            travel_times.get((ref.store, other), float("inf")) for other in stores
+                        )
+                    ),
+                    ref.price / ref.price_per_unit  
+                ))
             else:
                 continue
         except ValueError:

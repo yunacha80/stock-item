@@ -126,7 +126,7 @@ class ItemCategoryForm(forms.ModelForm):
 
         if not self.instance.pk and self.user:  # 新規作成時のみチェック
             if ItemCategory.objects.filter(user=self.user).count() >= 10:
-                raise ValidationError("カテゴリは最大10個まで登録できます。")
+                raise ValidationError("カテゴリは最大10個まで登録できます。<br>10個登録済みの為登録できません。")
 
         return cleaned_data
 
@@ -260,6 +260,9 @@ class StoreItemReferenceForm(forms.ModelForm):
         # 「価格不明」と「取り扱いなし」が同時に選択されている場合はエラー
         if price_unknown and no_handling:
             raise forms.ValidationError("「価格不明」と「取り扱いなし」は同時に選択できません。")
+        
+        if price and (price_unknown or no_handling):
+            raise forms.ValidationError("価格を入力する場合、「価格不明」や「取り扱いなし」は選択できません。")
 
         # 価格不明または取り扱いなしの場合、価格と入数をクリア
         if price_unknown or no_handling:
@@ -323,7 +326,9 @@ class StoreForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        self.user = self.user or getattr(self.instance, "user", None)
         self.fields['travel_time_home_min'].required = True
 
     def clean_travel_time_home_min(self):
@@ -333,6 +338,24 @@ class StoreForm(forms.ModelForm):
         if value <= 0:
             raise forms.ValidationError("1分以上の値を入力してください。")
         return value
+    
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if self.user:
+            qs = Store.objects.filter(user=self.user, name=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("この名前の店舗はすでに登録されています。")
+        return name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.instance.pk and self.user:
+            store_count = Store.objects.filter(user=self.user).count()
+            if store_count >= 10:
+                raise forms.ValidationError("店舗は最大10件まで登録できます。10店舗登録済みの為登録できません。")
+        return cleaned_data
 
 StoreTravelTimeFormSet = inlineformset_factory(
     parent_model=Store,
