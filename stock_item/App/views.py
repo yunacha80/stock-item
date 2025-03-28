@@ -168,7 +168,10 @@ def item_list(request):
             last_purchase_date + timedelta(days=purchase_frequency) if last_purchase_date and purchase_frequency else None
         )
         reminder_due = (
-            next_purchase_date and next_purchase_date <= now().date() and item.id not in shopping_list_items
+            item.reminder and  # 🔹 これを追加
+            next_purchase_date and
+            next_purchase_date <= now().date() and
+            item.id not in shopping_list_items
         )
 
         item_data.append({
@@ -1592,7 +1595,7 @@ def shopping_list_view(request):
                 suggestions = [
                     {"type": "最安値", **price_suggestion},
                     {"type": "最短時間", **time_suggestion},
-                    {"type": "安値＋短時間", **balance_suggestion},
+                    {"type": "コストパフォーマンス重視(短時間+安価)", **balance_suggestion},
                 ]
 
                 print(f"DEBUG: 取扱いなし無視 (price_suggestion_ignore): {price_suggestion_ignore.get('missing_items', [])}")

@@ -71,7 +71,11 @@ tfoot td {
     font-weight: bold;
 }
 
-
+.note {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 2px;
+}
 
 /* フォーム要素 */
 form {
@@ -93,8 +97,15 @@ form {
     border: none;
 }
 
+.form-input {
+    margin-bottom: 10px;
+}
 
-
+.form-label {
+    display: block;
+    font-weight: bold;
+    margin-top: 1em;
+}
 
 form button {
     display: block;
