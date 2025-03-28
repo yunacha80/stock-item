@@ -1278,7 +1278,13 @@ button.increment:hover {
     color: #34495e;
 }
 
-
+.no-items {
+    text-align: center;
+    color: red;
+    font-size: 1.5em;
+    font-weight: 600;
+    margin-top: 40px;
+}
 /* 
 .form-group input {
     width: 100%;

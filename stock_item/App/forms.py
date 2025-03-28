@@ -259,12 +259,13 @@ class StoreItemReferenceForm(forms.ModelForm):
         no_handling = cleaned_data.get('no_handling')
         price = cleaned_data.get('price')
         price_per_unit = cleaned_data.get('price_per_unit')
+        print("cleaned_data:", cleaned_data)
 
         # 「価格不明」と「取り扱いなし」が同時に選択されている場合はエラー
         if price_unknown and no_handling:
             raise forms.ValidationError("「価格不明」と「取り扱いなし」は同時に選択できません。")
         
-        if price and (price_unknown or no_handling):
+        if price is not None and (price_unknown or no_handling):
             raise forms.ValidationError("価格を入力する場合、「価格不明」や「取り扱いなし」は選択できません。")
 
         # 価格不明または取り扱いなしの場合、価格と入数をクリア

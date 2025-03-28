@@ -221,36 +221,37 @@ def add_item(request):
     has_error = False
 
     if request.method == 'POST':
-        item_form = ItemForm(request.POST, user=user, store_forms=[])
-
         # 仮でアイテムインスタンス作成（まだ保存しない）
-        item = item_form.instance
-        item.user = user
+        item_form = ItemForm(request.POST, user=user, store_forms=[])
+        if item_form.is_valid():
+            item = item_form.save(commit=False)
+            item.user = user
+            item.save()
+        
+            store_forms = [
+                StoreItemReferenceForm(
+                    request.POST,
+                    instance=StoreItemReference(store=store, item=item),
+                    prefix=f"store_{store.id}"
+                )
+                for store in stores
+            ]
+        else:
+            store_forms = [
+                StoreItemReferenceForm(
+                    request.POST,
+                    instance=StoreItemReference(store=store),
+                    prefix=f"store_{store.id}"
+                )
+                for store in stores
+            ] 
 
         try:
             with transaction.atomic():
                 if item_form.is_valid():
-                    item.save()
-
-                    # 最終購入日の保存
-                    last_purchase_date = item_form.cleaned_data.get('last_purchase_date')
-                    if last_purchase_date:
-                        PurchaseHistory.objects.create(
-                            item=item,
-                            purchased_date=last_purchase_date,
-                            purchased_quantity=item.stock_quantity
-                        )
-
-                    # 店舗ごとのフォーム処理
-                    for store in stores:
-                        store_item_reference, _ = StoreItemReference.objects.get_or_create(store=store, item=item)
-                        form = StoreItemReferenceForm(
-                            request.POST,
-                            instance=store_item_reference,
-                            prefix=f"store_{store.id}"
-                        )
-                        store_forms.append(form)
-
+                   
+                    for form in store_forms:
+                        store = form.instance.store
                         if not form.is_valid():
                             has_error = True
                             for field, errors in form.errors.items():
@@ -269,11 +270,46 @@ def add_item(request):
                     if has_error:
                         raise ValidationError("バリデーションエラーのためロールバック")
 
-                    # フォームがすべて正常な場合のみ保存
+                    
+                    item.save()
+                    # 最終購入日の保存
+                    last_purchase_date = item_form.cleaned_data.get('last_purchase_date')
+                    if last_purchase_date:
+                        PurchaseHistory.objects.create(
+                            item=item,
+                            purchased_date=last_purchase_date,
+                            purchased_quantity=item.stock_quantity
+                        )
+
+                    # 店舗ごとのフォーム処理
                     for form in store_forms:
-                        store_reference = form.save(commit=False)
-                        store_reference.item = item
-                        store_reference.save()
+                        if form.cleaned_data.get('price') or form.cleaned_data.get('price_unknown') or form.cleaned_data.get('no_handling'):
+                            store_reference = form.save(commit=False)
+                            store_reference.item = item
+                            store_reference.store = form.instance.store
+                            
+                        # get_or_create を使って重複回避
+                            existing_ref, created = StoreItemReference.objects.get_or_create(
+                            store=store_reference.store,
+                            item=store_reference.item,
+                            defaults={
+                                'price': store_reference.price,
+                                'price_per_unit': store_reference.price_per_unit,
+                                'memo': store_reference.memo,
+                                'price_unknown': store_reference.price_unknown,
+                                'no_handling': store_reference.no_handling,
+                            }
+                        )
+
+                        if not created:
+                            # 既存のデータがあるなら更新して上書き
+                            existing_ref.price = store_reference.price
+                            existing_ref.price_per_unit = store_reference.price_per_unit
+                            existing_ref.memo = store_reference.memo
+                            existing_ref.price_unknown = store_reference.price_unknown
+                            existing_ref.no_handling = store_reference.no_handling
+                            existing_ref.save()
+
 
                     # 購入頻度の計算
                     purchase_histories = PurchaseHistory.objects.filter(item=item).order_by('purchased_date')
@@ -297,15 +333,15 @@ def add_item(request):
             print("エラーでロールバック:", e)
             # すでにエラーは error_messages に入っているはず
 
-        store_forms = []
-        for store in stores:
-            store_item_reference = StoreItemReference(store=store, item=item)
-            form = StoreItemReferenceForm(
-                request.POST,
-                instance=store_item_reference,
-                prefix=f"store_{store.id}"
-            )
-            store_forms.append(form)
+        # store_forms = []
+        # for store in stores:
+        #     store_item_reference = StoreItemReference(store=store, item=item)
+        #     form = StoreItemReferenceForm(
+        #         request.POST,
+        #         instance=store_item_reference,
+        #         prefix=f"store_{store.id}"
+        #     )
+        #     store_forms.append(form)
 
     else:
         item_form = ItemForm(
@@ -313,10 +349,13 @@ def add_item(request):
             user=user,
             store_forms=[]
         )
-        for store in stores:
-            store_item_reference = StoreItemReference(store=store)
-            form = StoreItemReferenceForm(instance=store_item_reference, prefix=f"store_{store.id}")
-            store_forms.append(form)
+        store_forms = [
+            StoreItemReferenceForm(
+                instance=StoreItemReference(store=store),
+                prefix=f"store_{store.id}"
+            )
+            for store in stores
+        ]
 
     return render(request, 'add_item.html', {
         'item_form': item_form,

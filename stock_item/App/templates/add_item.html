@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
 {% extends "base.html" %}
 {% load static %}
 
@@ -8,139 +6,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>アイテム追加</title>
-    {% comment %} <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #fdfcf8;
-        }
-
-        h1, h2 {
-            color: #444;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 30px auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: #f8f8f8;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #555;
-            color: white;
-        }
-
-        input[type="number"],
-        input[type="text"] {
-            width: 100%;
-            padding: 6px;
-            box-sizing: border-box;
-        }
-
-        input[type="checkbox"] {
-            transform: scale(1.1);
-            margin-right: 4px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .error-container {
-            background-color: #ffe0e0;
-            border: 1px solid #ff9999;
-            padding: 12px 18px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-
-        .error {
-            color: red;
-            font-weight: bold;
-            margin: 4px 0;
-        }
-
-        .tooltip-container {
-            display: inline-block;
-            position: relative;
-        }
-
-        .tooltip-icon {
-            background-color: #ccc;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 12px;
-            margin-left: 5px;
-            cursor: pointer;
-        }
-
-        .tooltip-text {
-            visibility: hidden;
-            background-color: #555;
-            color: #fff;
-            text-align: left;
-            padding: 5px 8px;
-            border-radius: 6px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -60px;
-            width: 120px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .tooltip-container:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        .reminder-status {
-            margin-left: 10px;
-            color: #555;
-        }
-
-        .errorlist {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        ul.errorlist li,
-        table .errorlist li {
-            color: red !important;
-            font-weight: bold;
-            list-style: disc;
-            margin-left: 20px;
-        }
-    </style> {% endcomment %}
 </head>
 {% endblock head %}
 
@@ -150,64 +15,45 @@
     <h1>新規アイテム追加</h1>
 
     <form method="post">
-        {% csrf_token %}
-
-        {% if item_form.non_field_errors or store_forms.non_form_errors %}
-            <div class="error-container">
-                <ul>
-                    {% for error in item_form.non_field_errors %}
-                        <li class="error">{{ error }}</li>
-                    {% endfor %}
-                    {% for error in store_forms.non_form_errors %}
-                        <li class="error">{{ error }}</li>
-                    {% endfor %}
+        {% comment %} {% csrf_token %}
+        {# item_form.non_field_errors を別表示にする #}
+        {% if item_form.non_field_errors %}
+            <div class="form-errors">
+                <ul class="errorlist">
+                {% for error in item_form.non_field_errors %}
+                    <li class="error">{{ error }}</li>
+                {% endfor %}
                 </ul>
             </div>
-        {% endif %}
+        {% endif %} {% endcomment %}
+        
 
         <h2>■アイテム詳細</h2>
         {% for field in item_form %}
-            {% if field.name != "reminder" %}
             <div class="form-group">
-                    {{ field.label_tag }} {{ field }}
-                        {% if field.help_text %}
-                            <span class="tooltip-container">
-                                <span class="tooltip-icon">?</span>
-                                <span class="tooltip-text">{{ field.help_text }}</span>
-                            </span>
-                        {% endif %}
-                        {% if field.errors %}
-                            <ul class="errorlist">
-                                {% for error in field.errors %}
-                                    <li class="error">{{ error }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
+                {{ field.label_tag }} {{ field }}
+                {% if field.name == "name" and item_form.non_field_errors %}
+                    <ul class="errorlist">
+                        {% for error in item_form.non_field_errors %}
+                            <li class="error">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if field.help_text %}
+                    <span class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <span class="tooltip-text">{{ field.help_text }}</span>
+                    </span>
+                {% endif %}
+                {% if field.errors %}
+                    <ul class="errorlist">
+                        {% for error in field.errors %}
+                            <li class="error">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             </div>
-            {% endif %}
         {% endfor %}
-
-        <div class="form-group">
-            <label for="{{ item_form.reminder.id_for_label }}">
-                {{ item_form.reminder.label }}:
-            </label>
-            {{ item_form.reminder }}
-            <span class="reminder-status">ON</span>
-            {% if item_form.reminder.help_text %}
-                <span class="tooltip-container">
-                    <span class="tooltip-icon">?</span>
-                    <span class="tooltip-text">{{ item_form.reminder.help_text }}</span>
-                </span>
-            {% endif %}
-            </div>
-
-        {% if item_form.errors %}
-            <div class="error-messages">
-                {% for error in item_form.name.errors %}
-                    <p class="error">{{ error }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
 
         <h2>■店舗情報</h2>
         <table class="table">
@@ -237,31 +83,19 @@
                     <tr>
                         <td>{{ store_form.instance.store.name }}</td>
                         <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price" 
-                                   value="{{ store_form.initial.price|default_if_none:'' }}">
+                            {{ store_form.price }}
                         </td>
                         <td>
-                            <input type="number" 
-                                   name="{{ store_form.prefix }}-price_per_unit" 
-                                   value="{{ store_form.initial.price_per_unit|default_if_none:'' }}">
+                            {{ store_form.price_per_unit }}
                         </td>
                         <td>
-                            <input type="text" 
-                                   name="{{ store_form.prefix }}-memo" 
-                                   value="{{ store_form.initial.memo|default_if_none:'' }}">
+                            {{ store_form.memo }}
                         </td>
                         <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-price_unknown" 
-                                   {% if store_form.initial.price_unknown %}checked{% endif %}>
-                            価格不明
+                            {{ store_form.price_unknown }} 価格不明
                         </td>
                         <td>
-                            <input type="checkbox" 
-                                   name="{{ store_form.prefix }}-no_handling" 
-                                   {% if store_form.initial.no_handling %}checked{% endif %}>
-                            取り扱いなし
+                            {{ store_form.no_handling }} 取り扱いなし
                         </td>
                     </tr>
                     <input type="hidden" name="{{ store_form.prefix }}-store" value="{{ store_form.instance.store.id }}">
@@ -274,31 +108,29 @@
     </form>
 </div>
 
-        <br><br><br>
-        
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                document.querySelectorAll('tbody tr').forEach(row => {
-                    const priceField = row.querySelector('input[name$="-price"]');
-                    const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
-                    const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
-    
-                    priceUnknownCheckbox.addEventListener('change', () => {
-                        if (priceUnknownCheckbox.checked) {
-                            noPriceCheckbox.checked = false;
-                            priceField.value = ""; 
-                        }
-                    });
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const priceField = row.querySelector('input[name$="-price"]');
+            const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
+            const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
 
-                    noPriceCheckbox.addEventListener('change', () => {
-                        if (noPriceCheckbox.checked) {
-                            priceUnknownCheckbox.checked = false;
-                            priceField.value = ""; 
-                        }
-                    });
-                });
+            priceUnknownCheckbox.addEventListener('change', () => {
+                if (priceUnknownCheckbox.checked) {
+                    noPriceCheckbox.checked = false;
+                    priceField.value = "";
+                }
             });
-        </script>
-    {% endblock %}
+
+            noPriceCheckbox.addEventListener('change', () => {
+                if (noPriceCheckbox.checked) {
+                    priceUnknownCheckbox.checked = false;
+                    priceField.value = "";
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
 </body>
 </html>
