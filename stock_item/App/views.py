@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.utils.timezone import now
 from django.core.exceptions import ValidationError
 from collections import defaultdict
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,date
 
 
 
@@ -187,9 +187,10 @@ def item_list(request):
 
     # 並び替えの適用（最終購入日順）
     if sort_by == 'date_asc':
-        item_data = sorted(item_data, key=lambda x: x['last_purchase_date'] or datetime.date.min)
+        item_data = sorted(item_data, key=lambda x: x['last_purchase_date'] or date.min)
     elif sort_by == 'date_desc':
-        item_data = sorted(item_data, key=lambda x: x['last_purchase_date'] or datetime.date.min, reverse=True)
+        item_data = sorted(item_data, key=lambda x: x['last_purchase_date'] or date.min, reverse=True)
+
 
     print(f"DEBUG (before render): shopping_list_items = {shopping_list_items}")
 
@@ -265,10 +266,38 @@ def add_item(request):
                                 continue
 
                             # StoreItemReference 保存処理
-                            store_reference = form.save(commit=False)
-                            store_reference.item = item
-                            store_reference.store = form.instance.store
-                            store_reference.save()
+                                                   
+
+                            try:
+                                # StoreItemReference を取得または作成
+                                existing_references = StoreItemReference.objects.filter(store=form.instance.store, item=item)
+                                if existing_references.exists():
+                                    # 重複するエントリが存在する場合、最新の1つを除いて削除
+                                    store_reference = existing_references.first()
+                                    existing_references.exclude(id=store_reference.id).delete()
+
+                                    # 既存のエントリを更新する
+                                    store_reference.price = form.cleaned_data.get('price')
+                                    store_reference.price_per_unit = form.cleaned_data.get('price_per_unit')
+                                    store_reference.memo = form.cleaned_data.get('memo')
+                                    store_reference.price_unknown = form.cleaned_data.get('price_unknown', False)
+                                    store_reference.no_handling = form.cleaned_data.get('no_handling', False)
+                                    store_reference.save()
+
+                                else:
+                                    # 存在しない場合は新しく作成
+                                    StoreItemReference.objects.create(
+                                        store=form.instance.store,
+                                        item=item,
+                                        price=form.cleaned_data.get('price'),
+                                        price_per_unit=form.cleaned_data.get('price_per_unit'),
+                                        memo=form.cleaned_data.get('memo'),
+                                        price_unknown=form.cleaned_data.get('price_unknown', False),
+                                        no_handling=form.cleaned_data.get('no_handling', False)
+                                    )
+
+                            except StoreItemReference.MultipleObjectsReturned:
+                                error_messages.append(f"{form.instance.store.name} に対する StoreItemReference が重複しています。修正が必要です。")
 
                         else:
                             has_error = True
@@ -423,6 +452,8 @@ def edit_item(request, item_id):
                 store_reference = form.save(commit=False)
                 store_reference.item = updated_item
                 store_reference.save()
+
+            
 
             # 購入履歴の更新処理
             new_purchase_date = item_form.cleaned_data.get('last_purchase_date')
@@ -794,6 +825,14 @@ def store_edit(request, pk):
     if request.method == "POST":
         store_form = StoreForm(request.POST, instance=store, user=request.user)
 
+        item_price_formset = StoreItemReferenceFormSet(
+            request.POST,
+            queryset=StoreItemReference.objects.filter(store=store, store__user=request.user, item__user=request.user).select_related("item")
+        )
+
+        if store_form.is_valid() and item_price_formset.is_valid():
+            store_form.save()
+
         # POST時にtravel_time_formsを構築（POST値を初期値に）
         travel_time_forms = []
         for other_store in other_stores:
@@ -812,17 +851,6 @@ def store_edit(request, pk):
                 except ValueError:
                     error_messages.append(f"{other_store.name} の移動時間は数値で入力してください。")
 
-        # 価格フォーム
-        item_price_formset = StoreItemReferenceFormSet(
-            queryset=StoreItemReference.objects.filter(store=store, store__user=request.user, item__user=request.user).select_related("item")
-        )
-        for form in item_price_formset:
-            item = getattr(form.instance, "item", None)
-            if item:
-                form.fields['item_label'].initial = item.name
-            form.fields['price_unknown'].initial = form.instance.price_unknown
-            form.fields['no_handling'].initial = form.instance.no_handling
-
         store_form_valid = store_form.is_valid()
         formset_valid = item_price_formset.is_valid()
 
@@ -832,16 +860,23 @@ def store_edit(request, pk):
             for tf in travel_time_forms:
                 store_id = tf["store"].id
                 val = int(request.POST.get(f"travel_time_{store_id}"))
+
+                # **双方向で保存する処理**
                 StoreTravelTime.objects.update_or_create(
                     store1=store,
                     store2=tf["store"],
                     defaults={"travel_time_min": val},
                 )
+                StoreTravelTime.objects.update_or_create(
+                    store1=tf["store"],
+                    store2=store,
+                    defaults={"travel_time_min": val},  # 相互に同じ値を保存
+                )
 
             for form in item_price_formset:
-                    instance = form.save(commit=False)
-                    instance.item = form.instance.item  
-                    instance.save()
+                instance = form.save(commit=False)
+                instance.item = form.instance.item  
+                instance.save()
                 
             return redirect("settings")
         
@@ -883,6 +918,7 @@ def store_edit(request, pk):
             "error_messages": error_messages,
         }
     )
+
 
 
 

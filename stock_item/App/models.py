@@ -218,6 +218,9 @@ class StoreItemReference(models.Model):
         if self.price_per_unit is not None and self.price_per_unit <= 0:
             raise ValidationError("単位数は正の値である必要があります。")
         
+    class Meta:
+        unique_together = ('store', 'item')
+        
     
 
 
