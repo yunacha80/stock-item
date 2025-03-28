@@ -16,29 +16,31 @@
 
     <form method="post">
         {% csrf_token %}
-        {# item_form.non_field_errors を別表示にする #}
-        {% comment %} {% if item_form.non_field_errors %}
-            <div class="form-errors">
-                <ul class="errorlist">
-                {% for error in item_form.non_field_errors %}
-                    <li class="error">{{ error }}</li>
-                {% endfor %}
-                </ul>
-            </div>
-        {% endif %} {% endcomment %}
+        {% if item_form.non_field_errors or store_forms.non_form_errors %}
+                    <div class="error-container">
+                        <ul>
+                            {% for error in item_form.non_field_errors %}
+                                <li class="error">{{ error }}</li>
+                            {% endfor %}
+                            {% for error in store_forms.non_form_errors %}
+                                <li class="error">{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
         
 
         <h2>■アイテム詳細</h2>
         {% for field in item_form %}
             <div class="form-group">
                 {{ field.label_tag }} {{ field }}
-                {% if field.name == "name" and item_form.non_field_errors %}
+                {% comment %} {% if field.name == "name" and item_form.non_field_errors %}
                     <ul class="errorlist">
                         {% for error in item_form.non_field_errors %}
                             <li class="error">{{ error }}</li>
                         {% endfor %}
                     </ul>
-                {% endif %}
+                {% endif %} {% endcomment %}
                 {% if field.help_text %}
                     <span class="tooltip-container">
                         <span class="tooltip-icon">?</span>

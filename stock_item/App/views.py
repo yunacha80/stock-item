@@ -221,13 +221,14 @@ def add_item(request):
     has_error = False
 
     if request.method == 'POST':
-        # 仮でアイテムインスタンス作成（まだ保存しない）
+        # アイテムフォームを作成
         item_form = ItemForm(request.POST, user=user, store_forms=[])
-        if item_form.is_valid():
-            item = item_form.save(commit=False)
+
+        if item_form.is_valid():  
+            item = item_form.save(commit=False)  # 保存しないでインスタンスを作成
             item.user = user
-            item.save()
-        
+
+            # 店舗ごとのフォームを作成
             store_forms = [
                 StoreItemReferenceForm(
                     request.POST,
@@ -236,42 +237,12 @@ def add_item(request):
                 )
                 for store in stores
             ]
-        else:
-            store_forms = [
-                StoreItemReferenceForm(
-                    request.POST,
-                    instance=StoreItemReference(store=store),
-                    prefix=f"store_{store.id}"
-                )
-                for store in stores
-            ] 
 
-        try:
-            with transaction.atomic():
-                if item_form.is_valid():
-                   
-                    for form in store_forms:
-                        store = form.instance.store
-                        if not form.is_valid():
-                            has_error = True
-                            for field, errors in form.errors.items():
-                                for error in errors:
-                                    error_messages.append(f"{store.name} - {field}: {error}")
-                        else:
-                            price = form.cleaned_data.get('price')
-                            price_unknown = form.cleaned_data.get('price_unknown', False)
-                            no_handling = form.cleaned_data.get('no_handling', False)
-
-                            if not price and not price_unknown and not no_handling:
-                                form.add_error('price', '価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。')
-                                has_error = True
-                                error_messages.append(f"{store.name}: 価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。")
-
-                    if has_error:
-                        raise ValidationError("バリデーションエラーのためロールバック")
-
-                    
+            try:
+                with transaction.atomic():
+                    # アイテムを保存
                     item.save()
+
                     # 最終購入日の保存
                     last_purchase_date = item_form.cleaned_data.get('last_purchase_date')
                     if last_purchase_date:
@@ -281,35 +252,32 @@ def add_item(request):
                             purchased_quantity=item.stock_quantity
                         )
 
-                    # 店舗ごとのフォーム処理
                     for form in store_forms:
-                        if form.cleaned_data.get('price') or form.cleaned_data.get('price_unknown') or form.cleaned_data.get('no_handling'):
+                        if form.is_valid():
+                            price = form.cleaned_data.get('price')
+                            price_unknown = form.cleaned_data.get('price_unknown', False)
+                            no_handling = form.cleaned_data.get('no_handling', False)
+
+                            if not price and not price_unknown and not no_handling:
+                                form.add_error('price', '価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。')
+                                has_error = True
+                                error_messages.append(f"{form.instance.store.name}: 価格を入力するか、「価格不明」または「取り扱いなし」を選択してください。")
+                                continue
+
+                            # StoreItemReference 保存処理
                             store_reference = form.save(commit=False)
                             store_reference.item = item
                             store_reference.store = form.instance.store
-                            
-                        # get_or_create を使って重複回避
-                            existing_ref, created = StoreItemReference.objects.get_or_create(
-                            store=store_reference.store,
-                            item=store_reference.item,
-                            defaults={
-                                'price': store_reference.price,
-                                'price_per_unit': store_reference.price_per_unit,
-                                'memo': store_reference.memo,
-                                'price_unknown': store_reference.price_unknown,
-                                'no_handling': store_reference.no_handling,
-                            }
-                        )
+                            store_reference.save()
 
-                        if not created:
-                            # 既存のデータがあるなら更新して上書き
-                            existing_ref.price = store_reference.price
-                            existing_ref.price_per_unit = store_reference.price_per_unit
-                            existing_ref.memo = store_reference.memo
-                            existing_ref.price_unknown = store_reference.price_unknown
-                            existing_ref.no_handling = store_reference.no_handling
-                            existing_ref.save()
+                        else:
+                            has_error = True
+                            for field, errors in form.errors.items():
+                                for error in errors:
+                                    error_messages.append(f"{form.instance.store.name} - {field}: {error}")
 
+                    if has_error:
+                        raise ValidationError("バリデーションエラーのためロールバック")
 
                     # 購入頻度の計算
                     purchase_histories = PurchaseHistory.objects.filter(item=item).order_by('purchased_date')
@@ -323,25 +291,25 @@ def add_item(request):
 
                     return redirect('item_list')
 
-                else:
-                    has_error = True
-                    for field, errors in item_form.errors.items():
-                        for error in errors:
-                            error_messages.append(f"{field}: {error}")
+            except Exception as e:
+                print("エラーでロールバック:", e)
 
-        except Exception as e:
-            print("エラーでロールバック:", e)
-            # すでにエラーは error_messages に入っているはず
+        else:
+            # アイテムフォームが無効な場合のエラー処理
+            has_error = True
+            for field, errors in item_form.errors.items():
+                for error in errors:
+                    error_messages.append(f"{field}: {error}")
 
-        # store_forms = []
-        # for store in stores:
-        #     store_item_reference = StoreItemReference(store=store, item=item)
-        #     form = StoreItemReferenceForm(
-        #         request.POST,
-        #         instance=store_item_reference,
-        #         prefix=f"store_{store.id}"
-        #     )
-        #     store_forms.append(form)
+        if not store_forms:
+            store_forms = [
+                StoreItemReferenceForm(
+                    request.POST,
+                    instance=StoreItemReference(store=store),
+                    prefix=f"store_{store.id}"
+                )
+                for store in stores
+            ]
 
     else:
         item_form = ItemForm(
@@ -356,6 +324,7 @@ def add_item(request):
             )
             for store in stores
         ]
+
 
     return render(request, 'add_item.html', {
         'item_form': item_form,
