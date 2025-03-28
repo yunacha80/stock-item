@@ -15,9 +15,9 @@
     <h1>新規アイテム追加</h1>
 
     <form method="post">
-        {% comment %} {% csrf_token %}
+        {% csrf_token %}
         {# item_form.non_field_errors を別表示にする #}
-        {% if item_form.non_field_errors %}
+        {% comment %} {% if item_form.non_field_errors %}
             <div class="form-errors">
                 <ul class="errorlist">
                 {% for error in item_form.non_field_errors %}
