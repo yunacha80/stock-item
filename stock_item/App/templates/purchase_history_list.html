@@ -20,7 +20,7 @@
                 {% for field in form.fields.items.queryset %}
                     <div class="item-checkbox">
                         <input type="checkbox" name="items" value="{{ field.id }}" id="item-{{ field.id }}">
-                        <label for="item-{{ field.id }}">{{ field.name }} - 在庫最低値: {{ field.stock_min_threshold }}</label>
+                        <label for="item-{{ field.id }}">{{ field.name }}</label>
                     </div>
                 {% endfor %}
             </div>

@@ -1032,6 +1032,7 @@ button.increment:hover {
     padding: 10px 20px;
     border-radius: 25px;
     border: none;
+    text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
 }
@@ -1257,14 +1258,16 @@ button.increment:hover {
     align-items: center;
     gap: 8px; 
     margin-bottom: 15px;
-    padding-top: 20px;
+    padding-top: 0;
 }
 
 .form-group label {
     margin-bottom: 0;
-    font-size: 1.2em;
-    color: #34495e; 
+    font-size: 1em;
+    color: #34495e;
 }
+
+
 /* 
 .form-group input {
     width: 100%;
@@ -1328,6 +1331,19 @@ button.increment:hover {
 .error {
     color: #d60000;
     font-weight: bold;
+}
+
+.errorlist {
+    margin: 0;
+    padding-left: 18px;
+}
+
+ul.errorlist li,
+table .errorlist li {
+    color: red !important;
+    font-weight: bold;
+    list-style: disc;
+    margin-left: 20px;
 }
 
 .purchase-history-page .purchase-form-group {
@@ -1505,7 +1521,8 @@ button.increment:hover {
     cursor: pointer;
 }
 
-
-
-
-
+#password_change h2, #email_change h2 {
+    text-align: center !important;
+    font-size: 1.5rem;
+    margin-top: 30px;
+}

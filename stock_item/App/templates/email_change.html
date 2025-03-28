@@ -1,34 +1,42 @@
 <!DOCTYPE html>
 <html lang="ja">
 {% extends "base.html" %}
+{% load static %}
+
 {% block head %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Item</title>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Stock Item</title>
+        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+        <style>
+            .current_email input[type="email"] {
+                border: none; 
+                outline: none;
+                background: none;
+            }
+        </style>
+    </head>
 {% endblock head %}
 
-<body>
 {% block content %}
-<h2>■メールアドレス変更</h2>
-<form method="post">
-    {% csrf_token %}
-    <style>
-        .current_email input[type="email"] {
-            border: none; 
-            outline: none;
-            background: none;
-        }
-    </style>
-    <div class="current_email">
-        {{ form.current_email.label_tag }} {{ form.current_email }}
-    </div>
-    {{ form.new_email.label_tag }} {{ form.new_email }}<br>
-    {{ form.confirm_email.label_tag }} {{ form.confirm_email }}<br><br>
-    <button type="submit">変更する</button>  <button type="button" onclick="window.history.back();">戻る</button><br><br><br>
-    {% endblock%}
-</body>
+    <body>
+        <h1>メールアドレス変更</h1>
+            <form method="post">
+                <h2>■メールアドレス変更</h2>
+                {% csrf_token %}
 
+                <div class="current_email">
+                    {{ form.current_email.label_tag }} {{ form.current_email }}
+                </div>
 
-</form>
+                {{ form.new_email.label_tag }} {{ form.new_email }}<br>
+                {{ form.confirm_email.label_tag }} {{ form.confirm_email }}<br><br>
+
+                <button type="submit">変更する</button>
+                <button type="button" onclick="window.history.back();">戻る</button><br><br><br>
+            </form>
+        </div>
+    </body>
+{% endblock %}
+</html>

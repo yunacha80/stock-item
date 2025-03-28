@@ -12,6 +12,15 @@
     <h1>店舗編集</h1>
     <form method="post">
         {% csrf_token %}
+        {% if error_messages %}
+            <div class="error-container">
+                <ul class="errorlist">
+                    {% for msg in error_messages %}
+                        <li class="error">{{ msg }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
 
         <!-- 店舗情報編集 -->
         <fieldset>
@@ -60,7 +69,7 @@
                         <tr>
                             <th>アイテム名</th>
                             <th>価格</th>
-                            <th>単価基準量</th>
+                            <th>入数</th>
                             <th>メモ</th>
                             <th>価格不明</th>
                             <th>取り扱いなし</th>

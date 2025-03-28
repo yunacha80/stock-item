@@ -4,6 +4,7 @@ from App.models import User
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
+from django.utils import timezone
 from django.db import models
 from django.forms import inlineformset_factory,modelformset_factory,BaseInlineFormSet,ModelForm
 from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference
@@ -133,51 +134,37 @@ class ItemForm(forms.ModelForm):
         required=True
     )
 
+    def clean_last_purchase_date(self):
+        last_date = self.cleaned_data.get('last_purchase_date')
+        if last_date and last_date > timezone.now().date():
+            raise forms.ValidationError("未来の日付は選択できません。")
+        return last_date
+
     def __init__(self, *args, store_forms=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.store_forms = store_forms
-
+        self.user = user
 
         if user:
             self.fields['category'].queryset = ItemCategory.objects.filter(user=user)
 
-        # `form-control` を適用するフィールド
         form_control_fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date']
         for field in form_control_fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
-
-        # チェックボックスには `form-control` を適用しない
         self.fields['reminder'].widget.attrs.update({'class': 'form-check-input'})
 
-    def clean_name(self):
-        """ アイテム名の重複チェック """
-        name = self.cleaned_data.get('name')
-        item_id = self.instance.id
-
-        if Item.objects.filter(name=name).exclude(id=item_id).exists():
-            raise ValidationError("このアイテム名はすでに登録されています。")
-
-        return name
-
     def clean(self):
-        """ 店舗価格が未入力ならエラー """
         cleaned_data = super().clean()
-        store_forms = self.store_forms  # `views.py` から渡されたフォームリスト
-        has_valid_price = False
+        name = cleaned_data.get('name')
+        category = cleaned_data.get('category')
 
-        if store_forms:
-            for store_form in store_forms:
-                price = store_form.cleaned_data.get('price')
-                no_handling = store_form.cleaned_data.get('no_handling')
-
-                # 価格か「取り扱いなし」がチェックされている場合 OK
-                if price or no_handling:
-                    has_valid_price = True
-
-            if not has_valid_price:
-                raise ValidationError("少なくとも1店舗の価格を入力するか、「取り扱いなし」にチェックを入れてください。")
+        if name and category:
+            item_id = self.instance.id
+            if Item.objects.filter(name=name, category=category, user=self.user).exclude(id=item_id).exists():
+                raise ValidationError("このカテゴリには同じ名前のアイテムがすでに存在します。")
 
         return cleaned_data
+
 
 
 
@@ -313,6 +300,18 @@ class StoreForm(forms.ModelForm):
             'phone_number': '電話番号',
             'travel_time_home_min': '自宅からの移動時間（分）',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['travel_time_home_min'].required = True
+
+    def clean_travel_time_home_min(self):
+        value = self.cleaned_data.get('travel_time_home_min')
+        if value in (None, ''):
+            raise forms.ValidationError("移動時間は必須です。")
+        if value <= 0:
+            raise forms.ValidationError("1分以上の値を入力してください。")
+        return value
 
 StoreTravelTimeFormSet = inlineformset_factory(
     parent_model=Store,

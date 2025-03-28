@@ -138,22 +138,93 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            function updateSelectedCount() {
-                const selectedCount = document.querySelectorAll(".select-item:checked").length;
-                document.getElementById("selected-items-count").textContent = selectedCount;
-            }
-            document.querySelectorAll(".select-item").forEach(checkbox => {
-                checkbox.addEventListener("change", updateSelectedCount);
-            });
             const selectedItemIds = JSON.parse('{{ selected_item_ids|safe }}'.replace(/'/g, '"'));
+    
+            // チェックボックス状態を初期化
             document.querySelectorAll(".select-item").forEach(checkbox => {
                 if (selectedItemIds.includes(checkbox.value)) {
                     checkbox.checked = true;
                 }
+    
+                checkbox.addEventListener("change", updateSelectedCount);
             });
-            updateSelectedCount();
+    
+            function updateSelectedCount() {
+                const selectedCount = document.querySelectorAll(".select-item:checked").length;
+                document.getElementById("selected-items-count").textContent = selectedCount;
+            }
+    
+            updateSelectedCount();  // 初回表示時の数
+    
+            // ＋−ボタン処理
+            document.querySelectorAll(".decrement, .increment").forEach(button => {
+                button.addEventListener("click", async function () {
+                    const itemId = this.dataset.itemId;
+                    if (!itemId) return;
+    
+                    const isIncrement = this.classList.contains("increment");
+                    const quantityDisplay = document.getElementById(`quantity-${itemId}`);
+                    let newQuantity = parseInt(quantityDisplay.textContent) || 0;
+    
+                    newQuantity = isIncrement ? newQuantity + 1 : Math.max(0, newQuantity - 1);
+    
+                    try {
+                        const response = await fetch("{% url 'update_purchase_quantity' %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": getCSRFToken(),
+                            },
+                            body: JSON.stringify({ item_id: itemId, new_quantity: newQuantity })
+                        });
+    
+                        const data = await response.json();
+                        if (data.success) {
+                            quantityDisplay.textContent = data.planned_purchase_quantity;
+                        } else {
+                            alert("エラー：" + data.message);
+                        }
+                    } catch (error) {
+                        alert("ネットワークエラーが発生しました。");
+                    }
+                });
+            });
+    
+            // 削除ボタン処理
+            document.querySelectorAll(".btn-warning").forEach(button => {
+                button.addEventListener("click", async function (event) {
+                    event.preventDefault();
+                    const itemId = this.value;
+                    if (!confirm("本当に削除しますか？")) return;
+    
+                    try {
+                        const response = await fetch(`/remove-from-shopping-list/${itemId}/`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": getCSRFToken(),
+                            },
+                        });
+    
+                        const data = await response.json();
+                        if (data.success) {
+                            document.querySelector(`#item-${itemId}`).remove();
+                            updateSelectedCount(); // 削除後に選択数を再計算
+                        } else {
+                            alert("削除に失敗しました: " + data.message);
+                        }
+                    } catch (error) {
+                        alert("ネットワークエラーが発生しました。");
+                    }
+                });
+            });
+    
+            function getCSRFToken() {
+                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+            }
         });
     </script>
+    
 </body>
 {% endblock %}
 </html>

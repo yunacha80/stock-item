@@ -76,7 +76,12 @@
                 <span class="store-name">{{ store.name }}</span>
                 <div class="store-actions">
                     <a href="{% url 'store_edit' store.id %}" class="btn-edit">編集</a>
-                    <button class="btn-delete" onclick="deleteStore({{ store.id }})">削除</button>
+                    <button class="btn-delete"
+                            onclick="deleteStore(this)"
+                            data-id="{{ store.id }}"
+                            data-name="{{ store.name }}">
+                        削除
+                    </button>
                 </div>
             </li>
             {% empty %}
@@ -194,6 +199,36 @@
             alert("エラーが発生しました");
         });
     }
+    function deleteStore(button) {
+        const confirmed = confirm("この店舗を削除しますか？");
+        if (!confirmed) return;
+    
+        const storeId = button.getAttribute("data-id");  // ← data-id を取得
+        const csrfToken = getCsrfToken();
+        const deleteUrl = `/stores/delete/${storeId}/`;
+    
+        fetch(deleteUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("削除に失敗しました");
+            return response.json();
+        })
+        .then(data => {
+            alert("店舗が削除されました");
+            location.reload();
+        })
+        .catch(error => {
+            console.error("エラー:", error);
+            alert("エラーが発生しました");
+        });
+    }
+    
 </script>
 {% endblock %}
 </body>

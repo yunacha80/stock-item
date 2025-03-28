@@ -1,22 +1,64 @@
-<!DOCTYPE html>
-<html lang="ja">
 {% extends "base.html" %}
+
 {% block head %}
-<head>
     <meta charset="UTF-8">
     <title>店舗追加</title>
-</head>
 {% endblock head %}
+
 {% block content %}
-<body>
     <h1>新規店舗追加</h1>
-    
-    <!-- 店舗追加フォーム -->
+
     <form method="post">
         {% csrf_token %}
+
+        {% if error_messages %}
+            <div class="error-container">
+                <ul class="errorlist">
+                    {% for msg in error_messages %}
+                        <li class="error">{{ msg }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+
+
         <fieldset>
             <legend><h2>店舗情報</h2></legend>
-            {{ store_form.as_p }}
+
+            <p>
+                {{ store_form.name.label_tag }}<br>
+                {{ store_form.name }}
+                {% if store_form.name.errors %}
+                    <div class="error">{{ store_form.name.errors.0 }}</div>
+                {% endif %}
+            </p>
+
+            <p>
+                {{ store_form.address.label_tag }}<br>
+                {{ store_form.address }}
+            </p>
+
+            <p>
+                {{ store_form.phone_number.label_tag }}<br>
+                {{ store_form.phone_number }}
+            </p>
+
+            <p>
+                {{ store_form.travel_time_home_min.label_tag }}<br>
+                {{ store_form.travel_time_home_min }}
+                {% if store_form.travel_time_home_min.errors %}
+                    <ul class="errorlist">
+                        {% for error in store_form.travel_time_home_min.errors %}
+                            <li class="error">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </p>
+
+            {% for error in store_form.non_field_errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
         </fieldset>
 
         <fieldset>
@@ -42,10 +84,10 @@
         </fieldset>
 
         <br>
-        <button type="submit" class="button-container">保存</button><br>
+        <button type="submit" class="button-container">保存</button>
+        <br>
         <button type="button" onclick="window.history.back();" class="btn-secondary">戻る</button>
     </form>
+
     <br><br><br><br>
-</body>
 {% endblock %}
-</html>

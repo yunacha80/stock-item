@@ -14,29 +14,16 @@
 <div class="category-edit-form">
     <h1>{% if form.instance.id %}カテゴリ編集{% else %}新規カテゴリ追加{% endif %}</h1>
 
-    <!-- エラーメッセージがある場合に表示 -->
-    {% if is_post and form.errors %}
-    <div class="error-messages">
-        <ul>
-            {% for field, errors in form.errors.items %}
-                {% for error in errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-
-
+   
     <form method="post">
         {% csrf_token %}
         <div class="form-group">
             <label for="id_name">カテゴリ名 <span class="required">※必須</span>:</label>
-            {{ form.name }}
+            {{ form.name.as_widget }}
         </div>
         <div class="form-group">
             <label for="id_display_order">表示順:</label>
-            {{ form.display_order }}
+            {{ form.display_order.as_widget }}
         </div>
 
         <div class="catebtn">
