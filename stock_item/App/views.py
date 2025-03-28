@@ -108,6 +108,11 @@ class EmailChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
         self.request.user.email = new_email 
         self.request.user.save()
         return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        # エラー時のデバッグ用出力
+        print(form.errors)
+        return super().form_invalid(form)
 
 
 # class HomeView(LoginRequiredMixin, View):

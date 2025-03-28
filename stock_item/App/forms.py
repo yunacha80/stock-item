@@ -93,6 +93,9 @@ class EmailChangeForm(forms.Form):
         if new_email != confirm_email:
             raise ValidationError("新しいメールアドレスが一致しません。")
         
+        if User.objects.filter(email=new_email).exists():
+            raise ValidationError("このメールアドレスは既に登録されています。")
+        
         return cleaned_data
      
 class ItemCategoryForm(forms.ModelForm):

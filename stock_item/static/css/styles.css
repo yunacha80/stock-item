@@ -1357,6 +1357,11 @@ table .errorlist li {
     margin-left: 20px;
 }
 
+.error-messages {
+    color: #d60000;
+    font-weight: bold;
+}
+
 .purchase-history-page .purchase-form-group {
     margin-bottom: 20px;
     padding: 15px;
