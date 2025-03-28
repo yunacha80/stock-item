@@ -501,12 +501,8 @@ def categorized_item_list(request):
 @login_required
 def category_add(request):
     if request.method == "POST":
-        form = ItemCategoryForm(request.POST)
+        form = ItemCategoryForm(request.POST, user=request.user)
         if form.is_valid():
-            if ItemCategory.objects.filter(user=request.user).count() >= 10:
-                messages.error(request, "カテゴリは最大10個まで登録可能です。")
-                return render(request, 'category_form.html', {'form': form})
-
             category = form.save(commit=False)
             category.user = request.user
             new_order = category.display_order
@@ -527,7 +523,7 @@ def category_add(request):
         else:
             messages.error(request, "入力内容に誤りがあります。")
     else:
-        form = ItemCategoryForm()
+        form = ItemCategoryForm(user=request.user)
     return render(request, 'category_form.html', {
         'form': form,
         'is_post': request.method == 'POST'
@@ -544,7 +540,7 @@ def category_edit(request, category_id):
     old_order = category.display_order
 
     if request.method == "POST":
-        form = ItemCategoryForm(request.POST, instance=category)
+        form = ItemCategoryForm(request.POST, instance=category, user=request.user) 
         if form.is_valid():
             updated_category = form.save(commit=False)
 
@@ -571,7 +567,7 @@ def category_edit(request, category_id):
             updated_category.save()
             return redirect('settings')
     else:
-        form = ItemCategoryForm(instance=category)
+        form = ItemCategoryForm(instance=category, user=request.user)
     return render(request, 'category_form.html', {
         'form': form,
         'is_post': request.method == 'POST'

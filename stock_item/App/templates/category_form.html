@@ -13,7 +13,13 @@
 {% block content %}
 <div class="category-edit-form">
     <h1>{% if form.instance.id %}カテゴリ編集{% else %}新規カテゴリ追加{% endif %}</h1>
-
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
    
     <form method="post">
         {% csrf_token %}

@@ -106,8 +106,29 @@ class ItemCategoryForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)  # ユーザーを保存
         super().__init__(*args, **kwargs)
         self.fields['display_order'].required = False
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if self.user:
+            # 同じユーザー・同じ名前・別のIDのカテゴリがあるか確認
+            qs = ItemCategory.objects.filter(user=self.user, name=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise ValidationError("同じ名前のカテゴリがすでに存在します。")
+        return name
+    
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if not self.instance.pk and self.user:  # 新規作成時のみチェック
+            if ItemCategory.objects.filter(user=self.user).count() >= 10:
+                raise ValidationError("カテゴリは最大10個まで登録できます。")
+
+        return cleaned_data
 
         
 class ItemForm(forms.ModelForm):
