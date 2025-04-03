@@ -37,8 +37,8 @@
                     <ul>
                         {% for history in histories %}
                             <li>
-                                アイテム: {{ history.item.name }}<br>
-                                購入数量: {{ history.purchased_quantity }}
+                                アイテム名： {{ history.item.name }}-{{ history.item.category.name }}<br>
+                                購入数量： {{ history.purchased_quantity }}
                             </li>
                         {% endfor %}
                     </ul>

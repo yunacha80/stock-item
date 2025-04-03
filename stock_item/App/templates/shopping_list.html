@@ -33,7 +33,7 @@
                             <div class="shopping-tooltip-container">
                                 <span class="shopping-tooltip-icon">?</span>
                                 <div class="shopping-tooltip-text">
-                                    購入済をチェック、購入した数、購入日を入力したのち購入確定をクリックすると在庫更新が行われます。
+                                    購入済をチェック、購入した数、購入日を入力したのち在庫更新をクリックすると入力内容が保存されます。
                                 </div>
                             </div>
                         </div>
@@ -79,7 +79,7 @@
 
         <div class="button-container">
             <button type="submit" name="action" value="suggest" class="btn btn-primary">買い回り提案</button>
-            <button type="submit" name="action" value="update" class="btn btn-secondary1">購入確定</button>
+            <button type="submit" name="action" value="update" class="btn btn-secondary1">在庫更新</button>
         </div>
     </form>
 
@@ -211,14 +211,14 @@
                 return document.querySelector("[name=csrfmiddlewaretoken]").value;
             }
         
-            
+
             // 削除ボタン処理
             document.querySelectorAll(".btn-warning").forEach(button => {
                 button.addEventListener("click", async function (event) {
                     event.preventDefault();
                     const itemId = this.value;
                     if (!confirm("本当に削除しますか？")) return;
-    
+            
                     try {
                         const response = await fetch(`/remove-from-shopping-list/${itemId}/`, {
                             method: "POST",
@@ -227,22 +227,32 @@
                                 "X-CSRFToken": getCSRFToken(),
                             },
                         });
-    
+            
                         const data = await response.json();
                         if (data.success) {
-                            document.querySelector(`#item-${itemId}`).remove();
-                            updateSelectedCount(); // 削除後に選択数を再計算
+                            // アイテムをDOMから削除する処理を明確にする
+                            const itemRow = document.querySelector(`#item-${itemId}`);
+                            if (itemRow) itemRow.remove();  // 削除する行を取り除く
+                            
+                            updateSelectedCount(); // 選択数を更新
+            
+                            console.log("削除成功:", data.message);
                         } else {
                             alert("削除に失敗しました: " + data.message);
                         }
                     } catch (error) {
+                        console.error("削除リクエスト中にエラーが発生しました:", error);  // エラー内容を表示
                         alert("ネットワークエラーが発生しました。");
                     }
                 });
-            });           
-    
+            });
+            
             function getCSRFToken() {
-                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+                const tokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
+                if (tokenElement) {
+                    return tokenElement.value;
+                }
+                return '';
             }
         });
     </script>
