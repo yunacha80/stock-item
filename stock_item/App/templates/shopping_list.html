@@ -46,7 +46,7 @@
             </thead>
             <tbody>
                 {% for item in items %}
-                <tr id="item-{{ item.item.id }}">
+                <tr id="item-{{ item.item.id }}" data-item-name="{{ item.item.name }}">
                     <td>
                         <input type="checkbox" class="select-item" name="item_ids" value="{{ item.item.id }}">
                     </td>
@@ -251,7 +251,41 @@
                 const tokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
                 return tokenElement ? tokenElement.value : '';
             }
-        });
+
+            // 在庫更新ボタンのクリックイベントを処理
+            const updateButton = document.querySelector("button[name='action'][value='update']");
+            if (updateButton) {
+            updateButton.addEventListener("click", function (event) {
+                const rows = document.querySelectorAll("tbody tr");
+                let hasError = false;
+                let errorMessages = [];
+
+                rows.forEach(row => {
+                    const itemId = row.id.split("-")[1];  // item-{{ item.item.id }} から ID 部分を取得
+                    const itemName = row.getAttribute("data-item-name");  // アイテム名を取得
+                    const purchasedCheckbox = row.querySelector(`input[name='purchased_${itemId}']`);
+                    const purchasedQuantity = row.querySelector(`input[name='purchased_quantity_${itemId}']`);
+                    const purchasedDate = row.querySelector(`input[name='purchased_date_${itemId}']`);
+
+                    if (purchasedCheckbox && purchasedCheckbox.checked) {
+                        if (!purchasedQuantity.value) {
+                            errorMessages.push(`${itemName} の購入数を入力してください。`);
+                            hasError = true;
+                        }
+                        if (!purchasedDate.value) {
+                            errorMessages.push(`${itemName} の購入日を入力してください。`);
+                            hasError = true;
+                        }
+                    }
+                });
+    
+                if (hasError) {
+                    event.preventDefault();  // フォーム送信を停止
+                    alert(errorMessages.join("\n"));  // エラーメッセージを表示
+                }
+            });
+        }
+    });
     </script>
     
 </body>
