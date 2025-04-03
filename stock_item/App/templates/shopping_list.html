@@ -229,19 +229,19 @@
                         });
             
                         const data = await response.json();
-                        if (data.success) {
-                            // アイテムをDOMから削除する処理を明確にする
-                            const itemRow = document.querySelector(`#item-${itemId}`);
-                            if (itemRow) itemRow.remove();  // 削除する行を取り除く
-                            
-                            updateSelectedCount(); // 選択数を更新
             
-                            console.log("削除成功:", data.message);
+                        if (response.ok && data.success) {
+                            // 成功した場合はアイテムを画面から削除
+                            const itemRow = document.querySelector(`#item-${itemId}`);
+                            if (itemRow) itemRow.remove();
+                            updateSelectedCount();  // 選択数の更新
+                            alert(data.message);  // 成功メッセージを表示
                         } else {
-                            alert("削除に失敗しました: " + data.message);
+                            // エラーメッセージを表示
+                            alert(data.message || "削除に失敗しました。");
                         }
                     } catch (error) {
-                        console.error("削除リクエスト中にエラーが発生しました:", error);  // エラー内容を表示
+                        console.error("削除リクエスト中にエラーが発生しました:", error);
                         alert("ネットワークエラーが発生しました。");
                     }
                 });
@@ -249,10 +249,7 @@
             
             function getCSRFToken() {
                 const tokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
-                if (tokenElement) {
-                    return tokenElement.value;
-                }
-                return '';
+                return tokenElement ? tokenElement.value : '';
             }
         });
     </script>

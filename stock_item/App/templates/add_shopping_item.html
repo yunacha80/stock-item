@@ -11,7 +11,7 @@
         <select id="item_id" name="item_id" required>
             <option value="">-- アイテムを選択してください --</option>
             {% for item in items %}
-                <option value="{{ item.id }}">{{ item.name }}</option>
+                <option value="{{ item.id }}">{{ item.name }}－{{ item.category.name}}</option>
             {% endfor %}
         </select>
         <br>

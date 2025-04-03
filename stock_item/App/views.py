@@ -1408,7 +1408,6 @@ def clean_route(route):
     return cleaned_route
 
 
-
 @login_required
 @require_POST
 def remove_from_shopping_list(request, item_id):
@@ -1418,42 +1417,41 @@ def remove_from_shopping_list(request, item_id):
     try:
         print(f"DEBUG: remove_from_shopping_list called with item_id={item_id}")
 
-         # 1. 手動追加されたアイテムを削除
-        purchase_item = PurchaseItem.objects.filter(item__id=item_id, item__user=request.user)
-        if purchase_item.exists():
-            purchase_item.delete()
-            print(f"DEBUG: 手動追加アイテム {item_id} を削除")
+        # アイテムを取得する
+        item = get_object_or_404(Item, id=item_id, user=request.user)
+        print(f"DEBUG: item={item.name}, stock_quantity={item.stock_quantity}, stock_min_threshold={item.stock_min_threshold}")
 
+        # 自動追加アイテムかどうかの判断
+        if item.stock_quantity < item.stock_min_threshold:
+            # 在庫不足による自動追加アイテムの場合、削除を禁止する
+            print(f"DEBUG: 自動追加アイテムと判断 (stock_quantity={item.stock_quantity} < stock_min_threshold={item.stock_min_threshold})")
+            return JsonResponse({
+                "success": False,
+                "message": "在庫最低値を下回っているため削除できません。在庫更新または最低在庫数の変更を行ってください。"
+            }, status=400)
+
+        # 手動追加アイテムの場合
+        purchase_item = PurchaseItem.objects.filter(item__id=item_id, item__user=request.user).first()
+        
+        if purchase_item:
+            # 手動追加アイテムとして削除を試みる
+            purchase_item.delete()
+            print(f"DEBUG: 手動追加アイテム {item_id} を削除しました")
             return JsonResponse({
                 "success": True,
-                "message": "アイテムを買い物リストから削除しました。",
+                "message": "手動追加アイテムを削除しました。"
             })
-
         else:
-            item = get_object_or_404(Item, id=item_id, user=request.user)
-            
-            if item.stock_quantity < item.stock_min_threshold:
-                # 在庫が最低値を下回っている場合は削除禁止
-                return JsonResponse({
-                    "success": False,
-                    "message": "在庫最低値を下回っているため削除できません。在庫更新または最低在庫数の変更を行ってください。"
-                }, status=400)
-            else:
-                # 通常削除
-                item.stock_min_threshold = item.stock_quantity  # 在庫数と同じにすることでリストから削除
-                item.save()
-                print(f"DEBUG: 自動追加アイテム {item_id} の stock_min_threshold を変更し、リストから削除")
-                
-                return JsonResponse({
-                    "success": True,
-                    "message": "アイテムを買い物リストから削除しました。",
-                })
+            # PurchaseItem が存在しない場合
+            print(f"DEBUG: 手動追加アイテムとして存在しない (PurchaseItem が見つかりません)")
+            return JsonResponse({
+                "success": False,
+                "message": "削除対象のアイテムが見つかりません。"
+            }, status=400)
 
     except Exception as e:
         print(f"DEBUG: 削除エラー - {e}")
         return JsonResponse({"success": False, "message": f"削除に失敗しました: {e}"}, status=500)
-
-
 
 
 
