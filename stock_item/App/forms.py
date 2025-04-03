@@ -98,6 +98,11 @@ class EmailChangeForm(forms.Form):
         
         return cleaned_data
      
+
+def validate_non_negative(value):
+    if value < 0:
+        raise ValidationError('この値は0以上である必要があります。')
+     
 class ItemCategoryForm(forms.ModelForm):
     class Meta:
         model = ItemCategory
@@ -176,6 +181,7 @@ class ItemForm(forms.ModelForm):
         if last_date and last_date > timezone.now().date():
             raise forms.ValidationError("未来の日付は選択できません。")
         return last_date
+    
 
     def __init__(self, *args, store_forms=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -189,6 +195,21 @@ class ItemForm(forms.ModelForm):
         for field in form_control_fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})
         self.fields['reminder'].widget.attrs.update({'class': 'form-check-input'})
+
+        self.fields['stock_quantity'].widget = forms.NumberInput(attrs={'class': 'form-control', 'min': '0'})
+        self.fields['stock_min_threshold'].widget = forms.NumberInput(attrs={'class': 'form-control', 'min': '0'})
+
+    def clean_stock_quantity(self):
+        stock_quantity = self.cleaned_data.get('stock_quantity')
+        if stock_quantity is not None and stock_quantity < 0:
+            raise ValidationError('在庫数は0以上にしてください。')
+        return stock_quantity
+
+    def clean_stock_min_threshold(self):
+        stock_min_threshold = self.cleaned_data.get('stock_min_threshold')
+        if stock_min_threshold is not None and stock_min_threshold < 0:
+            raise ValidationError('最低在庫数は0以上にしてください。')
+        return stock_min_threshold
 
     def clean(self):
         cleaned_data = super().clean()
