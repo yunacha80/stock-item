@@ -29,6 +29,8 @@ p {
     
     text-align: left;
     margin: 10px auto;
+    width: 90%;
+    max-width: 1200px;
 }
 
 header, header h1 {
@@ -648,9 +650,11 @@ button.increment:hover {
     list-style: none;
     justify-content: center;
     padding: 0;
-    margin: 30px 0;
+    margin: 30px auto;
     display: flex;
     gap: 20px;
+    max-width: 1200px;
+    width: 90%;
 }
 
 .portfolio-li {
@@ -1329,13 +1333,63 @@ button.increment:hover {
     z-index: 1000;
 }
 
-
-
 /* ？マークツールチップ表示時 */
 .tooltip-container:hover .tooltip-text,
 .tooltip-container:focus-within .tooltip-text {
     display: block;
 }
+
+/* ツールチップを含むコンテナ */
+.shopping-tooltip-container {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* ？マークのスタイル */
+.shopping-tooltip-icon {
+    background-color: #ddd;
+    color: #333;
+    border-radius: 50%;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    margin-left: 5px;
+}
+
+/* ツールチップの本体 (非表示状態) */
+.shopping-tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 20px;
+    left: 0;
+    background-color: #fff;
+    color: #333; 
+    border: 1px solid #ccc;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+/* ホバー時の表示設定 */
+.shopping-tooltip-container:hover .shopping-tooltip-text,
+.shopping-tooltip-container:focus-within .shopping-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+
+
 
 
 .error-container {
@@ -1454,8 +1508,9 @@ table .errorlist li {
 
 .shopping-list-table td:nth-child(2),
 .shopping-list-table th:nth-child(2) {
-    min-width: 200px;
-    width: 25%;
+    min-width: 300px;
+    width: 300%;
+    white-space: nowrap;
 }
 
 .shopping-list-table td:nth-child(1),
@@ -1567,4 +1622,67 @@ table .errorlist li {
 
 .error-space {
     min-height: 1.4em; 
+}
+
+/* 全ての details タグの枠線を消す */
+details {
+    border: none !important; 
+    padding: 5px !important; 
+    margin: 0 !important; 
+    background-color: transparent ; 
+    outline: none ;
+}
+
+/* summary タグのスタイルを完全にリセット */
+summary {
+    list-style: none !important;
+    outline: none !important; 
+    border: none !important; 
+    padding: 0 !important; 
+    margin: 0 !important; 
+    background-color: transparent !important; 
+}
+/* details のデフォルトアイコンを非表示にする */
+details > summary {
+    list-style: none; 
+    outline: none; 
+}
+
+/* 提案内容の詳細スタイル */
+.suggestion-details summary {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    transition: box-shadow 0.3s, background-color 0.3s, transform 0.3s;
+}
+
+/* ホバー時の効果 */
+.suggestion-details summary:hover {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    background-color: #f0f0f0;
+    transform: translateY(-2px);
+}
+
+/* 開いている時のスタイル */
+.suggestion-details[open] summary {
+    background-color: #fafafa;
+}
+
+/* カスタムアイコンのスタイル */
+.suggestion-icon {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 10px;
+    font-size: 1.2rem;
+    color: #ff4444;
+    transition: transform 0.3s;
+}
+
+/* 開いた時のアイコン */
+.suggestion-details[open] .suggestion-icon {
+    transform: rotate(180deg);
 }

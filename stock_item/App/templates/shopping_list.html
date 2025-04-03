@@ -25,9 +25,20 @@
             <thead>
                 <tr>
                     <th>選択</th>
-                    <th>アイテム名 (現在庫数)</th>
+                    <th>アイテム名-カテゴリ(現在庫数)</th>
                     <th>購入予定数</th>
-                    <th>購入済み</th>
+                    <th>
+                        <div style="display: flex; align-items: center; white-space: nowrap; gap: 4px;">
+                        購入済み
+                            <div class="shopping-tooltip-container">
+                                <span class="shopping-tooltip-icon">?</span>
+                                <div class="shopping-tooltip-text">
+                                    購入済をチェック、購入した数、購入日を入力したのち購入確定をクリックすると在庫更新が行われます。
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    
                     <th>購入した数</th>
                     <th>購入日</th>
                     <th>削除</th>
@@ -39,12 +50,12 @@
                     <td>
                         <input type="checkbox" class="select-item" name="item_ids" value="{{ item.item.id }}">
                     </td>
-                    <td>{{ item.item.name }} (現在：{{ item.item.stock_quantity }}個)</td>
+                    <td>{{ item.item.name }} - {{ item.item.category.name }} (現在：{{ item.item.stock_quantity }}個)</td>
                     <td>
                         <div class="quantity-control">
-                            <button type="button" class="decrement" data-item-id="{{ item.item.id }}">－</button>
-                            <span class="quantity-display" id="quantity-{{ item.item.id }}">{{ item.planned_purchase_quantity|default:1 }}</span>
-                            <button type="button" class="increment" data-item-id="{{ item.item.id }}">＋</button>
+                            <button type="button" class="decrement" data-purchase-item-id="{{ item.id }}">－</button>
+                            <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.planned_purchase_quantity }}</span>
+                            <button type="button" class="increment" data-purchase-item-id="{{ item.id }}">＋</button>
                         </div>
                     </td>
                     <td>
@@ -68,7 +79,7 @@
 
         <div class="button-container">
             <button type="submit" name="action" value="suggest" class="btn btn-primary">買い回り提案</button>
-            <button type="submit" name="action" value="update" class="btn btn-secondary1">在庫更新</button>
+            <button type="submit" name="action" value="update" class="btn btn-secondary1">購入確定</button>
         </div>
     </form>
 
@@ -84,9 +95,11 @@
 
         <div class="suggestions">
             {% for suggestion in suggestions %}
-                <details>
-                    <summary>
-                        {{ suggestion.type }}
+            <details class="suggestion-details">
+                <summary>
+                    <span class="suggestion-icon">🔽</span> 
+                    {{ suggestion.type }}
+                
                         ◇お店：
                         {% if suggestion.route|length == 1 %}
                             {{ suggestion.route.0 }}
@@ -99,7 +112,7 @@
                         {% if suggestion.total_time %}
                             ◇移動時間 {{ suggestion.total_time }}分
                         {% endif %}
-                    </summary>
+                </summary>
                     <ul style="list-style: none; padding-left: 0;">
                         {% for store, items in suggestion.store_details.items %}
                             <li><b>◇店舗：{{ store }}</b></li>
@@ -159,15 +172,15 @@
             // ＋−ボタン処理
             document.querySelectorAll(".decrement, .increment").forEach(button => {
                 button.addEventListener("click", async function () {
-                    const itemId = this.dataset.itemId;
-                    if (!itemId) return;
-    
+                    const purchaseItemId = this.dataset.purchaseItemId;
+                    if (!purchaseItemId) return;
+        
                     const isIncrement = this.classList.contains("increment");
-                    const quantityDisplay = document.getElementById(`quantity-${itemId}`);
+                    const quantityDisplay = document.getElementById(`quantity-${purchaseItemId}`);
                     let newQuantity = parseInt(quantityDisplay.textContent) || 0;
-    
+        
                     newQuantity = isIncrement ? newQuantity + 1 : Math.max(0, newQuantity - 1);
-    
+        
                     try {
                         const response = await fetch("{% url 'update_purchase_quantity' %}", {
                             method: "POST",
@@ -175,12 +188,16 @@
                                 "Content-Type": "application/json",
                                 "X-CSRFToken": getCSRFToken(),
                             },
-                            body: JSON.stringify({ item_id: itemId, new_quantity: newQuantity })
+                            body: JSON.stringify({ 
+                                purchase_item_id: purchaseItemId, 
+                                new_quantity: newQuantity 
+                            })
                         });
-    
+        
                         const data = await response.json();
                         if (data.success) {
                             quantityDisplay.textContent = data.planned_purchase_quantity;
+                            console.log("保存成功:", data.message);
                         } else {
                             alert("エラー：" + data.message);
                         }
@@ -189,7 +206,12 @@
                     }
                 });
             });
-    
+        
+            function getCSRFToken() {
+                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+            }
+        
+            
             // 削除ボタン処理
             document.querySelectorAll(".btn-warning").forEach(button => {
                 button.addEventListener("click", async function (event) {
@@ -217,7 +239,7 @@
                         alert("ネットワークエラーが発生しました。");
                     }
                 });
-            });
+            });           
     
             function getCSRFToken() {
                 return document.querySelector("[name=csrfmiddlewaretoken]").value;

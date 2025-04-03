@@ -570,7 +570,7 @@ def category_add(request):
         form = ItemCategoryForm(user=request.user)
     return render(request, 'category_form.html', {
         'form': form,
-        'is_post': request.method == 'POST'
+
     })
 
 
@@ -1411,7 +1411,6 @@ def clean_route(route):
 
 @login_required
 @require_POST
-@csrf_exempt
 def remove_from_shopping_list(request, item_id):
     """
     買い物リストからアイテムを削除（PurchaseItem を削除）
@@ -1426,21 +1425,21 @@ def remove_from_shopping_list(request, item_id):
             print(f"DEBUG: 手動追加アイテム {item_id} を削除")
 
         else:
-            # 2. 自動追加アイテムの場合、stock_min_threshold を調整して削除
+            # 自動追加アイテムの時、stock_min_threshold を調整して削除
             item = get_object_or_404(Item, id=item_id, user=request.user)
             item.stock_min_threshold = item.stock_quantity  # 在庫数と同じにすることでリストから削除
             item.save()
             print(f"DEBUG: 自動追加アイテム {item_id} の stock_min_threshold を変更し、リストから削除")
 
-        # **最新の shopping_list_items を取得 (定義を追加)**
-        manually_added_items = set(PurchaseItem.objects.filter(item__user=request.user).values_list('item_id', flat=True))
-        low_stock_items = set(Item.objects.filter(user=request.user, stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
-        shopping_list_items = manually_added_items | low_stock_items  # 🔹 ここで定義
+        # **最新の shopping_list_items を取得**
+        # manually_added_items = set(PurchaseItem.objects.filter(item__user=request.user).values_list('item_id', flat=True))
+        # low_stock_items = set(Item.objects.filter(user=request.user, stock_quantity__lt=models.F('stock_min_threshold')).values_list('id', flat=True))
+        # shopping_list_items = manually_added_items | low_stock_items 
 
         return JsonResponse({
             "success": True,
             "message": "アイテムを買い物リストから削除しました。",
-            "updated_shopping_list_items": list(shopping_list_items)  # ここでエラーが出ないようにする
+            # "updated_shopping_list_items": list(shopping_list_items)  # ここでエラーが出ないようにする
         })
 
     except Exception as e:
@@ -1588,40 +1587,38 @@ def add_shopping_item(request):
 @login_required
 @require_POST
 def update_purchase_quantity(request):
-    """
-    購入予定数を更新するAPI
-    """
     try:
         data = json.loads(request.body)
-        item_id = data.get("item_id")
+        purchase_item_id = data.get("purchase_item_id")
         new_quantity = data.get("new_quantity")
 
-        if not item_id or not isinstance(new_quantity, int) or new_quantity < 0:
+        if not purchase_item_id or not isinstance(new_quantity, int) or new_quantity < 0:
             return JsonResponse({"message": "無効なリクエスト"}, status=400)
 
-        item = get_object_or_404(Item, id=item_id, user=request.user)
-        
-        # `PurchaseItem` を明示的に取得 or 作成
-        purchase_item, created = PurchaseItem.objects.get_or_create(item=item, defaults={"planned_purchase_quantity": new_quantity})
+        # PurchaseItem の取得と保存処理
+        try:
+            purchase_item = PurchaseItem.objects.get(id=purchase_item_id, item__user=request.user)
+        except PurchaseItem.DoesNotExist:
+            return JsonResponse({"message": "指定されたアイテムが見つかりません。"}, status=404)
 
-        # 既存データがある場合は更新
+        # 購入予定数を更新して保存
         purchase_item.planned_purchase_quantity = new_quantity
         purchase_item.save()
 
-        print(f"DEBUG: {item.name} の購入予定数を {new_quantity} に更新")
+        print(f"DEBUG: {purchase_item.item.name} の購入予定数を {new_quantity} に更新しました。")
 
         return JsonResponse({
-            "message": f"{item.name} の購入予定数を {new_quantity} に更新しました。",
+            "message": f"{purchase_item.item.name} の購入予定数を {new_quantity} に更新しました。",
             "success": True,
             "planned_purchase_quantity": purchase_item.planned_purchase_quantity
         })
 
     except json.JSONDecodeError:
-        return JsonResponse({"message": "無効なリクエスト形式"}, status=400)
-
+        return JsonResponse({"message": "無効なリクエスト形式です。"}, status=400)
     except Exception as e:
-        print(f"DEBUG: 購入予定数変更エラー - {e}")
+        print(f"エラー: {e}")
         return JsonResponse({"message": "購入予定数の更新中にエラーが発生しました。"}, status=500)
+
 
 @login_required
 def shopping_list_view(request):
@@ -1642,8 +1639,8 @@ def shopping_list_view(request):
         )
 
         if not created:
-            purchase_item.planned_purchase_quantity = max(1, item.stock_min_threshold - item.stock_quantity)
-            purchase_item.save()
+            if purchase_item.planned_purchase_quantity != max(1, item.stock_min_threshold - item.stock_quantity):
+                print(f"DEBUG: {item.name} の既存の購入予定数を保持する (現在: {purchase_item.planned_purchase_quantity})")
 
     # 結果として、全 PurchaseItem を統一的に取得
     final_purchase_items = PurchaseItem.objects.filter(item__user=request.user)
@@ -1742,8 +1739,15 @@ def shopping_list_view(request):
         for suggestion in suggestions:
             missing_items.extend(suggestion.get("missing_items", []))
 
+    final_items = PurchaseItem.objects.select_related('item').filter(item__user=request.user).order_by('item__name')
+
+    final_items_list = list(final_items)
+    shopping_list_items = [p.item.id for p in final_items_list]
+    print(f"DEBUG: shopping_list_items = {shopping_list_items}")
+
+
     return render(request, "shopping_list.html", {
-        "items": final_items,
+        "items": final_items_list,
         "suggestions": suggestions,
         "messages": feedback_messages,
         "selected_items": selected_items,  

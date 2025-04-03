@@ -10,56 +10,78 @@
 </head>
 {% endblock head %}
 
+
 {% block content %}
 <div class="category-edit-form">
     <h1>{% if form.instance.id %}カテゴリ編集{% else %}新規カテゴリ追加{% endif %}</h1>
 
     <!-- フォーム全体のエラー -->
-    {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-            {% for error in form.non_field_errors %}
-                <p>{{ error|safe  }}</p>
-            {% endfor %}
-        </div>
-    {% endif %}
+    
 
-    <form method="post">
+    <form method="post" novalidate>
         {% csrf_token %}
         <div class="form-group name-field">
-            <label for="id_name">カテゴリ名 :</label>
-            <div class="input-with-error">
-                {{ form.name }}
-                <div class="error-space">
-                    {% if form.name.errors %}
-                        <ul class="errorlist">
-                            {% for error in form.name.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        
-
-        <div class="form-group">
-            <label for="id_display_order">表示順:</label>
-            {{ form.display_order }}
-            {% if form.display_order.errors %}
-                <div class="text-danger">
-                    {% for error in form.display_order.errors %}
-                        <p>{{ error }}</p>
+            <label for="id_name">カテゴリ名(必須) :</label>
+            {{ form.name }} <!-- Django のフォームウィジェットを使う -->
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p class="error">・{{ error }}</p>
                     {% endfor %}
                 </div>
             {% endif %}
+            
+            <!-- JavaScriptによるエラーメッセージ -->
+            <div id="name-error" class="error-space" style="display: none;">
+                <p class="error">・このフィールドは必須です。</p>
+            </div>
         </div>
-
+    
+        <div class="form-group">
+            <label for="id_display_order">表示順:</label>
+            {{ form.display_order }}
+        </div>
+    
         <div class="catebtn">
             <button type="submit" class="btn">保存</button>
-            <button type="button" onclick="window.history.back();" class="btn-secondary1">戻る</button>
+            <button type="button" onclick="window.location.href='{% url 'settings' %}';" class="btn-secondary1">戻る</button>
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameField = document.getElementById('id_name');
+        const nameErrorContainer = document.getElementById('name-error');
+        const serverErrorContainer = document.getElementById('server-name-error');
+    
+        // サーバーサイドのエラーがある場合はJSのエラーメッセージを非表示にする
+        if (serverErrorContainer && serverErrorContainer.innerHTML.trim() !== "") {
+            nameErrorContainer.style.display = 'none';
+        }
+    
+        // フォーム送信時のバリデーション
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (!nameField.value.trim()) {
+                event.preventDefault(); // フォーム送信をキャンセル
+                nameErrorContainer.style.display = 'block';
+            } else {
+                nameErrorContainer.style.display = 'none';
+            }
+        });
+    
+        // 入力中のバリデーション（リアルタイム）
+        nameField.addEventListener('input', function() {
+            if (this.value.trim()) {
+                nameErrorContainer.style.display = 'none';
+                if (serverErrorContainer) {
+                    serverErrorContainer.style.display = 'none';
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}
 </html>

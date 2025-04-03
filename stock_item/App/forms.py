@@ -107,21 +107,31 @@ class ItemCategoryForm(forms.ModelForm):
             'name': 'カテゴリ名',
             'display_order': '表示順',
         }
+        # error_messages = {
+        #     'name': {
+        #         'required': 'このフィールドは必須です。',
+        #     },
+        # }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)  # ユーザーを保存
+        self.user = kwargs.pop('user', None)  
         super().__init__(*args, **kwargs)
         self.fields['display_order'].required = False
+        # self.fields['name'].required = True
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
+        # if self.user and self.instance.pk is None and not name:
+        #     # 新規作成時にのみ、名前が空の場合はエラーを返す
+        #     raise ValidationError("このフィールドは必須です。")
+        
         if self.user:
             # 同じユーザー・同じ名前・別のIDのカテゴリがあるか確認
             qs = ItemCategory.objects.filter(user=self.user, name=name)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise ValidationError("同じ名前のカテゴリがすでに存在します。")
+                self.add_error(None, "同じ名前のカテゴリが既に存在します。")
         return name
     
     def clean(self):
@@ -132,6 +142,9 @@ class ItemCategoryForm(forms.ModelForm):
                 raise ValidationError("カテゴリは最大10個まで登録できます。<br>10個登録済みの為登録できません。")
 
         return cleaned_data
+    
+    
+    
 
         
 class ItemForm(forms.ModelForm):
