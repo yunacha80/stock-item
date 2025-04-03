@@ -1436,7 +1436,7 @@ def remove_from_shopping_list(request, item_id):
                 # 在庫が最低値を下回っている場合は削除禁止
                 return JsonResponse({
                     "success": False,
-                    "message": "在庫最低値を下回っているため削除できません。在庫更新を行ってください。"
+                    "message": "在庫最低値を下回っているため削除できません。在庫更新または最低在庫数の変更を行ってください。"
                 }, status=400)
             else:
                 # 通常削除
