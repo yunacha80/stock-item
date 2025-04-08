@@ -30,10 +30,11 @@
 
     <h2>検索結果</h2>
     {% if grouped_histories %}
-        <div class="purchase-history">
+        <div class="suggestions">
             {% for date, histories in grouped_histories.items %}
-                <details>
-                    <summary>{{ date }} - {{ histories|length }} 件</summary>
+                <details class="suggestion-details">
+                    <summary>
+                        <span class="suggestion-icon">🔽</span> {{ date }} - {{ histories|length }} 件</summary>
                     <ul>
                         {% for history in histories %}
                             <li>
