@@ -14,6 +14,7 @@ h1, h2 {
 }
 
 h1 {
+    margin-top: 150px;
     text-align: center;
     font-size: 2rem;
     padding-bottom: 10px; /* 下線を削除 */
@@ -23,6 +24,14 @@ h2 {
     text-align: left;
     font-size: 1.5rem;
     margin-top: 30px;
+}
+
+textarea.auto-expand-textarea {
+    overflow: hidden !important;
+    resize: none !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 32px;
 }
 
 p {
@@ -39,6 +48,20 @@ header, header h1 {
     padding: 10px 0 0;
     text-align: center;
 }
+
+.wave-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; 
+    background-color: #fcf2c3f1; 
+    color: white;
+    padding: 10px 0 0;
+    text-align: center;
+    overflow: visible;
+}
+
 
 /* テーブルのスタイル */
 table {
@@ -247,19 +270,12 @@ button.decrement:hover,
 button.increment:hover {
     background-color: #b0bbc2;
 }
-.wave-header {
-    background-color: #fcf2c3f1;
-    color: white;
-    padding: 10px 0 0;
-    text-align: center;
-    position: relative;
-    overflow: visible;
-    z-index: 10;
-}
+
 
 
 /* ナビゲーションのデザイン */
 .navigation {
+    position: relative;
     background-color: transparent;
     padding: 10px;
     display: flex;
@@ -1042,28 +1058,39 @@ button.increment:hover {
     margin-top: 20px;
 }
 
-.btn,
-.btn-secondary1 {
+.btn {
     padding: 10px 20px;
     border-radius: 25px;
     border: none;
     text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
-}
-
-.btn {
-    background-color: #494a4b;
+    background-color: #2c2c2d;
     color: white;
 }
 
-.btn:hover {
-    background-color: #c6c7c7;
+.btn-warning {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
 }
 
-.btn-secondary1:hover {
-    background-color: #3f3f3f;
+.btn-warning:hover {
+    background-color: #c82333;
 }
+
+.btn:hover {
+    background-color: #2a2a2de9;
+}
+
+
 
 /* アカウント編集リスト */
 #account-edit-section .account-edit-list {
@@ -1104,6 +1131,40 @@ button.increment:hover {
 #account-edit-section .account-edit-item a:hover {
     background-color: #f0f0f0;
     border-color: #999;
+}
+
+/* 店舗情報フィールド用 */
+.store-form-group {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.store-form-group label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #34495e;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.store-form-group input[type="text"],
+.store-form-group input[type="number"],
+.store-form-group select {
+    font-size: 16px;
+    padding: 10px 12px;
+    width: 50%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fff;
+}
+
+.store-form-group input:focus,
+.store-form-group select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0,123,255,0.3);
+    outline: none;
 }
 
 
@@ -1172,8 +1233,8 @@ button.increment:hover {
     /* margin: 10px auto 0; */
     padding: 15px 40px;
     font-size: 20px;
-    background-color: #3a3a3a;
-    color: white;
+    background-color: #ffcc66;
+    color: #050505;
     border: none;
     border-radius: 28px;
     cursor: pointer;
@@ -1183,11 +1244,11 @@ button.increment:hover {
 }
 
 .button-container .btn-primary:hover {
-    background-color:  #050505;
+    background-color:  #ffaa00;
 }
 
 .button-container1 {
-    background-color: #454b50; /* 灰色 */
+    background-color: #007bff; /* 灰色 */
     color: white;
     border: none;
     margin-top: 10px;
@@ -1198,8 +1259,23 @@ button.increment:hover {
     cursor: pointer;
 }
 
+.submit {
+    background-color: #007bff !important; 
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: none;
+    text-decoration: none;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.submit:hover {
+    background-color: #0051ff !important;
+}
+
+
 .btn-secondary1 {
-    background-color: #5e5f5f; /* 灰色 */
+    background-color: #cc66ff;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -1209,8 +1285,12 @@ button.increment:hover {
     cursor: pointer;
 }
 
+.btn-secondary1:hover {
+    background-color: #aa00ff;
+}
+
 .button-container .btn-secondary:hover {
-    background-color: #5a6268; /* ホバー時の色 */
+    background-color: #5a6268; 
 }
 
 .itemlist-choice {

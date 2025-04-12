@@ -106,7 +106,7 @@
         </table>
 
         <br>
-        <button type="submit">保存</button>
+        <button type="submit" class="submit">保存</button>
     </form>
 </div>
 
@@ -130,6 +130,21 @@
                     priceField.value = "";
                 }
             });
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('textarea').forEach(function (textarea) {
+            textarea.style.overflow = 'hidden';
+            textarea.style.resize = 'none';
+            textarea.setAttribute('rows', 1);
+
+            const autoResize = () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            };
+
+            textarea.addEventListener('input', autoResize);
+            autoResize();  // 初期状態でも調整
         });
     });
 </script>

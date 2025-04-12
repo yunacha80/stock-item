@@ -97,7 +97,7 @@ class Item(models.Model):
     category = models.ForeignKey('ItemCategory', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     stock_quantity = models.IntegerField(default=0)
-    memo = models.CharField(max_length=100, blank=True, null=True)
+    memo = models.CharField(max_length=500, blank=True, null=True)
     stock_min_threshold = models.IntegerField(default=1)
     purchase_interval_days = models.IntegerField(null=True, blank=True, verbose_name="購入頻度（日）")
     reminder = models.BooleanField(default=True)

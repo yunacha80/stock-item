@@ -165,6 +165,13 @@ class ItemForm(forms.ModelForm):
             'last_purchase_date': '最終購入日',
             'reminder': 'リマインダー',
         }
+        widgets = {
+            'memo': forms.Textarea(attrs={
+                'class': 'form-control auto-expand-textarea',
+                'rows': 1,
+                'style': 'overflow:hidden; resize:none; box-sizing:border-box;',
+            }),
+        }
         help_texts = {
             'stock_min_threshold': '在庫数がこの値を下回るとアイテムが買い物リストに自動追加されます。',
             'reminder': '購入頻度を分析し、買い忘れ防ぐためのリマインダー機能',
@@ -368,6 +375,8 @@ class StoreForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.user = self.user or getattr(self.instance, "user", None)
         self.fields['travel_time_home_min'].required = True
+        self.fields['travel_time_home_min'].widget.attrs.update({'min': 1})
+
 
     def clean_travel_time_home_min(self):
         value = self.cleaned_data.get('travel_time_home_min')

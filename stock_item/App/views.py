@@ -1039,12 +1039,262 @@ def calculate_travel_time(cleaned_route, travel_times):
 
 
 
-# 1店舗でも価格なしあればmissing_itemにはいる
-# def calculate_route(purchase_items, strategy, consider_missing=True):
+def build_result_for_single_store(store, purchase_items, missing_items=None):
+    results = {}
+    store_details = {}
+    total_price = 0
+    unit_total_price = 0
+
+    if missing_items is None:
+        missing_items = []
+
+    for pi in purchase_items:
+        item = pi.item
+        ref = StoreItemReference.objects.filter(
+            store=store,
+            item=item,
+            price__isnull=False,
+            price_per_unit__isnull=False
+        ).order_by("-updated_at").first()
+
+        if not ref:
+            continue
+
+        quantity = pi.planned_purchase_quantity or 1
+        unit_price = ref.price / ref.price_per_unit
+        total = ref.price * quantity
+
+        results[item.name] = {
+            "store": store.name,
+            "unit_price": unit_price,
+            "price": total,
+            "quantity": quantity
+        }
+
+        if store.name not in store_details:
+            store_details[store.name] = []
+        store_details[store.name].append({
+            "name": item.name,
+            "quantity": quantity,
+            "unit_price": unit_price
+        })
+
+        total_price += total
+        unit_total_price += unit_price
+
+    return {
+        "details": results,
+        "route": [store],
+        "total_price": total_price,
+        "unit_total_price": unit_total_price,
+        "total_time": store.travel_time_home_min * 2,
+        "store_details": store_details,
+        "missing_items": list(missing_items),
+        "no_suggestions": False,
+    }
+
+
+def calculate_route(purchase_items, strategy, user, consider_missing=True):
+    if not purchase_items:
+        return {
+            "error_message": "アイテムを選択してください。",
+            "details": {},
+            "route": [],
+            "total_price": 0,
+            "unit_total_price": 0,
+            "total_time": 0,
+            "store_details": {},
+            "missing_items": [],
+            "no_suggestions": True,
+        }
+
+    all_items = [pi.item for pi in purchase_items]
+    stores = Store.objects.filter(user=user)
+
+    if strategy == "time":
+        shortest_store = stores.order_by('travel_time_home_min').first()
+
+    # missing itemを考慮しないようにfilter（missingは除外）
+        def is_available(store, item):
+            return StoreItemReference.objects.filter(
+                store=store,
+                item=item,
+                price__isnull=False,
+                price_per_unit__isnull=False,
+                price_unknown=False,
+                no_handling=False
+            ).exists()
+
+        # あとで使うために missing_items をここで先に一時記録
+        missing_items_tmp = set()
+        available_items = []
+        for pi in purchase_items:
+            item = pi.item
+            if any(
+                is_available(store, item)
+                for store in stores
+            ):
+                available_items.append(pi)
+            else:
+                missing_items_tmp.add(item.name)
+
+    # 1店舗で available_items がすべて揃う店舗を探す
+        single_store_candidates = []
+        for store in stores:
+            if all(is_available(store, pi.item) for pi in available_items):
+                single_store_candidates.append(store)
+
+        if single_store_candidates:
+            best_single = min(single_store_candidates, key=lambda s: s.travel_time_home_min * 2)
+            return build_result_for_single_store(best_single, purchase_items, missing_items=missing_items_tmp)
+
+    # 共通ロジック: 商品別に最適ストア選定
+    from itertools import permutations
+    store_item_map = {}
+    store_details = {}
+    results = {}
+    total_price = 0
+    unit_total_price = 0
+    missing_items = set()
+    travel_times = {}
+
+    for s1 in stores:
+        for s2 in stores:
+            if s1 != s2:
+                tt = StoreTravelTime.objects.filter(store1=s1, store2=s2).first()
+                travel_times[(s1, s2)] = tt.travel_time_min if tt else float("inf")
+
+    for pi in purchase_items:
+        item = pi.item
+        valid_refs = StoreItemReference.objects.filter(
+            item=item,
+            store__user=user,
+            price__isnull=False,
+            price_per_unit__isnull=False,
+            price_unknown=False,
+            no_handling=False
+        ).order_by('price')
+
+        if not valid_refs.exists():
+            missing_items.add(item.name)
+            if not consider_missing:
+                continue
+            else:
+                continue
+
+        def unit_price(ref):
+            return ref.price / ref.price_per_unit
+
+        if strategy == "price":
+            best_ref = min(valid_refs, key=lambda r: unit_price(r))
+
+        elif strategy == "balance":
+            best_ref = min(valid_refs, key=lambda r: (
+                0.6 * unit_price(r) + 0.4 * (
+                    r.store.travel_time_home_min + min(
+                        travel_times.get((r.store, other), float("inf")) for other in stores if r.store != other
+                    )
+                )
+            ))
+
+        elif strategy == "time":
+            best_ref = valid_refs.first()  # placeholder, 本命は後でmulti-storeで決定
+        else:
+            best_ref = valid_refs.first()
+
+        quantity = pi.planned_purchase_quantity or 1
+        store = best_ref.store
+        unit = unit_price(best_ref)
+        total = best_ref.price * quantity
+
+        results[item.name] = {
+            "store": store.name,
+            "unit_price": unit,
+            "price": total,
+            "quantity": quantity
+        }
+
+        if store not in store_item_map:
+            store_item_map[store] = []
+        store_item_map[store].append(item)
+
+        if store.name not in store_details:
+            store_details[store.name] = []
+        store_details[store.name].append({
+            "name": item.name,
+            "quantity": quantity,
+            "unit_price": unit
+        })
+
+        total_price += total
+        unit_total_price += unit
+    
+    if strategy == "time":
+        missing_items |= missing_items_tmp
+
+    multi_stores = list(store_item_map.keys())
+    if not multi_stores:
+        return {
+            "details": {},
+            "route": [],
+            "total_price": 0,
+            "unit_total_price": 0,
+            "total_time": 0,
+            "store_details": {},
+            "missing_items": list(missing_items),
+            "no_suggestions": True
+        }
+
+    best_multi_route = min(
+        permutations(multi_stores),
+        key=lambda r: (
+            sum(travel_times.get((r[i], r[i+1]), float("inf")) for i in range(len(r)-1)) +
+            r[0].travel_time_home_min + r[-1].travel_time_home_min
+        )
+    )
+
+    multi_route_time = (
+        sum(travel_times.get((best_multi_route[i], best_multi_route[i+1]), float("inf")) for i in range(len(best_multi_route)-1)) +
+        best_multi_route[0].travel_time_home_min + best_multi_route[-1].travel_time_home_min
+    )
+
+    if strategy == "time" and single_store_candidates:
+        best_single = min(single_store_candidates, key=lambda s: s.travel_time_home_min * 2)
+        single_time = best_single.travel_time_home_min * 2
+        single_total_price = sum([
+            ref.price * (pi.planned_purchase_quantity or 1)
+            for pi in purchase_items
+            for ref in StoreItemReference.objects.filter(
+                store=best_single, item=pi.item, price__isnull=False, price_per_unit__isnull=False
+            ).order_by('-updated_at')[:1]
+        ])
+
+        if single_time < multi_route_time or (
+            single_time == multi_route_time and single_total_price <= total_price
+        ):
+            return build_result_for_single_store(best_single, purchase_items)
+        
+    return {
+        "details": results,
+        "route": best_multi_route,
+        "total_price": total_price,
+        "unit_total_price": unit_total_price,
+        "total_time": multi_route_time,
+        "store_details": store_details,
+        "missing_items": list(missing_items),
+        "no_suggestions": False
+    }
+
+
+
+
+
+
+# def calculate_route(purchase_items, strategy,user, consider_missing=True):
 #     """
 #     買い回りルートの計算 (自宅↔店舗の移動時間も考慮)
 #     """
-#      # **アイテムが選択されていない場合のチェック**
+#     # **アイテムが選択されていない場合のチェック**
 #     if not purchase_items:
 #         return {
 #             "error_message": "アイテムを選択してください。",
@@ -1058,13 +1308,12 @@ def calculate_travel_time(cleaned_route, travel_times):
 #             "no_suggestions": True,
 #         }
 
-
-#     results, total_price, unit_total_price = {}, [], 0, 0
+#     results, total_price, unit_total_price = {}, 0, 0
 #     missing_items = set()
 #     store_details, travel_times = {}, {}
 
 #     # 1. 店舗間の移動時間を取得
-#     stores = Store.objects.all()
+#     stores = Store.objects.filter(user=user)
 #     for store1 in stores:
 #         for store2 in stores:
 #             if store1 != store2:
@@ -1078,8 +1327,7 @@ def calculate_travel_time(cleaned_route, travel_times):
 #         item = purchase_item.item
 
 #         # 価格情報がある `StoreItemReference` を取得（更新日時が最新のものを優先）
-#         references = StoreItemReference.objects.filter(item=item).order_by('-updated_at')
-#         print(f"DEBUG: {item.name} の取得リファレンス = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit}, price_unknown={ref.price_unknown}, no_handling={ref.no_handling})' for ref in references]}")
+#         references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
         
 #         if not references.exists():
 #             print(f"DEBUG: {item.name} は全店舗でリファレンスがないため missing_items に追加")
@@ -1089,13 +1337,9 @@ def calculate_travel_time(cleaned_route, travel_times):
 
 #         # **価格が1つもない場合に missing_items に追加**
 #         has_valid_price = references.filter(price__isnull=False, price_per_unit__isnull=False).exists()
-#         # **全店舗で price_unknown=True または no_handling=True または price=None の場合 missing_items に追加**
 #         all_unknown_or_no_handling = all(
 #             (ref.price_unknown or ref.no_handling or ref.price is None) for ref in references
 #         )
-
-#         print(f"DEBUG: {item.name} の all_unknown_or_no_handling 判定 = {all_unknown_or_no_handling}")
-#         print(f"DEBUG: {item.name} の has_valid_price = {has_valid_price}")
 
 #         if not has_valid_price and all_unknown_or_no_handling:
 #             print(f"DEBUG: {item.name} は全店舗で価格不明または取扱いなしのため missing_items に追加")
@@ -1105,33 +1349,38 @@ def calculate_travel_time(cleaned_route, travel_times):
 
 #         # **有効な `StoreItemReference` を取得**
 #         valid_references = references.filter(price__isnull=False, price_per_unit__isnull=False)
-        
-#         print(f"DEBUG: {item.name} の valid_references.count() = {valid_references.count()}")
-#         print(f"DEBUG: {item.name} の valid_references = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit})' for ref in valid_references]}")
-        
+
 #         if not valid_references.exists():
 #             print(f"DEBUG: {item.name} は価格情報なしのため missing_items に追加")
 #             missing_items.add(item.name)
 #             if not consider_missing:
 #                 continue
 
-#         print(f"DEBUG: {item.name} の valid_references = {[f'{ref.store.name} (price={ref.price}, price_per_unit={ref.price_per_unit})' for ref in valid_references]}")
-
-#         if item.name in missing_items:
-#             print(f"DEBUG: {item.name} は missing_items に含まれているためスキップ")
-#             continue
+#         best_reference = None
 
 #         # **最適なリファレンスを選択**
 #         try:
 #             if strategy == "price":
-#                 best_reference = min(valid_references, key=lambda ref: ref.price / ref.price_per_unit)
+#                 best_reference = min(valid_references, key=lambda ref: (
+#                     ref.price / ref.price_per_unit,  
+#                     ref.store.travel_time_home_min  
+#                 ))
 #             elif strategy == "time":
-#                 best_reference = min(valid_references, key=lambda ref: ref.store.travel_time_home_min + min(
-#                     travel_times.get((ref.store, other), float("inf")) for other in stores))
+#                 best_reference = min(valid_references, key=lambda ref: (
+#                     ref.store.travel_time_home_min + min(
+#                         travel_times.get((ref.store, other), float("inf")) for other in stores
+#                     ),
+#                     ref.price / ref.price_per_unit  
+#                 ))
 #             elif strategy == "balance":
-#                 best_reference = min(valid_references, key=lambda ref: 0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
+#                 best_reference = min(valid_references, key=lambda ref: (
+#                     0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
 #                         ref.store.travel_time_home_min + min(
-#                     travel_times.get((ref.store, other), float("inf")) for other in stores)))
+#                             travel_times.get((ref.store, other), float("inf")) for other in stores
+#                         )
+#                     ),
+#                     ref.price / ref.price_per_unit  
+#                 ))
 #             else:
 #                 continue
 #         except ValueError:
@@ -1139,6 +1388,11 @@ def calculate_travel_time(cleaned_route, travel_times):
 #             missing_items.add(item.name)
 #             if not consider_missing:
 #                 continue
+
+#         # **最適なリファレンスがない場合はスキップ**
+#         if best_reference is None:
+#             print(f"DEBUG: {item.name} は有効な最適店舗なしのためスキップ")
+#             continue
 
 #         # **計算結果を保存**
 #         store = best_reference.store
@@ -1184,10 +1438,6 @@ def calculate_travel_time(cleaned_route, travel_times):
 #             "no_suggestions": True,  
 #         }
 
-#     print(f"DEBUG: selected_stores = {[store.name for store in selected_stores]}")
-#     print(f"DEBUG: missing_items (修正後) = {list(missing_items)}")
-
-
 #     best_route = min(
 #         permutations(selected_stores),
 #         key=lambda r: (
@@ -1202,9 +1452,7 @@ def calculate_travel_time(cleaned_route, travel_times):
 #         + (best_route[0].travel_time_home_min if best_route else 0)  
 #         + (best_route[-1].travel_time_home_min if best_route else 0)  
 #     )
-#     print(f"DEBUG: missing_items = {missing_items}")
 
-    
 #     return {
 #         "details": results,
 #         "route": best_route,
@@ -1215,181 +1463,6 @@ def calculate_travel_time(cleaned_route, travel_times):
 #         "missing_items": list(missing_items) if consider_missing else [],
 #         "no_suggestions": False,
 #     }
-
-
-def calculate_route(purchase_items, strategy,user, consider_missing=True):
-    """
-    買い回りルートの計算 (自宅↔店舗の移動時間も考慮)
-    """
-    # **アイテムが選択されていない場合のチェック**
-    if not purchase_items:
-        return {
-            "error_message": "アイテムを選択してください。",
-            "details": {},
-            "route": [],
-            "total_price": 0,
-            "unit_total_price": 0,
-            "total_time": 0,
-            "store_details": {},
-            "missing_items": [],
-            "no_suggestions": True,
-        }
-
-    results, total_price, unit_total_price = {}, 0, 0
-    missing_items = set()
-    store_details, travel_times = {}, {}
-
-    # 1. 店舗間の移動時間を取得
-    stores = Store.objects.filter(user=user)
-    for store1 in stores:
-        for store2 in stores:
-            if store1 != store2:
-                travel_time = StoreTravelTime.objects.filter(store1=store1, store2=store2).first()
-                travel_times[(store1, store2)] = travel_time.travel_time_min if travel_time else float("inf")
-
-    # 2. 商品ごとに最適な購入店舗を決定
-    store_item_map = {}  # {store: [items]}
-
-    for purchase_item in purchase_items:
-        item = purchase_item.item
-
-        # 価格情報がある `StoreItemReference` を取得（更新日時が最新のものを優先）
-        references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
-        
-        if not references.exists():
-            print(f"DEBUG: {item.name} は全店舗でリファレンスがないため missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-
-        # **価格が1つもない場合に missing_items に追加**
-        has_valid_price = references.filter(price__isnull=False, price_per_unit__isnull=False).exists()
-        all_unknown_or_no_handling = all(
-            (ref.price_unknown or ref.no_handling or ref.price is None) for ref in references
-        )
-
-        if not has_valid_price and all_unknown_or_no_handling:
-            print(f"DEBUG: {item.name} は全店舗で価格不明または取扱いなしのため missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-
-        # **有効な `StoreItemReference` を取得**
-        valid_references = references.filter(price__isnull=False, price_per_unit__isnull=False)
-
-        if not valid_references.exists():
-            print(f"DEBUG: {item.name} は価格情報なしのため missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-
-        best_reference = None
-
-        # **最適なリファレンスを選択**
-        try:
-            if strategy == "price":
-                best_reference = min(valid_references, key=lambda ref: (
-                    ref.price / ref.price_per_unit,  
-                    ref.store.travel_time_home_min  
-                ))
-            elif strategy == "time":
-                best_reference = min(valid_references, key=lambda ref: (
-                    ref.store.travel_time_home_min + min(
-                        travel_times.get((ref.store, other), float("inf")) for other in stores
-                    ),
-                    ref.price / ref.price_per_unit  
-                ))
-            elif strategy == "balance":
-                best_reference = min(valid_references, key=lambda ref: (
-                    0.6 * (ref.price / ref.price_per_unit) + 0.4 * (
-                        ref.store.travel_time_home_min + min(
-                            travel_times.get((ref.store, other), float("inf")) for other in stores
-                        )
-                    ),
-                    ref.price / ref.price_per_unit  
-                ))
-            else:
-                continue
-        except ValueError:
-            print(f"DEBUG: {item.name} は有効な価格情報なし (ValueError) のため missing_items に追加")
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-
-        # **最適なリファレンスがない場合はスキップ**
-        if best_reference is None:
-            print(f"DEBUG: {item.name} は有効な最適店舗なしのためスキップ")
-            continue
-
-        # **計算結果を保存**
-        store = best_reference.store
-        unit_price = best_reference.price / best_reference.price_per_unit
-        quantity = purchase_item.planned_purchase_quantity or 1
-        item_total_price = best_reference.price * quantity
-
-        results[item.name] = {
-            'store': store.name,
-            'unit_price': unit_price,
-            'price': item_total_price,
-            'quantity': quantity,
-        }
-
-        if store not in store_item_map:
-            store_item_map[store] = []
-        store_item_map[store].append(item)
-
-        if store.name not in store_details:
-            store_details[store.name] = []
-        store_details[store.name].append({
-            'name': item.name,
-            'quantity': quantity,
-            'unit_price': unit_price,
-        })
-
-        total_price += item_total_price
-        unit_total_price += unit_price
-
-    selected_stores = list(store_item_map.keys())
-
-    if not selected_stores:
-        print("DEBUG: 選択された店舗がありません。ルート計算をスキップします。")
-
-        return {
-            "details": {},
-            "route": [],
-            "total_price": 0,
-            "unit_total_price": 0,
-            "total_time": 0,
-            "store_details": {},
-            "missing_items": list(missing_items) if consider_missing else [],
-            "no_suggestions": True,  
-        }
-
-    best_route = min(
-        permutations(selected_stores),
-        key=lambda r: (
-            sum(travel_times.get((r[i], r[i+1]), float("inf")) for i in range(len(r)-1)) 
-            + r[0].travel_time_home_min  
-            + r[-1].travel_time_home_min  
-        )
-    )
-
-    total_travel_time = (
-        sum(travel_times.get((best_route[i], best_route[i+1]), float("inf")) for i in range(len(best_route)-1))
-        + (best_route[0].travel_time_home_min if best_route else 0)  
-        + (best_route[-1].travel_time_home_min if best_route else 0)  
-    )
-
-    return {
-        "details": results,
-        "route": best_route,
-        "total_price": total_price,
-        "unit_total_price": unit_total_price,
-        "total_time": total_travel_time,
-        "store_details": store_details,
-        "missing_items": list(missing_items) if consider_missing else [],
-        "no_suggestions": False,
-    }
 
 
 
@@ -1454,26 +1527,6 @@ def remove_from_shopping_list(request, item_id):
         return JsonResponse({"success": False, "message": f"削除に失敗しました: {e}"}, status=500)
 
 
-
-
-
-
-def suggestion_detail_view(request, suggestion_type):
-    """
-    提案の詳細表示画面。
-    """
-    # 提案の種類（最安値、最短時間、バランス）に基づいてデータを取得
-    suggestion = {
-        "type": suggestion_type,
-        "details": f"{suggestion_type} に基づく提案詳細情報。",
-        "route": ["Store A", "Store B", "Store C"],
-        "total_price": 2000 if suggestion_type == "最安値" else None,
-        "total_time": 30 if suggestion_type == "最短時間" else None,
-    }
-
-    return render(request, "suggestion_detail.html", {
-        "suggestion": suggestion,
-    })
 
 @login_required
 @require_POST

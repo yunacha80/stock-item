@@ -31,9 +31,9 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">保存</button>
+        <button type="submit" class="submit">保存</button>
     </form>
-    <a href="{% url 'store_list' %}">戻る</a>
+    <a href="{% url 'store_list' %}" class="btn">戻る</a>
 </body>
 {% endblock %}
 </html>

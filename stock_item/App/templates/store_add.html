@@ -35,44 +35,32 @@
 
         <fieldset>
             <legend><h2>店舗情報</h2></legend>
-
-            <p>
-                {{ store_form.name.label_tag }}<br>
+        
+            <div class="store-form-group">
+                {{ store_form.name.label_tag }}
                 {{ store_form.name }}
                 {% if store_form.name.errors %}
-                    <div class="error">
-                        <ul class="errorlist">
-                            {% for error in store_form.name.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                    <div class="errorlist">{{ store_form.name.errors }}</div>
                 {% endif %}
-            </p>
-
-            <p>
-                {{ store_form.address.label_tag }}<br>
+            </div>
+        
+            <div class="store-form-group">
+                {{ store_form.address.label_tag }}
                 {{ store_form.address }}
-            </p>
-
-            <p>
-                {{ store_form.phone_number.label_tag }}<br>
+            </div>
+        
+            <div class="store-form-group">
+                {{ store_form.phone_number.label_tag }}
                 {{ store_form.phone_number }}
-            </p>
-
-            <p>
-                {{ store_form.travel_time_home_min.label_tag }}<br>
+            </div>
+        
+            <div class="store-form-group">
+                {{ store_form.travel_time_home_min.label_tag }}
                 {{ store_form.travel_time_home_min }}
                 {% if store_form.travel_time_home_min.errors %}
-                    <ul class="errorlist">
-                        {% for error in store_form.travel_time_home_min.errors %}
-                            <li class="error">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="errorlist">{{ store_form.travel_time_home_min.errors }}</div>
                 {% endif %}
-            </p>
-
-            
+            </div>
         </fieldset>
 
         <fieldset>
@@ -98,9 +86,9 @@
         </fieldset>
 
         <br>
-        <button type="submit" class="button-container">保存</button>
+        <button type="submit" class="submit">保存</button>
         <br>
-        <button type="button" onclick="window.history.back();" class="btn-secondary">戻る</button>
+        <button type="button" onclick="window.history.back();" class="btn">戻る</button>
     </form>
 
     <br><br><br><br>

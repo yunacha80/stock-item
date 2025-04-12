@@ -64,7 +64,7 @@
                     <div class="form-group">
                         {{ item_form.memo.label_tag }}
                         {{ item_form.memo }}
-                    </div>
+                    </div>                    
                     <div class="form-group">
                         {{ item_form.last_purchase_date.label_tag }}
                         {{ item_form.last_purchase_date }}
@@ -177,58 +177,81 @@
                 </div>
             </form>
         </div>
-
-        <script>
-            document.getElementById("delete-button").addEventListener("click", function() {
-                if (!confirm("本当に削除しますか？")) {
-                    return;
-                }
-
-                fetch("{% url 'item_delete' item.id %}", {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": "{{ csrf_token }}",
-                        "Content-Type": "application/json"
-                    },
-                    credentials: "same-origin"
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("アイテムが削除されました。");
-                        window.location.href = "{% url 'item_list' %}";
-                    } else {
-                        alert("削除に失敗しました: " + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("エラーが発生しました。");
-                });
-            });
-
-            document.addEventListener('DOMContentLoaded', () => {
-                document.querySelectorAll('tbody tr').forEach(row => {
-                    const priceField = row.querySelector('input[name$="-price"]');
-                    const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
-                    const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
-
-                    priceUnknownCheckbox?.addEventListener('change', () => {
-                        if (priceUnknownCheckbox.checked) {
-                            noPriceCheckbox.checked = false;
-                            priceField.value = "";
-                        }
-                    });
-
-                    noPriceCheckbox?.addEventListener('change', () => {
-                        if (noPriceCheckbox.checked) {
-                            priceUnknownCheckbox.checked = false;
-                            priceField.value = "";
-                        }
-                    });
-                });
-            });
-        </script>
     {% endblock %}
-</body>
-</html>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+    
+            // 削除ボタンの処理（存在する場合）
+            const deleteButton = document.getElementById("delete-button");
+            if (deleteButton) {
+                deleteButton.addEventListener("click", function () {
+                    if (!confirm("本当に削除しますか？")) {
+                        return;
+                    }
+    
+                    fetch("{% url 'item_delete' item.id %}", {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/json"
+                        },
+                        credentials: "same-origin"
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert("アイテムが削除されました。");
+                                window.location.href = "{% url 'item_list' %}";
+                            } else {
+                                alert("削除に失敗しました: " + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            alert("エラーが発生しました。");
+                        });
+                });
+            }
+    
+            // 価格不明・取り扱いなしの排他チェック
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const priceField = row.querySelector('input[name$="-price"]');
+                const priceUnknownCheckbox = row.querySelector('input[name$="-price_unknown"]');
+                const noPriceCheckbox = row.querySelector('input[name$="-no_handling"]');
+    
+                if (priceUnknownCheckbox) {
+                    priceUnknownCheckbox.addEventListener('change', () => {
+                        if (priceUnknownCheckbox.checked) {
+                            if (noPriceCheckbox) noPriceCheckbox.checked = false;
+                            if (priceField) priceField.value = "";
+                        }
+                    });
+                }
+    
+                if (noPriceCheckbox) {
+                    noPriceCheckbox.addEventListener('change', () => {
+                        if (noPriceCheckbox.checked) {
+                            if (priceUnknownCheckbox) priceUnknownCheckbox.checked = false;
+                            if (priceField) priceField.value = "";
+                        }
+                    });
+                }
+            });
+    
+            // textarea の自動リサイズ
+            setTimeout(function () {
+                document.querySelectorAll('.auto-expand-textarea').forEach(function (textarea) {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = (textarea.scrollHeight) + 'px';
+    
+                    textarea.addEventListener('input', function () {
+                        this.style.height = 'auto';
+                        this.style.height = (this.scrollHeight) + 'px';
+                    });
+                });
+            }, 10);
+        });
+    </script>
+    </body>
+    </html>

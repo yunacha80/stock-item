@@ -25,11 +25,38 @@
         <!-- 店舗情報編集 -->
         <fieldset>
             <legend><h3>店舗情報</h3></legend>
-            {{ form.as_p }}
+        
+            <div class="store-form-group">
+                {{ form.name.label_tag }}
+                {{ form.name }}
+                {% for error in form.name.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        
+            <div class="store-form-group">
+                {{ form.address.label_tag }}
+                {{ form.address }}
+            </div>
+        
+            <div class="store-form-group">
+                {{ form.phone_number.label_tag }}
+                {{ form.phone_number }}
+            </div>
+        
+            <div class="store-form-group">
+                {{ form.travel_time_home_min.label_tag }}
+                {{ form.travel_time_home_min }}
+                {% for error in form.travel_time_home_min.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        
             {% for error in form.non_field_errors %}
                 <div class="error">{{ error }}</div>
             {% endfor %}
         </fieldset>
+        
 
         <!-- 他店舗との移動時間設定 -->
         <fieldset>
@@ -111,8 +138,8 @@
             {% endif %}
         </fieldset>
 
-        <button type="submit" class="button-container1">保存</button><br>
-        <button type="button" onclick="window.history.back();" class="btn-secondary1">戻る</button>
+        <button type="submit" class="submit">保存</button><br>
+        <button type="button" onclick="window.history.back();" class="btn">戻る</button>
     </form>
     <br><br><br><br>
 </body>
