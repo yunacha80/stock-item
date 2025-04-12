@@ -14,7 +14,7 @@ h1, h2 {
 }
 
 h1 {
-    margin-top: 150px;
+    /* margin-top: 150px; */
     text-align: center;
     font-size: 2rem;
     padding-bottom: 10px; /* 下線を削除 */
@@ -32,6 +32,10 @@ textarea.auto-expand-textarea {
     box-sizing: border-box !important;
     height: auto !important;
     min-height: 32px;
+}
+
+.main-content {
+    padding-top: 110px;
 }
 
 p {
@@ -326,9 +330,7 @@ button.increment:hover {
     z-index: 1;
 }
 
-.content {
-    margin-top: 100px; /* 波線と見出しの間隔を広げる */
-}
+
 
 /* PC用波線のデザイン */
 .u-pc {

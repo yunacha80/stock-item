@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
-    <header class="wave-header">
+    <header id="main-header" class="wave-header">
         <nav class="navigation">
             <ul>
                 <li>
@@ -73,9 +73,24 @@
             </div>
         </div>
     </header>
-    <div class="content">
+    <div class="content main-content">
         {% block content %}
         {% endblock %}
     </div>
 </body>
+<script>
+    function adjustContentMargin() {
+        const header = document.getElementById("main-header");
+        const content = document.querySelector(".main-content");
+        if (header && content) {
+            const headerHeight = header.offsetHeight;
+            content.style.setProperty("margin-top", headerHeight + "px", "important");
+        }
+    }
+
+    window.addEventListener("load", adjustContentMargin);
+    window.addEventListener("resize", adjustContentMargin);
+</script>
+
+
 </html>
