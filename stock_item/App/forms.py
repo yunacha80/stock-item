@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm,PasswordChangeForm
 from App.models import User
 from django.contrib.auth import authenticate
+from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils import timezone
@@ -69,7 +70,18 @@ class LoginForm(forms.Form):
         return self.cleaned_data
     
 class CustomPasswordChangeForm(PasswordChangeForm):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['new_password1'].help_text = (
+            "・あなたの他の個人情報と似ているパスワードにはできません。<br>"
+            "・パスワードは最低 8 文字以上必要です。<br>"
+            "・よく使われるパスワードにはできません。<br>"
+            "・数字だけのパスワードにはできません。"
+        )
+        self.fields['new_password2'].help_text = (
+            "確認のため、再度パスワードを入力してください。"
+        )
 
 class EmailChangeForm(forms.Form):
      current_email = forms.EmailField(
@@ -84,6 +96,10 @@ class EmailChangeForm(forms.Form):
         super().__init__(*args, **kwargs)
         if user:
             self.fields['current_email'].initial = user.email
+
+        for field_name, field in self.fields.items():
+            existing_classes = field.widget.attrs.get("class", "")
+            field.widget.attrs["class"] = f"{existing_classes} form-control".strip()
 
      def clean(self):
         cleaned_data = super().clean()

@@ -9,6 +9,7 @@ body {
 }
 
 h1, h2 {
+    margin-top: 80px;
     margin-bottom: 20px;
     color: #5c5a5a;
 }
@@ -105,9 +106,69 @@ tfoot td {
     font-size: 0.9em;
     margin-top: 2px;
 }
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.form-group label {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #34495e;
+    display: inline-block !important;
+    text-align: left !important;
+    margin: 10px !important;
+    padding: 0 !important;
+    line-height: 1.4;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    max-width: 500px;
+    font-size: 16px;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    background-color: #fff;
+}
+
+.form-group label {
+    display: block;
+    text-align: left;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.item-detail-section {
+    width: 100%;
+    max-width: 600px;
+    text-align: left;
+}
+
+.section-box {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+}
 
 /* フォーム要素 */
 form {
+    text-align: left !important;
+    align-items: flex-start !important;
     justify-content: center; 
     width: 90%;
     max-width: 1200px;
@@ -160,6 +221,7 @@ form button:hover {
     align-items: center;
     height: 100vh;
     background-color: #fcfbeba1; 
+    
 }
 
 .login-box {
@@ -168,7 +230,10 @@ form button:hover {
     border-radius: 10px; /* 角を丸く */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 軽い影 */
     text-align: center;
-    width: 300px;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    box-sizing: border-box;
 }
 
 .login-box form {
@@ -178,16 +243,19 @@ form button:hover {
     padding: 0;
     box-shadow: none;
     background: none;
+    align-items: center;
 }
 
 
 .login-box input {
     width: 100%;
+    max-width: 100%;
     padding: 10px;
     margin: 5px 0;
     border: 1px solid #ccc;
     border-radius: 5px;
     box-sizing: border-box;
+    
 }
 
 .login-box button {
@@ -201,6 +269,46 @@ form button:hover {
 }
 
 .login-box button:hover {
+    background-color: #333;
+}
+
+.login-form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.login-form-label {
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-align: center;
+    width: 100%;
+}
+
+.login-form-control {
+    width: 80%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.login-btn {
+    width: 60% !important;
+    padding: 10px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    align-items: center;
+    text-align: center;
+}
+
+.login-btn:hover {
     background-color: #333;
 }
 
@@ -1067,6 +1175,7 @@ button.increment:hover {
     text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
+    margin-top: 20px;
     background-color: #2c2c2d;
     color: white;
 }
@@ -1269,6 +1378,7 @@ button.increment:hover {
     text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
+    margin-top: 20px;
 }
 
 .submit:hover {
@@ -1380,6 +1490,27 @@ button.increment:hover {
     border-radius: 5px;
     margin-top: 5px;
 } */
+
+.label-with-tooltip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: bold;
+    color: #34495e;
+    margin-bottom: 4px;
+}
+
+.reminder-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reminder-status {
+    font-size: 16px;
+    color: #333;
+}
+
 
 /* ？マークツールチップのベース */
 .tooltip-container {
@@ -1768,3 +1899,36 @@ details > summary {
 .suggestion-details[open] .suggestion-icon {
     transform: rotate(180deg);
 }
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    width: 60%;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5);
+    outline: none;
+}
+
+.form-help-text {
+    font-size: 0.9em;
+    color: #555;
+    margin-left: 10px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }

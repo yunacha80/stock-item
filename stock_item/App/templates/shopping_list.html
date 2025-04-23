@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+""<!DOCTYPE html>
 <html lang="ja">
 {% extends "base.html" %}
 {% load static %}
@@ -86,52 +86,60 @@
     <h2 class="kaimawari-h2">選択アイテム: <span id="selected-items-count">{{ selected_items|length }}</span>点</h2>
 
     {% if suggestions %}
-        <h2 class="kaimawari-h2">■ 買い回り提案</h2>
-        {% if suggestions.0.missing_items %}
-        <p style="color:red; font-weight:bold; text-align:center; margin: 3px auto;" class="kaimawari-h2">
-                    ⚠ 取扱い及び価格不明アイテム: {{ suggestions.0.missing_items|join:", " }}
-            </p>
-        {% endif %}
+    <h2 class="kaimawari-h2">■ 買い回り提案</h2>
+    
+    {% if suggestions.0.missing_items %}
+    <p style="color:red; font-weight:bold; text-align:center; margin: 3px auto;" class="kaimawari-h2">
+        ⚠ 取扱いなしアイテム: {{ suggestions.0.missing_items|join:", " }}
+    </p>
+    {% endif %}
 
-        <div class="suggestions">
-            {% for suggestion in suggestions %}
-            <details class="suggestion-details">
-                <summary>
-                    <span class="suggestion-icon">🔽</span> 
-                    {{ suggestion.type }}
-                
-                        ◇お店：
-                        {% if suggestion.route|length == 1 %}
-                            {{ suggestion.route.0 }}
-                        {% else %}
-                            {{ suggestion.route|join:" ➞ " }}
-                        {% endif %}
-                        {% if suggestion.total_price %}
-                            ◇合計金額 {{ suggestion.total_price|floatformat:2 }}円 (単価合計 {{ suggestion.unit_total_price|floatformat:2 }}円)
-                        {% endif %}
-                        {% if suggestion.total_time %}
-                            ◇移動時間 {{ suggestion.total_time }}分
-                        {% endif %}
-                </summary>
-                    <ul style="list-style: none; padding-left: 0;">
-                        {% for store, items in suggestion.store_details.items %}
-                            <li><b>◇店舗：{{ store }}</b></li>
-                            {% for item in items %}
-                                <li style="padding-left: 20px;"> ・{{ item.name }}: {{ item.quantity }}個
-                                    {% if item.price_unknown %} <span style="color:red;">(価格不明)</span> {% endif %}
-                                    {% if item.no_handling %} <span style="color:red;">(取扱いなし)</span> {% endif %}
-                                </li>
-                            {% endfor %}
-                        {% endfor %}
-                        {% if suggestion.missing_items and suggestion.missing_items|length > 0 %}
-                            <li style="color:red; font-weight:bold; padding-left: 20px;">
-                                ⚠ 取扱い及び価格不明アイテム: {{ suggestion.missing_items|join:", " }}
-                            </li>
-                        {% endif %}
-                    </ul>
-                </details>
-            {% endfor %}
-        </div>
+    <div class="suggestions">
+        {% for suggestion in suggestions %}
+        <details class="suggestion-details">
+            <summary>
+                <span class="suggestion-icon">🔽</span> 
+                {{ suggestion.type }}
+                ◇お店：
+                {% if suggestion.route|length == 1 %}
+                    {{ suggestion.route.0 }}
+                {% else %}
+                    {{ suggestion.route|join:" ➞ " }}
+                {% endif %}
+                {% if suggestion.total_price %}
+                    ◇合計金額 {{ suggestion.total_price|floatformat:2 }}円
+                {% endif %}
+                {% if suggestion.total_time %}
+                    ◇移動時間 {{ suggestion.total_time }}分
+                {% endif %}
+            </summary>
+            <ul style="list-style: none; padding-left: 0;">
+                {% for store, items in suggestion.store_details.items %}
+                <li><b>◇店舗：{{ store }}</b></li>
+                <ul>
+                    {% for item in items %}
+                    <li style="padding-left: 20px;">
+                        ・{{ item.name }}: {{ item.quantity }}個{% if item.unit_price %}（{{ item.unit_price|floatformat:2 }}円:単価）{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endfor %}
+
+                {% if suggestion.unknown_prices %}
+                    <li style="color:crimson; font-weight:bold; padding-left: 20px;">
+                        ⚠ 価格不明アイテム: {{ suggestion.unknown_prices|join:", " }}
+                    </li>
+                {% endif %}
+
+                {% if suggestion.missing_items %}
+                   <li style="color:red; font-weight:bold; padding-left: 20px;">
+                        ⚠ 取扱いなしアイテム: {{ suggestion.missing_items|join:", " }}
+                    </li>
+                {% endif %}
+            </ul>
+        </details>
+        {% endfor %}
+    </div>
     {% endif %}
 
     {% if show_no_suggestion_message %}
@@ -148,6 +156,8 @@
             {% endfor %}
         </ul>
     {% endif %}
+
+</body>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {

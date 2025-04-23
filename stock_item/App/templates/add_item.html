@@ -29,83 +29,91 @@
                     </div>
                 {% endif %}
         
-
-        <h2>■アイテム詳細</h2>
-        {% for field in item_form %}
-            <div class="form-group">
-                {{ field.label_tag }} {{ field }}
-                {% comment %} {% if field.name == "name" and item_form.non_field_errors %}
-                    <ul class="errorlist">
-                        {% for error in item_form.non_field_errors %}
-                            <li class="error">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %} {% endcomment %}
-                {% if field.help_text %}
-                    <span class="tooltip-container">
-                        <span class="tooltip-icon">?</span>
-                        <span class="tooltip-text">{{ field.help_text }}</span>
-                    </span>
-                {% endif %}
-                {% if field.errors %}
-                    <ul class="errorlist">
-                        {% for error in field.errors %}
-                            <li class="error">{{ error }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </div>
-        {% endfor %}
-
-        <h2>■店舗情報</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>店舗名</th>
-                    <th>価格</th>
-                    <th>入数</th>
-                    <th>メモ</th>
-                    <th>価格不明</th>
-                    <th>取り扱いなし</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for store_form in store_forms %}
-                    {% if store_form.non_field_errors %}
-                        <tr>
-                            <td colspan="6">
+            <div class="section-box">
+                <h2>■アイテム詳細</h2>
+                <div class="item-detail-section">
+                    {% for field in item_form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                                {% if field.help_text %}
+                                    <span class="tooltip-container">
+                                        <span class="tooltip-icon">?</span>
+                                        <span class="tooltip-text">{{ field.help_text }}</span>
+                                    </span>
+                                {% endif %}
+                            </label>
+                
+                            {% if field.name == "reminder" %}
+                                <div class="reminder-checkbox-container">
+                                    {{ field }} <span class="reminder-status">ON</span>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
+                
+                            {% if field.errors %}
                                 <ul class="errorlist">
-                                    {% for error in store_form.non_field_errors %}
-                                        <li>{{ error }}</li>
+                                    {% for error in field.errors %}
+                                        <li class="error">{{ error }}</li>
                                     {% endfor %}
                                 </ul>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+                
+
+        <div class="section-box">    
+            <h2>■店舗情報</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>店舗名</th>
+                        <th>価格</th>
+                        <th>入数</th>
+                        <th>メモ</th>
+                        <th>価格不明</th>
+                        <th>取り扱いなし</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store_form in store_forms %}
+                        {% if store_form.non_field_errors %}
+                            <tr>
+                                <td colspan="6">
+                                    <ul class="errorlist">
+                                        {% for error in store_form.non_field_errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td>{{ store_form.instance.store.name }}</td>
+                            <td>
+                                {{ store_form.price }}
+                            </td>
+                            <td>
+                                {{ store_form.price_per_unit }}
+                            </td>
+                            <td>
+                                {{ store_form.memo }}
+                            </td>
+                            <td>
+                                {{ store_form.price_unknown }} 価格不明
+                            </td>
+                            <td>
+                                {{ store_form.no_handling }} 取り扱いなし
                             </td>
                         </tr>
-                    {% endif %}
-                    <tr>
-                        <td>{{ store_form.instance.store.name }}</td>
-                        <td>
-                            {{ store_form.price }}
-                        </td>
-                        <td>
-                            {{ store_form.price_per_unit }}
-                        </td>
-                        <td>
-                            {{ store_form.memo }}
-                        </td>
-                        <td>
-                            {{ store_form.price_unknown }} 価格不明
-                        </td>
-                        <td>
-                            {{ store_form.no_handling }} 取り扱いなし
-                        </td>
-                    </tr>
-                    <input type="hidden" name="{{ store_form.prefix }}-store" value="{{ store_form.instance.store.id }}">
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <br>
+                        <input type="hidden" name="{{ store_form.prefix }}-store" value="{{ store_form.instance.store.id }}">
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <button type="submit" class="submit">保存</button>
     </form>
 </div>

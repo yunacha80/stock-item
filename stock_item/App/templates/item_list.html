@@ -112,11 +112,8 @@
                             {% endif %}
                         {% endwith %}
                     </td>
-                    <td class="actions">    
-                        <div class="action-box">
-                            <!-- ゴミ箱（削除ボタン） -->
-                            <button class="delete-item" data-item-id="{{ entry.item.id }}">🗑️</button>
-                        </div>
+                    <td >
+                        <button type="button" class="btn-warning delete-item" data-item-id="{{ entry.item.id }}">削除</button>
                     </td>
                 </tr>
                 {% endfor %}

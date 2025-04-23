@@ -13,10 +13,19 @@
             <h2 style="text-align: center;">ライフストック管理</h2>
             <form method="post">
                 {% csrf_token %}
-                <div>メールアドレス <input type="email" name="email"></div>
-                <div>パスワード <input type="password" name="password"></div>
-            <br>
-                <button type="submit" class="btn">ログイン</button>
+                <div class="login-form-group">
+                    <label class="form-label">メールアドレス</label>
+                    <input type="email" name="email" class="form-control">
+                </div>
+            
+                <div class="login-form-group">
+                    <label class="form-label">パスワード</label>
+                    <input type="password" name="password" class="form-control">
+                </div>
+            
+                <div class="login-form-group">
+                    <button type="submit" class="login-btn">ログイン</button>
+                </div>
             </form>
             {% if form.errors %}
                 <div class="error-messages">

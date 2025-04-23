@@ -1,63 +1,56 @@
-<!DOCTYPE html>
-<html lang="ja">
 {% extends "base.html" %}
 {% load static %}
 
 {% block head %}
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Stock Item</title>
-        <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-        <style>
-            .current_email input[type="email"] {
-                border: none; 
-                outline: none;
-                background: none;
-            }
-        </style>
-    </head>
-{% endblock head %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メールアドレス変更</title>
+{% endblock %}
 
 {% block content %}
-    <body>
+<div class="container">
+    
         <h1>メールアドレス変更</h1>
-            <form method="post">
-                <h2>■メールアドレス変更</h2>
-                {% csrf_token %}
+        <form method="post">
+            {% csrf_token %}
+            <h2>■メールアドレス変更</h2>
 
-
-                {% if form.non_field_errors %}
-                    <div class="error-messages">
-                        <ul>
-                            {% for error in form.non_field_errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-                {% if form.errors %}
-                    <div class="error-messages">
-                        <ul>
-                            {% for field in form %}
-                                {% for error in field.errors %}
-                                    <li>{{ error }}</li>
-                                {% endfor %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-
-                <div class="current_email">
-                    {{ form.current_email.label_tag }} {{ form.current_email }}
+            {% if form.non_field_errors %}
+                <div class="error-container">
+                    <ul>
+                        {% for error in form.non_field_errors %}
+                            <li class="error">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
+            {% endif %}
 
-                {{ form.new_email.label_tag }} {{ form.new_email }}<br>
-                {{ form.confirm_email.label_tag }} {{ form.confirm_email }}<br><br>
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
 
-                <button type="submit" class="submit">変更する</button>
+                    {% if field.help_text %}
+                        <div class="tooltip-text" style="margin-left: 10px; margin-top: 5px; max-width: 400px;">
+                            {{ field.help_text|linebreaksbr }}
+                        </div>
+                    {% endif %}
+
+                    {% if field.errors %}
+                        <ul class="errorlist">
+                            {% for error in field.errors %}
+                                <li class="error">{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="button-container">
+                <button type="submit" class="submit">変更</button>
                 <button type="button" onclick="window.history.back();" class="btn">戻る</button>
-            </form>
-    </body><br><br><br>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
-</html>
