@@ -1804,6 +1804,8 @@ def shopping_list_view(request):
             show_missing_warning = True
             break
 
+    has_no_suggestions = any(s.get("no_suggestions") for s in suggestions)
+
 
     return render(request, "shopping_list.html", {
         "items": final_items_list,
@@ -1815,7 +1817,8 @@ def shopping_list_view(request):
         "price_suggestion_ignore": price_suggestion_ignore,  
         "show_no_suggestion_message": show_no_suggestion_message,
         "show_missing_warning": show_missing_warning,
-        # "has_missing_items_in_any_suggestion": any(s["missing_items"] for s in suggestions),
+        "has_missing_items_in_any_suggestion": any(s["missing_items"] for s in suggestions),
+        "has_no_suggestions": has_no_suggestions, 
     })
 
 

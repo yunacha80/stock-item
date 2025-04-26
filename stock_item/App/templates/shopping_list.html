@@ -86,14 +86,20 @@
     <h2 class="kaimawari-h2">選択アイテム: <span id="selected-items-count">{{ selected_items|length }}</span>点</h2>
 
     {% if suggestions %}
-    <h2 class="kaimawari-h2">■ 買い回り提案</h2>
-    
-    {% if show_missing_warning %}
+        <h2 class="kaimawari-h2">■ 買い回り提案</h2>
+
+        {% if has_no_suggestions %}
+            <p style="color:red; font-weight:bold; text-align:center; margin: 3px auto;" class="kaimawari-h2">
+                    ⚠ 提案が見つからないルートがありました。詳細を確認してください。
+            </p>
+        {% endif %}
+
+        {% if show_missing_warning %}
             <p style="color:red; font-weight:bold; text-align:center; margin: 3px auto;" class="kaimawari-h2">
                 ⚠ 取扱いなしアイテム又は価格不明アイテム あります！詳細を確認してください。
             </p>
-    {% endif %}
-
+        {% endif %}
+    
 
     <div class="suggestions">
         {% for suggestion in suggestions %}
@@ -126,6 +132,12 @@
                 </ul>
                 {% endfor %}
 
+                {% if suggestion.no_suggestions %}
+                    <li style="color:red; font-weight:bold; padding-left: 20px;">
+                        ⚠ 提案が見つかりませんでした。
+                    </li>
+                {% endif %}
+
                 {% if suggestion.missing_items and suggestion.type == "最安値" %}
                     <li style="color:red; font-weight:bold; padding-left: 20px;">
                          ⚠ 全店舗価格不明または取扱いなしアイテム: {{ suggestion.missing_items|join:", " }}
@@ -144,6 +156,8 @@
                         ⚠ 取扱いなしアイテム: {{ suggestion.missing_items|join:", " }}
                     </li>
                 {% endif %}
+
+                
             </ul>
         </details>
         {% endfor %}
