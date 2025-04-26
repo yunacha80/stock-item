@@ -1798,6 +1798,12 @@ def shopping_list_view(request):
     shopping_list_items = [p.item.id for p in final_items_list]
     print(f"DEBUG: shopping_list_items = {shopping_list_items}")
 
+    show_missing_warning = False
+    for s in suggestions:
+        if (s.get('type') == '最安値' and s.get('missing_items')) or (s.get('type') != '最安値' and s.get('missing_items')):
+            show_missing_warning = True
+            break
+
 
     return render(request, "shopping_list.html", {
         "items": final_items_list,
@@ -1808,6 +1814,8 @@ def shopping_list_view(request):
         "shopping_list_items": list(shopping_list_items),
         "price_suggestion_ignore": price_suggestion_ignore,  
         "show_no_suggestion_message": show_no_suggestion_message,
+        "show_missing_warning": show_missing_warning,
+        # "has_missing_items_in_any_suggestion": any(s["missing_items"] for s in suggestions),
     })
 
 
