@@ -139,9 +139,13 @@
                 {% endif %}
 
                 {% if suggestion.missing_items and suggestion.type == "最安値" %}
-                    <li style="color:red; font-weight:bold; padding-left: 20px;">
-                         ⚠ 全店舗価格不明または取扱いなしアイテム: {{ suggestion.missing_items|join:", " }}
+                <li style="color:red; font-weight:bold; padding-left: 20px;">
+                    ⚠ 以下のアイテムは、全店舗で価格が不明または取扱いがないため、最安値ルートには含まれていません:<br>
+                    ・{{ suggestion.missing_items|join:", " }}<br>
+                    <li style="color:crimson; font-weight:600; padding-left: 20px; font-size:13px">※最安値ルートでは、価格が登録されている店舗のみを比較対象としています。<br>
+                    　よろしければ、価格を登録するか、他のコース（最短時間・コストパフォーマンス重視）もご確認ください。
                     </li>
+                </li>
                 {% endif %}
 
 
