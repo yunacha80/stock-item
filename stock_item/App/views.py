@@ -946,10 +946,24 @@ def settings_view(request):
                 try:
                     new_value = int(new_value)
                     if new_value > 0:  # 正の整数のみ許可
+                        # items_to_update = Item.objects.filter(
+                        #     user=request.user,
+                        #     stock_min_threshold=stock_min_threshold_default  # 変更されていないアイテムのみ対象
+                        # )
+                        oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
+                        if oldest_item:
+                            created_at = oldest_item.created_at
+                            stock_min_threshold_default = oldest_item.stock_min_threshold
+                        else:
+                            created_at = None
+                            stock_min_threshold_default = 1
+                        
                         items_to_update = Item.objects.filter(
                             user=request.user,
-                            stock_min_threshold=stock_min_threshold_default  # 変更されていないアイテムのみ対象
+                            stock_min_threshold=stock_min_threshold_default,
+                            created_at__gt=created_at  
                         )
+                        
                         if items_to_update.exists():
                             for item in items_to_update:
                                 item.stock_min_threshold = new_value
