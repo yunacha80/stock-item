@@ -77,20 +77,21 @@
         {% block content %}
         {% endblock %}
     </div>
-</body>
-<script>
-    function adjustContentMargin() {
-        const header = document.getElementById("main-header");
-        const content = document.querySelector(".main-content");
-        if (header && content) {
-            const headerHeight = header.offsetHeight;
-            content.style.setProperty("margin-top", headerHeight + "px", "important");
+    {% block scripts %}{% endblock %}
+
+    <script>
+        function adjustContentMargin() {
+            const header = document.getElementById("main-header");
+            const content = document.querySelector(".main-content");
+            if (header && content) {
+                const headerHeight = header.offsetHeight;
+                content.style.setProperty("margin-top", headerHeight + "px", "important");
+            }
         }
-    }
 
-    window.addEventListener("load", adjustContentMargin);
-    window.addEventListener("resize", adjustContentMargin);
-</script>
+        window.addEventListener("load", adjustContentMargin);
+        window.addEventListener("resize", adjustContentMargin);
+    </script>
 
-
+</body>
 </html>

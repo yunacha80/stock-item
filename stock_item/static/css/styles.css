@@ -1932,3 +1932,18 @@ textarea:focus {
     margin-bottom: 10px;
     line-height: 1.4;
   }
+
+  .quantity-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.quantity-display[readonly] {
+    border: none;
+    background: none;
+    outline: none;
+    text-align: center;
+    width: 20px;  
+    font-weight: bold; 
+}

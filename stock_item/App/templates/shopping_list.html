@@ -54,7 +54,7 @@
                     <td>
                         <div class="quantity-control">
                             <button type="button" class="decrement" data-purchase-item-id="{{ item.id }}">－</button>
-                            <span class="quantity-display" id="quantity-{{ item.id }}">{{ item.planned_purchase_quantity }}</span>
+                            <input class="quantity-display" id="quantity-{{ item.id }}" value="{{ item.planned_purchase_quantity|default_if_none:1 }}" readonly>
                             <button type="button" class="increment" data-purchase-item-id="{{ item.id }}">＋</button>
                         </div>
                     </td>
@@ -76,6 +76,10 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <p id="resuggest-message" style="display: none; color: crimson; font-weight: bold; text-align: center; margin-top: 10px;">
+            購入予定数を変更しました。<br>再度買い回り提案をクリックして再提案を実行してください。
+        </p>
 
         <div class="button-container">
             <button type="submit" name="action" value="suggest" class="btn btn-primary">買い回り提案</button>
@@ -143,7 +147,7 @@
                     ⚠ 以下のアイテムは、全店舗で価格が不明または取扱いがないため、最安値ルートには含まれていません:<br>
                     ・{{ suggestion.missing_items|join:", " }}<br>
                     <li style="color:crimson; font-weight:600; padding-left: 20px; font-size:13px">※最安値ルートでは、価格が登録されている店舗のみを比較対象としています。<br>
-                    　よろしければ、価格を登録するか、他のコース（最短時間・コストパフォーマンス重視）もご確認ください。
+                      よろしければ、価格を登録するか、他のコース（最短時間・コストパフォーマンス重視）もご確認ください。
                     </li>
                 </li>
                 {% endif %}
@@ -184,147 +188,177 @@
     {% endif %}
     <br><br><br>
 
-</body>
+    {{ selected_item_ids|json_script:"selected-item-ids" }}
 
+    {% block scripts %}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const selectedItemIds = JSON.parse('{{ selected_item_ids|safe }}'.replace(/'/g, '"'));
-    
-            // チェックボックス状態を初期化
-            document.querySelectorAll(".select-item").forEach(checkbox => {
-                if (selectedItemIds.includes(checkbox.value)) {
-                    checkbox.checked = true;
-                }
-    
-                checkbox.addEventListener("change", updateSelectedCount);
-            });
-    
+            const selectedItemIds = JSON.parse(document.getElementById("selected-item-ids").textContent);
+            console.log("読み込まれたID一覧:", selectedItemIds);
+
+            function getCSRFToken() {
+                return document.querySelector("[name=csrfmiddlewaretoken]").value;
+            }
+
             function updateSelectedCount() {
                 const selectedCount = document.querySelectorAll(".select-item:checked").length;
                 document.getElementById("selected-items-count").textContent = selectedCount;
             }
-    
-            updateSelectedCount();  // 初回表示時の数
-    
-            // ＋−ボタン処理
-            document.querySelectorAll(".decrement, .increment").forEach(button => {
-                button.addEventListener("click", async function () {
-                    const purchaseItemId = this.dataset.purchaseItemId;
-                    if (!purchaseItemId) return;
-        
-                    const isIncrement = this.classList.contains("increment");
-                    const quantityDisplay = document.getElementById(`quantity-${purchaseItemId}`);
-                    let newQuantity = parseInt(quantityDisplay.textContent) || 0;
-        
-                    newQuantity = isIncrement ? newQuantity + 1 : Math.max(0, newQuantity - 1);
-        
-                    try {
-                        const response = await fetch("{% url 'update_purchase_quantity' %}", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRFToken": getCSRFToken(),
-                            },
-                            body: JSON.stringify({ 
-                                purchase_item_id: purchaseItemId, 
-                                new_quantity: newQuantity 
-                            })
-                        });
-        
-                        const data = await response.json();
-                        if (data.success) {
-                            quantityDisplay.textContent = data.planned_purchase_quantity;
-                            console.log("保存成功:", data.message);
-                        } else {
-                            alert("エラー：" + data.message);
-                        }
-                    } catch (error) {
-                        alert("ネットワークエラーが発生しました。");
+
+            async function handleQuantityClick(event) {
+                const purchaseItemId = this.dataset.purchaseItemId;
+                console.log("＋ボタン押された！", purchaseItemId);
+                if (!purchaseItemId) return;
+
+                const isIncrement = this.classList.contains("increment");
+                const quantityDisplay = document.getElementById(`quantity-${purchaseItemId}`);
+                let newQuantity = parseInt(quantityDisplay.value) || 0;
+                newQuantity = isIncrement ? newQuantity + 1 : Math.max(1, newQuantity - 1);
+
+                try {
+                    const response = await fetch("{% url 'update_purchase_quantity' %}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCSRFToken(),
+                        },
+                        body: JSON.stringify({
+                            purchase_item_id: purchaseItemId,
+                            new_quantity: newQuantity
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        quantityDisplay.value = data.planned_purchase_quantity;
+                        showResuggestMessageIfSuggestionsExist();
+                    } else {
+                        alert("エラー：" + data.message);
                     }
-                });
-            });
-        
-            function getCSRFToken() {
-                return document.querySelector("[name=csrfmiddlewaretoken]").value;
-            }
-        
-
-            // 削除ボタン処理
-            document.querySelectorAll(".btn-warning").forEach(button => {
-                button.addEventListener("click", async function (event) {
-                    event.preventDefault();
-                    const itemId = this.value;
-                    if (!confirm("本当に削除しますか？")) return;
-            
-                    try {
-                        const response = await fetch(`/remove-from-shopping-list/${itemId}/`, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRFToken": getCSRFToken(),
-                            },
-                        });
-            
-                        const data = await response.json();
-            
-                        if (response.ok && data.success) {
-                            // 成功した場合はアイテムを画面から削除
-                            const itemRow = document.querySelector(`#item-${itemId}`);
-                            if (itemRow) itemRow.remove();
-                            updateSelectedCount();  // 選択数の更新
-                            alert(data.message);  // 成功メッセージを表示
-                        } else {
-                            // エラーメッセージを表示
-                            alert(data.message || "削除に失敗しました。");
-                        }
-                    } catch (error) {
-                        console.error("削除リクエスト中にエラーが発生しました:", error);
-                        alert("ネットワークエラーが発生しました。");
-                    }
-                });
-            });
-            
-            function getCSRFToken() {
-                const tokenElement = document.querySelector('input[name="csrfmiddlewaretoken"]');
-                return tokenElement ? tokenElement.value : '';
-            }
-
-            // 在庫更新ボタンのクリックイベントを処理
-            const updateButton = document.querySelector("button[name='action'][value='update']");
-            if (updateButton) {
-            updateButton.addEventListener("click", function (event) {
-                const rows = document.querySelectorAll("tbody tr");
-                let hasError = false;
-                let errorMessages = [];
-
-                rows.forEach(row => {
-                    const itemId = row.id.split("-")[1];  // item-{{ item.item.id }} から ID 部分を取得
-                    const itemName = row.getAttribute("data-item-name");  // アイテム名を取得
-                    const purchasedCheckbox = row.querySelector(`input[name='purchased_${itemId}']`);
-                    const purchasedQuantity = row.querySelector(`input[name='purchased_quantity_${itemId}']`);
-                    const purchasedDate = row.querySelector(`input[name='purchased_date_${itemId}']`);
-
-                    if (purchasedCheckbox && purchasedCheckbox.checked) {
-                        if (!purchasedQuantity.value) {
-                            errorMessages.push(`${itemName} の購入数を入力してください。`);
-                            hasError = true;
-                        }
-                        if (!purchasedDate.value) {
-                            errorMessages.push(`${itemName} の購入日を入力してください。`);
-                            hasError = true;
-                        }
-                    }
-                });
-    
-                if (hasError) {
-                    event.preventDefault();  // フォーム送信を停止
-                    alert(errorMessages.join("\n"));  // エラーメッセージを表示
+                } catch (error) {
+                    alert("ネットワークエラーが発生しました。");
                 }
-            });
-        }
-    });
+            }
+
+            function attachQuantityHandlers() {
+                document.querySelectorAll(".decrement, .increment").forEach(button => {
+                    button.removeEventListener("click", handleQuantityClick);
+                    button.addEventListener("click", handleQuantityClick);
+                });
+            }
+
+            function setupDeleteButtons() {
+                document.querySelectorAll(".btn-warning").forEach(button => {
+                    button.addEventListener("click", async function (event) {
+                        event.preventDefault();
+                        const itemId = this.value;
+                        if (!confirm("本当に削除しますか？")) return;
+
+                        try {
+                            const response = await fetch(`/remove-from-shopping-list/${itemId}/`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRFToken": getCSRFToken(),
+                                },
+                            });
+
+                            const data = await response.json();
+                            if (response.ok && data.success) {
+                                const itemRow = document.querySelector(`#item-${itemId}`);
+                                if (itemRow) itemRow.remove();
+                                updateSelectedCount();
+                                alert(data.message);
+                            } else {
+                                alert(data.message || "削除に失敗しました。");
+                            }
+                        } catch (error) {
+                            alert("ネットワークエラーが発生しました。");
+                        }
+                    });
+                });
+            }
+
+            function setupUpdateValidation() {
+                const updateButton = document.querySelector("button[name='action'][value='update']");
+                if (updateButton) {
+                    updateButton.addEventListener("click", function (event) {
+                        const rows = document.querySelectorAll("tbody tr");
+                        let hasError = false;
+                        let errorMessages = [];
+
+                        rows.forEach(row => {
+                            const itemId = row.id.split("-")[1];
+                            const itemName = row.getAttribute("data-item-name");
+                            const purchasedCheckbox = row.querySelector(`input[name='purchased_${itemId}']`);
+                            const purchasedQuantity = row.querySelector(`input[name='purchased_quantity_${itemId}']`);
+                            const purchasedDate = row.querySelector(`input[name='purchased_date_${itemId}']`);
+
+                            if (purchasedCheckbox && purchasedCheckbox.checked) {
+                                if (!purchasedQuantity.value) {
+                                    errorMessages.push(`${itemName} の購入数を入力してください。`);
+                                    hasError = true;
+                                }
+                                if (!purchasedDate.value) {
+                                    errorMessages.push(`${itemName} の購入日を入力してください。`);
+                                    hasError = true;
+                                }
+                            }
+                        });
+
+                        if (hasError) {
+                            event.preventDefault();
+                            alert(errorMessages.join("\n"));
+                        }
+                    });
+                }
+            }
+
+            function showResuggestMessageIfSuggestionsExist() {
+                const suggestionSection = document.querySelector(".suggestions");
+                const messageDiv = document.getElementById("resuggest-message");
+                if (messageDiv && suggestionSection && suggestionSection.children.length > 0) {
+                    messageDiv.style.display = "block";
+                }
+            }
+
+            function hideResuggestMessage() {
+                const messageDiv = document.getElementById("resuggest-message");
+                if (messageDiv) {
+                    messageDiv.style.display = "none";
+                }
+            }
+
+            function setupSuggestButton() {
+                const suggestBtn = document.querySelector("button[name='action'][value='suggest']");
+                if (suggestBtn) {
+                    suggestBtn.addEventListener("click", hideResuggestMessage);
+                }
+            }
+
+            function setupCheckboxCount() {
+                document.querySelectorAll(".select-item").forEach(checkbox => {
+                    if (selectedItemIds.includes(checkbox.value)) {
+                        checkbox.checked = true;
+                    }
+                    checkbox.addEventListener("change", updateSelectedCount);
+                });
+                updateSelectedCount();
+            }
+
+            // 実行
+            setupCheckboxCount();
+            attachQuantityHandlers();
+            setupDeleteButtons();
+            setupUpdateValidation();
+            setupSuggestButton();
+        });
     </script>
-    
+{% endblock %}
+
+
+
+
 </body>
 {% endblock %}
 </html>
