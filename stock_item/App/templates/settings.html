@@ -198,8 +198,9 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                inputField.value = data.new_value; // ✅ 更新後の値を即時反映
+                inputField.value = data.new_value; // 更新後の値を即時反映
                 alert("在庫最低値を変更しました");
+                location.reload();
             } else {
                 alert("変更に失敗しました: " + data.message);
             }

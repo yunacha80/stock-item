@@ -938,44 +938,47 @@ def settings_view(request):
     categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
     can_add_category = ItemCategory.objects.filter(user=request.user).count() < 10
 
-    if request.method == "POST":
-        if "update_stock_threshold" in request.POST:
-            # 在庫最低値の一括変更（変更されていない `stock_min_threshold` を更新）
-            new_value = request.POST.get("stock_min_threshold", None)
-            if new_value is not None:
-                try:
-                    new_value = int(new_value)
-                    if new_value > 0:  # 正の整数のみ許可
-                        # items_to_update = Item.objects.filter(
-                        #     user=request.user,
-                        #     stock_min_threshold=stock_min_threshold_default  # 変更されていないアイテムのみ対象
-                        # )
-                        oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
-                        if oldest_item:
-                            created_at = oldest_item.created_at
-                            stock_min_threshold_default = oldest_item.stock_min_threshold
-                        else:
-                            created_at = None
-                            stock_min_threshold_default = 1
-                        
-                        items_to_update = Item.objects.filter(
-                            user=request.user,
-                            stock_min_threshold=stock_min_threshold_default,
-                            created_at__gt=created_at  
-                        )
-                        
-                        if items_to_update.exists():
-                            for item in items_to_update:
-                                item.stock_min_threshold = new_value
-                            Item.objects.bulk_update(items_to_update, ["stock_min_threshold"])
-                            messages.success(request, f"デフォルトの在庫最低値を {new_value} に更新しました。")
-                            return JsonResponse({"success": True, "new_value": new_value})  
-                        else:
-                            return JsonResponse({"success": False, "message": "変更対象のアイテムがありません。"})
+    if "update_stock_threshold" in request.POST:
+        new_value = request.POST.get("stock_min_threshold", None)
+        if new_value is not None:
+            try:
+                new_value = int(new_value)
+                if new_value > 0:
+                    # 最初のアイテムをデフォルト判定基準とする
+                    oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
+                    if oldest_item:
+                        created_at = oldest_item.created_at
+                        stock_min_threshold_default = oldest_item.stock_min_threshold
                     else:
-                        return JsonResponse({"success": False, "message": "1以上の数値を入力してください。"})
-                except ValueError:
-                    return JsonResponse({"success": False, "message": "無効な値が入力されました。"})
+                        # アイテムが1つもない場合、デフォルトを保存用に設定
+                        created_at = None
+                        stock_min_threshold_default = 1
+                    
+                    # 変更対象アイテム（既存でデフォルトと同じ値のものだけ）
+                    items_to_update = Item.objects.filter(
+                        user=request.user,
+                        stock_min_threshold=stock_min_threshold_default,
+                        created_at__gt=created_at
+                    )
+                    
+                    if items_to_update.exists():
+                        for item in items_to_update:
+                            item.stock_min_threshold = new_value
+                        Item.objects.bulk_update(items_to_update, ["stock_min_threshold"])
+
+                    # 🔽 デフォルト値そのものを oldest_item に保存（常に）
+                    if oldest_item:
+                        oldest_item.stock_min_threshold = new_value
+                        oldest_item.save()
+
+                    return JsonResponse({
+                        "success": True,
+                        "message": f"デフォルトの在庫最低値を {new_value} に更新しました。"
+                    })
+                else:
+                    return JsonResponse({"success": False, "message": "1以上の数値を入力してください。"})
+            except ValueError:
+                return JsonResponse({"success": False, "message": "無効な値が入力されました。"})
 
         # カテゴリ追加処理
         if "add_category" in request.POST:
