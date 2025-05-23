@@ -63,9 +63,9 @@
             <p>※個別で在庫最低値設定したアイテムを除く</P>
             <form method="POST" action="{% url 'settings' %}" class="form-list" onsubmit="updateStockThreshold(event)">
                 {% csrf_token %}
-                <input type="hidden" name="update_stock_threshold">
+                <input type="hidden" name="update_stock_threshold" value="1">
                 <input id="stock_min_threshold" type="number" name="stock_min_threshold" 
-                        value="{{ stock_min_threshold_default }}" min="1" required><br><br>
+                        value="{{ stock_min_threshold_default }}" min="1" required><br>
                 <button type="submit" class="btn-add">変更</button>
             </form>
         </div>
@@ -102,9 +102,6 @@
             {% endif %}
         </div>
         
-    </div>
-
-
     </div>
     
 
@@ -199,7 +196,7 @@
         .then(data => {
             if (data.success) {
                 inputField.value = data.new_value; // 更新後の値を即時反映
-                alert("在庫最低値を変更しました");
+                alert(`デフォルトの在庫最低値を ${data.new_value} に更新しました。`);
                 location.reload();
             } else {
                 alert("変更に失敗しました: " + data.message);

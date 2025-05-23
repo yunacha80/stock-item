@@ -169,6 +169,12 @@ class ItemCategoryForm(forms.ModelForm):
 
         
 class ItemForm(forms.ModelForm):
+    last_purchase_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="最終購入日",
+        required=True,
+        initial=timezone.now().date  
+    )
     class Meta:
         model = Item
         fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date', 'reminder']
@@ -193,11 +199,11 @@ class ItemForm(forms.ModelForm):
             'reminder': '購入頻度を分析し、買い忘れ防ぐためのリマインダー機能',
         }
 
-    last_purchase_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
-        label="最終購入日",
-        required=True
-    )
+    # last_purchase_date = forms.DateField(
+    #     widget=forms.DateInput(attrs={'type': 'date'}),
+    #     label="最終購入日",
+    #     required=True
+    # )
 
     def clean_last_purchase_date(self):
         last_date = self.cleaned_data.get('last_purchase_date')
@@ -212,7 +218,7 @@ class ItemForm(forms.ModelForm):
         self.user = user
 
         if user:
-            self.fields['category'].queryset = ItemCategory.objects.filter(user=user)
+            self.fields['category'].queryset = ItemCategory.objects.filter(user=user).order_by('display_order')
 
         form_control_fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date']
         for field in form_control_fields:

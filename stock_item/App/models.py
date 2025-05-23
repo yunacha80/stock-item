@@ -1,11 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser,BaseUserManager
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.timezone import now
 from django.db.models.signals import post_save
 from datetime import timedelta
+from django.conf import settings
 
 # from .models import Category
 
@@ -48,7 +48,7 @@ class User(AbstractBaseUser):
 
 
 class ItemCategory(models.Model):
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, blank=False, null=False)
     display_order = models.IntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -63,7 +63,7 @@ class ItemCategory(models.Model):
     
 
 class Store(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=50, blank=False, null=False)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     address = models.CharField(max_length=200, blank=True, null=True)
@@ -93,7 +93,7 @@ class ItemManager(models.Manager):
             )
 
 class Item(models.Model):
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     category = models.ForeignKey('ItemCategory', on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     stock_quantity = models.IntegerField(default=0)
@@ -288,5 +288,13 @@ class PurchaseItem(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - 購入予定数: {self.planned_purchase_quantity}"
-
     
+
+class UserSetting(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    default_stock_min_threshold = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} の最低在庫デフォルト値: {self.default_stock_min_threshold}"

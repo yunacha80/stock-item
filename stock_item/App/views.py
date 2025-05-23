@@ -18,7 +18,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse,reverse_lazy
 from django import forms
 from django.views.generic.edit import FormView
-from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference,PurchaseItem
+from .models import Item,ItemCategory,PurchaseHistory,Store,StoreTravelTime,StoreItemReference,PurchaseItem,UserSetting
 from .forms import CustomPasswordChangeForm,ItemForm, ItemCategoryForm,PurchaseHistoryForm,StoreForm,StoreTravelTimeForm,StoreTravelTimeFormSet,StoreItemReferenceForm,StoreItemReferenceFormSet
 from django.utils import timezone
 from django.utils.timezone import now
@@ -212,9 +212,9 @@ def item_list(request):
 def add_item(request):
     user = request.user
 
-    # 現在のデフォルト `stock_min_threshold`
-    oldest_item = Item.objects.filter(user=user).order_by('created_at').first()
-    stock_min_threshold_default = oldest_item.stock_min_threshold if oldest_item else 1
+    # 現在のデフォルト stock_min_threshold を UserSetting から取得
+    user_setting = UserSetting.objects.filter(user=user).first()
+    stock_min_threshold_default = user_setting.default_stock_min_threshold if user_setting else 1
 
     stores = Store.objects.filter(user=user)
     store_forms = []
@@ -929,14 +929,14 @@ def settings_view(request):
     """
     設定画面ビュー
     """
-    # 現在のデフォルト値を取得（最も古い `Item` の `stock_min_threshold` を基準とする）
-    oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
-    stock_min_threshold_default = oldest_item.stock_min_threshold if oldest_item else 1
+    # UserSetting から現在のデフォルト値を取得
+    user_setting = UserSetting.objects.filter(user=request.user).first()
+    stock_min_threshold_default = user_setting.default_stock_min_threshold if user_setting else 1
 
     stores = Store.objects.filter(user=request.user)
     can_add_store = stores.count() < 10
     categories = ItemCategory.objects.filter(user=request.user).order_by('display_order')
-    can_add_category = ItemCategory.objects.filter(user=request.user).count() < 10
+    can_add_category = categories.count() < 10
 
     if "update_stock_threshold" in request.POST:
         new_value = request.POST.get("stock_min_threshold", None)
@@ -944,48 +944,43 @@ def settings_view(request):
             try:
                 new_value = int(new_value)
                 if new_value > 0:
-                    # 最初のアイテムをデフォルト判定基準とする
+                    # アイテムの更新対象を取得
                     oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
-                    if oldest_item:
-                        created_at = oldest_item.created_at
-                        stock_min_threshold_default = oldest_item.stock_min_threshold
-                    else:
-                        # アイテムが1つもない場合、デフォルトを保存用に設定
-                        created_at = None
-                        stock_min_threshold_default = 1
-                    
-                    # 変更対象アイテム（既存でデフォルトと同じ値のものだけ）
+                    created_at = oldest_item.created_at if oldest_item else None
+
                     items_to_update = Item.objects.filter(
                         user=request.user,
                         stock_min_threshold=stock_min_threshold_default,
-                        created_at__gt=created_at
                     )
-                    
+                    if created_at:
+                        items_to_update = items_to_update.filter(created_at__gt=created_at)
+
                     if items_to_update.exists():
                         for item in items_to_update:
                             item.stock_min_threshold = new_value
                         Item.objects.bulk_update(items_to_update, ["stock_min_threshold"])
 
-                    # 🔽 デフォルト値そのものを oldest_item に保存（常に）
-                    if oldest_item:
-                        oldest_item.stock_min_threshold = new_value
-                        oldest_item.save()
+                    # デフォルト値を UserSetting に保存
+                    user_setting, _ = UserSetting.objects.get_or_create(user=request.user)
+                    user_setting.default_stock_min_threshold = new_value
+                    user_setting.save()
 
                     return JsonResponse({
                         "success": True,
-                        "message": f"デフォルトの在庫最低値を {new_value} に更新しました。"
+                        "message": f"デフォルトの在庫最低値を {new_value} に更新しました。",
+                        "new_value": new_value
                     })
                 else:
                     return JsonResponse({"success": False, "message": "1以上の数値を入力してください。"})
             except ValueError:
                 return JsonResponse({"success": False, "message": "無効な値が入力されました。"})
 
-        # カテゴリ追加処理
-        if "add_category" in request.POST:
-            category_name = request.POST.get("category_name", "").strip()
-            if category_name:
-                ItemCategory.objects.create(user=request.user, name=category_name)
-                messages.success(request, f"カテゴリ '{category_name}' を追加しました。")
+    # カテゴリ追加処理
+    if "add_category" in request.POST:
+        category_name = request.POST.get("category_name", "").strip()
+        if category_name:
+            ItemCategory.objects.create(user=request.user, name=category_name)
+            messages.success(request, f"カテゴリ '{category_name}' を追加しました。")
 
     return render(request, "settings.html", {
         "stock_min_threshold_default": stock_min_threshold_default,
@@ -1111,6 +1106,15 @@ def build_result_for_single_store(store, purchase_items, missing_items=None):
     }
 
 
+from itertools import permutations
+
+def average_time_to_other_stores(target_store, other_stores, travel_times):
+    times = [
+        travel_times.get((target_store, other), travel_times.get((other, target_store), float("inf")))
+        for other in other_stores if other != target_store
+    ]
+    return sum(times) / len(times) if times else float("inf")
+
 def calculate_route(purchase_items, strategy, user, consider_missing=True):
     if not purchase_items:
         return {
@@ -1140,110 +1144,100 @@ def calculate_route(purchase_items, strategy, user, consider_missing=True):
                 travel_time = StoreTravelTime.objects.filter(store1=store1, store2=store2).first()
                 travel_times[(store1, store2)] = travel_time.travel_time_min if travel_time else float("inf")
 
-    for purchase_item in purchase_items:
-        item = purchase_item.item
-        references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
-        quantity = purchase_item.planned_purchase_quantity or 1
+    if strategy in ["balance", "time"]:
+        candidate_routes = permutations(stores)
+        best_score = float("inf")
+        best_route = []
 
-        if not references.exists():
-            missing_items.add(item.name)
-            if not consider_missing:
+        for route in candidate_routes:
+            cleaned = clean_route(route)
+            if not cleaned:
                 continue
 
-        valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
-        unknown_refs = references.filter(price_unknown=True, no_handling=False, price__isnull=True)
+            route_results = {}
+            route_store_details = {}
+            route_total_price = 0
+            route_unit_total_price = 0
+            route_unknown_prices = []
+            used_stores = set()
+            route_missing_items = set()
 
-        if not valid_refs.exists() and not unknown_refs.exists():
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
+            for purchase_item in purchase_items:
+                item = purchase_item.item
+                quantity = purchase_item.planned_purchase_quantity or 1
+                references = StoreItemReference.objects.filter(item=item, store__in=cleaned).order_by('-updated_at')
 
-        best_reference = None
-        candidate_refs = list(valid_refs) + list(unknown_refs)
+                valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
+                unknown_refs = references.filter(price_unknown=True, no_handling=False, price__isnull=True)
 
-        try:
-            if strategy == "price":
-                if not valid_refs.exists():
-                    missing_items.add(item.name)
-                    continue
-                candidate_refs = list(valid_refs)
-            else:
-                if not valid_refs.exists() and not unknown_refs.exists():
-                    missing_items.add(item.name)
-                    if not consider_missing:
-                        continue
-                candidate_refs = list(valid_refs) + list(unknown_refs)
-                
-            if strategy == "price":
-                best_reference = min(candidate_refs, key=lambda ref: (
-                    (ref.price / ref.price_per_unit) * quantity,
-                    ref.store.travel_time_home_min
-                ))
-            elif strategy == "time":
-                best_reference = min(candidate_refs, key=lambda ref: (
-                    ref.store.travel_time_home_min + min(
-                        travel_times.get((ref.store, other), float("inf")) for other in stores
-                    ),
-                    ((ref.price / ref.price_per_unit) * quantity) if ref.price and ref.price_per_unit else float("inf")
-                    ))
-                
-            elif strategy == "balance":
-                best_reference = min(candidate_refs, key=lambda ref: (
-                    0.6 * (((ref.price / ref.price_per_unit) * quantity) if ref.price and ref.price_per_unit else float("inf")) +
-                    0.4 * (
-                        ref.store.travel_time_home_min + min(
-                            travel_times.get((ref.store, other), float("inf")) for other in stores
+                if valid_refs.exists():
+                    ref = min(valid_refs, key=lambda r: r.price / r.price_per_unit)
+                elif unknown_refs.exists():
+                    refs_in_route = unknown_refs.filter(store__in=used_stores)
+                    if refs_in_route.exists():
+                        ref = min(refs_in_route, key=lambda r: r.store.travel_time_home_min)
+                    else:
+                        ref = min(
+                            unknown_refs,
+                            key=lambda r: (
+                                0.6 * r.store.travel_time_home_min +
+                                0.4 * average_time_to_other_stores(r.store, cleaned, travel_times)
+                            )
                         )
-                    )
-                ))
-            else:
+                else:
+                    route_missing_items.add(item.name)
+                    if not consider_missing:
+                        break
+                    continue
+
+                store = ref.store
+                used_stores.add(store)
+
+                if ref.price is not None and ref.price_per_unit:
+                    unit_price = ref.price / ref.price_per_unit
+                    item_total_price = unit_price * quantity
+                else:
+                    unit_price = None
+                    item_total_price = 0
+                    route_unknown_prices.append(f"{store.name}の{item.name}")
+
+                route_results[item.name] = {
+                    'store': store.name,
+                    'unit_price': unit_price,
+                    'price': item_total_price,
+                    'quantity': quantity,
+                }
+
+                if store.name not in route_store_details:
+                    route_store_details[store.name] = []
+                route_store_details[store.name].append({
+                    'name': item.name,
+                    'quantity': quantity,
+                    'unit_price': unit_price,
+                })
+
+                route_total_price += item_total_price
+                if unit_price:
+                    route_unit_total_price += unit_price * quantity
+
+            used_route = [s for s in cleaned if s in used_stores]
+            if not used_route:
                 continue
 
-        except Exception:
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-        if not best_reference:
-            continue
+            route_time = calculate_travel_time(used_route, travel_times)
+            score = 0.6 * route_total_price + 0.4 * route_time if strategy == "balance" else route_time
 
-        store = best_reference.store
+            if score < best_score:
+                best_score = score
+                best_route = used_route
+                results = route_results
+                store_details = route_store_details
+                total_price = route_total_price
+                unit_total_price = route_unit_total_price
+                unknown_prices = route_unknown_prices
+                missing_items = route_missing_items
 
-        if best_reference.price is not None and best_reference.price_per_unit:
-            unit_price = best_reference.price / best_reference.price_per_unit
-            item_total_price = unit_price * quantity
-        else:
-            unit_price = None
-            item_total_price = 0
-            unknown_prices.append(f"{store.name}の{item.name}")
-
-        results[item.name] = {
-            'store': store.name,
-            'unit_price': unit_price,
-            'price': item_total_price,
-            'quantity': quantity,
-        }
-
-        if store not in store_item_map:
-            store_item_map[store] = []
-        store_item_map[store].append(item)
-
-        if store.name not in store_details:
-            store_details[store.name] = []
-        store_details[store.name].append({
-            'name': item.name,
-            'quantity': quantity,
-            'unit_price': unit_price,
-        })
-
-        total_price += item_total_price
-        if unit_price:
-            unit_total_price += unit_price * quantity
-
-    selected_stores = list(store_item_map.keys())
-
-    if not selected_stores:
-        if strategy == "price" and len(results) < len(purchase_items):
-        
+        if not best_route:
             return {
                 "details": {},
                 "route": [],
@@ -1257,20 +1251,84 @@ def calculate_route(purchase_items, strategy, user, consider_missing=True):
                 "no_suggestions": True,
             }
 
-    best_route = min(
-        permutations(selected_stores),
-        key=lambda r: (
-            sum(travel_times.get((r[i], r[i+1]), float("inf")) for i in range(len(r)-1)) +
-            r[0].travel_time_home_min +
-            r[-1].travel_time_home_min
-        )
-    )
+        total_travel_time = calculate_travel_time(best_route, travel_times)
 
-    total_travel_time = (
-        sum(travel_times.get((best_route[i], best_route[i+1]), float("inf")) for i in range(len(best_route)-1)) +
-        best_route[0].travel_time_home_min +
-        best_route[-1].travel_time_home_min
-    )
+    else:  # strategy == "price"
+        for purchase_item in purchase_items:
+            item = purchase_item.item
+            quantity = purchase_item.planned_purchase_quantity or 1
+            references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
+
+            if not references.exists():
+                missing_items.add(item.name)
+                if not consider_missing:
+                    continue
+
+            valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
+
+            if not valid_refs.exists():
+                missing_items.add(item.name)
+                continue
+
+            best_ref = min(valid_refs, key=lambda ref: (ref.price / ref.price_per_unit) * quantity)
+
+            store = best_ref.store
+            unit_price = (best_ref.price / best_ref.price_per_unit) if best_ref.price and best_ref.price_per_unit else None
+            item_total_price = unit_price * quantity if unit_price else 0
+            if unit_price is None:
+                unknown_prices.append(f"{store.name}の{item.name}")
+
+            results[item.name] = {
+                'store': store.name,
+                'unit_price': unit_price,
+                'price': item_total_price,
+                'quantity': quantity,
+            }
+
+            if store not in store_item_map:
+                store_item_map[store] = []
+            store_item_map[store].append(item)
+
+            if store.name not in store_details:
+                store_details[store.name] = []
+            store_details[store.name].append({
+                'name': item.name,
+                'quantity': quantity,
+                'unit_price': unit_price,
+            })
+
+            total_price += item_total_price
+            if unit_price:
+                unit_total_price += unit_price * quantity
+
+        selected_stores = list(store_item_map.keys())
+        if not selected_stores:
+            return {
+                "details": {},
+                "route": [],
+                "total_price": 0,
+                "unit_total_price": 0,
+                "total_time": 0,
+                "store_details": {},
+                "missing_items": [item.item.name for item in purchase_items],
+                "unknown_prices": [],
+                "mode": strategy,
+                "no_suggestions": True,
+            }
+
+        best_route = min(
+            permutations(selected_stores),
+            key=lambda r: (
+                sum(travel_times.get((r[i], r[i+1]), float("inf")) for i in range(len(r)-1)) +
+                r[0].travel_time_home_min +
+                r[-1].travel_time_home_min
+            )
+        )
+        total_travel_time = (
+            sum(travel_times.get((best_route[i], best_route[i+1]), float("inf")) for i in range(len(best_route)-1)) +
+            best_route[0].travel_time_home_min +
+            best_route[-1].travel_time_home_min
+        )
 
     return {
         "details": results,
@@ -1284,6 +1342,7 @@ def calculate_route(purchase_items, strategy, user, consider_missing=True):
         "mode": strategy,
         "no_suggestions": False,
     }
+
 
 
 
