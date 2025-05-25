@@ -220,6 +220,12 @@ class ItemForm(forms.ModelForm):
         if user:
             self.fields['category'].queryset = ItemCategory.objects.filter(user=user).order_by('display_order')
 
+            from App.models import UserSetting
+            user_setting = UserSetting.objects.filter(user=user).first()
+            if user_setting:
+                self.fields['stock_min_threshold'].initial = user_setting.default_stock_min_threshold
+
+
         form_control_fields = ['name', 'category', 'stock_quantity', 'memo', 'stock_min_threshold', 'last_purchase_date']
         for field in form_control_fields:
             self.fields[field].widget.attrs.update({'class': 'form-control'})

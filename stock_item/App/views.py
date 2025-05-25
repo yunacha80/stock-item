@@ -212,9 +212,10 @@ def item_list(request):
 def add_item(request):
     user = request.user
 
-    # 現在のデフォルト stock_min_threshold を UserSetting から取得
-    user_setting = UserSetting.objects.filter(user=user).first()
-    stock_min_threshold_default = user_setting.default_stock_min_threshold if user_setting else 1
+
+    user_setting, _ = UserSetting.objects.get_or_create(user=user)
+    stock_min_threshold_default = user_setting.default_stock_min_threshold
+
 
     stores = Store.objects.filter(user=user)
     store_forms = []
@@ -228,6 +229,10 @@ def add_item(request):
         if item_form.is_valid():  
             item = item_form.save(commit=False)  # 保存しないでインスタンスを作成
             item.user = user
+
+            # 在庫最低値を反映
+            if 'stock_min_threshold' not in item_form.changed_data:
+               item.stock_min_threshold = stock_min_threshold_default
 
             # 店舗ごとのフォームを作成
             store_forms = [
@@ -754,6 +759,8 @@ def store_add(request):
     store_limit_reached = stores.count() >= 10
     error_messages = []
     other_stores = stores
+    items = Item.objects.filter(user=request.user)
+    item_price_formset = None
 
     if request.method == 'POST':
         store_form = StoreForm(request.POST, user=request.user)
@@ -762,6 +769,14 @@ def store_add(request):
             store = store_form.save(commit=False)
             store.user = request.user
             other_stores = stores.exclude(name=store.name)
+
+            store.save()
+            store_form_valid = True
+
+            item_price_formset = StoreItemReferenceFormSet(
+                request.POST,
+                queryset=StoreItemReference.objects.filter(store=store)
+            )
 
             travel_times = []
             for store_instance in other_stores:
@@ -778,42 +793,60 @@ def store_add(request):
                 except ValueError:
                     error_messages.append(f"{store_instance.name} の移動時間は数値で入力してください。")
 
-            if not error_messages:
+            if not error_messages and item_price_formset.is_valid():
                 try:
                     with transaction.atomic():
-                        store.save()
                         for store_instance, travel_time_int in travel_times:
                             StoreTravelTime.objects.create(
-                                store1=store,
-                                store2=store_instance,
-                                travel_time_min=travel_time_int
+                                store1=store, store2=store_instance, travel_time_min=travel_time_int
                             )
                             StoreTravelTime.objects.create(
-                                store1=store_instance,
-                                store2=store,
-                                travel_time_min=travel_time_int
+                                store1=store_instance, store2=store, travel_time_min=travel_time_int
                             )
+
+                        for form in item_price_formset:
+                            reference = form.save(commit=False)
+                            reference.store = store
+                            reference.item = form.instance.item
+                            reference.save()
+
                         messages.success(request, "店舗が追加されました。")
                         return redirect('settings')
-                except Exception as e:
-                    print(f"Error: {e}")
-                    messages.error(request, "店舗の追加中にエラーが発生しました。")
 
-        return render(request, 'store_add.html', {
-            'store_form': store_form,
-            'stores': other_stores,
-            'error_messages': error_messages,
-        })
+                except Exception as e:
+                    print(f"Error during store and reference save: {e}")
+                    messages.error(request, "店舗の追加中にエラーが発生しました。")
+        else:
+            item_price_formset = StoreItemReferenceFormSet(queryset=StoreItemReference.objects.none())
 
     else:
         store_form = StoreForm(user=request.user)
+
+        if items.exists():
+            formset_forms = []
+            for item in items:
+                form = StoreItemReferenceForm(
+                    prefix=f"item_{item.id}",
+                    instance=StoreItemReference(item=item)
+                )
+                form.instance.item = item  # ★ここで item を明示
+                formset_forms.append(form)
+
+            item_price_formset = StoreItemReferenceFormSet(queryset=StoreItemReference.objects.none())
+            item_price_formset.forms = formset_forms
+            item_price_formset._errors = [form.errors for form in formset_forms]
+        else:
+            item_price_formset = None
 
     return render(request, 'store_add.html', {
         'store_form': store_form,
         'stores': stores,
         'error_messages': error_messages,
         'store_limit_reached': store_limit_reached,
+        'item_price_formset': item_price_formset,
+        'has_items': items.exists(),
     })
+
 
 
 @login_required
@@ -944,17 +977,12 @@ def settings_view(request):
             try:
                 new_value = int(new_value)
                 if new_value > 0:
-                    # アイテムの更新対象を取得
-                    oldest_item = Item.objects.filter(user=request.user).order_by('created_at').first()
-                    created_at = oldest_item.created_at if oldest_item else None
-
+                    #  ✅変更：すべての「デフォルト値を使っているアイテム」を更新
                     items_to_update = Item.objects.filter(
                         user=request.user,
                         stock_min_threshold=stock_min_threshold_default,
                     )
-                    if created_at:
-                        items_to_update = items_to_update.filter(created_at__gt=created_at)
-
+                    
                     if items_to_update.exists():
                         for item in items_to_update:
                             item.stock_min_threshold = new_value

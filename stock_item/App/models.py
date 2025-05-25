@@ -300,3 +300,13 @@ class UserSetting(models.Model):
 
     def __str__(self):
         return f"{self.user.email} の最低在庫デフォルト値: {self.default_stock_min_threshold}"
+    
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from App.models import UserSetting
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_setting(sender, instance, created, **kwargs):
+    if created:
+        UserSetting.objects.get_or_create(user=instance)

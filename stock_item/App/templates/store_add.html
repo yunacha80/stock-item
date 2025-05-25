@@ -84,6 +84,48 @@
                 </tbody>
             </table>
         </fieldset>
+        
+        {% if has_items and item_price_formset %}
+            <fieldset>
+                <legend><h2>アイテム価格設定</h2></legend>
+                {{ item_price_formset.management_form }}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>アイテム名</th>
+                            <th>価格</th>
+                            <th>入数</th>
+                            <th>メモ</th>
+                            <th>価格不明</th>
+                            <th>取扱なし</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in item_price_formset %}
+                        {% if store_form.non_field_errors %}
+                            <tr>
+                                <td colspan="6">
+                                    <ul class="errorlist">
+                                        {% for error in store_form.non_field_errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td>{{ form.instance.item.name }}</td>
+                            <td>{{ form.price }}</td>
+                            <td>{{ form.price_per_unit }}</td>
+                            <td>{{ form.memo }}</td>
+                            <td>{{ form.price_unknown }}価格不明</td>
+                            <td>{{ form.no_handling }}取り扱いなし</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </fieldset>
+        {% endif %}
 
         <br>
         <button type="submit" class="submit">保存</button>

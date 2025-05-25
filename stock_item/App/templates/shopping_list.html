@@ -169,12 +169,12 @@
     </div>
     {% endif %}
 
-    {% if show_no_suggestion_message %}
+    {% comment %} {% if show_no_suggestion_message %}
         <p style="color:red; font-weight:bold;" class="kaimawari-h2">⚠ 提案が見つかりませんでした。</p>
         {% if suggestions.0.missing_items %}
             <p style="color:red;" class="kaimawari-h2">⚠ 取扱いの有無及び価格不明: {{ suggestions.0.missing_items|join:", " }}</p>
         {% endif %}
-    {% endif %}
+    {% endif %} {% endcomment %}
 
     {% if messages %}
         <ul class="messages">
