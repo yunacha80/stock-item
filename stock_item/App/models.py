@@ -1,11 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser,BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.timezone import now
-from django.db.models.signals import post_save
 from datetime import timedelta
 from django.conf import settings
+from django.apps import apps
+
 
 # from .models import Category
 
@@ -80,7 +80,8 @@ class ItemManager(models.Manager):
         """
         在庫を更新し、必要に応じて買い物リストに追加。
         """
-        from .models import PurchaseItem  # 遅延インポートを推奨
+        from django.apps import apps
+        PurchaseItem = apps.get_model('App', 'PurchaseItem')  # 遅延インポートを推奨
 
         item.stock_quantity += purchased_quantity
         item.save()
@@ -140,6 +141,7 @@ class Item(models.Model):
         
         if self.needs_restock():
             planned_purchase_quantity = self.stock_min_threshold - self.stock_quantity
+            PurchaseItem = apps.get_model('App', 'PurchaseItem')
             purchase_item, created = PurchaseItem.objects.get_or_create(
                 item=self,
                 defaults={"planned_purchase_quantity": planned_purchase_quantity}
@@ -288,8 +290,8 @@ class PurchaseItem(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - 購入予定数: {self.planned_purchase_quantity}"
-    
 
+    
 class UserSetting(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     default_stock_min_threshold = models.PositiveIntegerField(default=1)

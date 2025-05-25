@@ -85,7 +85,7 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = 'App.User'
+AUTH_USER_MODEL = 'App.User' 
 AUTHENTICATION_BACKENDS = [
     # "App.backends.UserAuthBackend"
     'django.contrib.auth.backends.ModelBackend'
