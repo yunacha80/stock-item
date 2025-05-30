@@ -85,7 +85,7 @@
             </table>
         </fieldset>
         
-        {% if has_items and item_price_formset %}
+        {% comment %} {% if has_items and item_price_formset %}
             <fieldset>
                 <legend><h2>アイテム価格設定</h2></legend>
                 {{ item_price_formset.management_form }}
@@ -125,7 +125,7 @@
                     </tbody>
                 </table>
             </fieldset>
-        {% endif %}
+        {% endif %} {% endcomment %}
 
         <br>
         <button type="submit" class="submit">保存</button>
