@@ -27,8 +27,6 @@ from collections import defaultdict
 from datetime import datetime,timedelta,date
 
 
-
-
 # Create your views here.
 
 
@@ -1118,6 +1116,7 @@ def average_time_to_other_stores(target_store, other_stores, travel_times):
 
 
 
+
 def calculate_route(purchase_items, strategy, user, consider_missing=True):
     if not purchase_items:
         return {
@@ -1134,42 +1133,51 @@ def calculate_route(purchase_items, strategy, user, consider_missing=True):
             "no_suggestions": True,
         }
 
-    results, total_price, unit_total_price = {}, 0, 0
+    results = {}
+    total_price = 0
+    unit_total_price = 0
     missing_items = set()
     unknown_prices = []
-    store_details, travel_times = {}, {}
+    store_details = {}
     store_item_map = {}
 
     stores = Store.objects.filter(user=user)
+    travel_times = {}
     for store1 in stores:
         for store2 in stores:
             if store1 != store2:
                 travel_time = StoreTravelTime.objects.filter(store1=store1, store2=store2).first()
                 travel_times[(store1, store2)] = travel_time.travel_time_min if travel_time else float("inf")
 
-    if strategy == "time":
-        all_refs = []
-        for purchase_item in purchase_items:
-            item = purchase_item.item
-            quantity = purchase_item.planned_purchase_quantity or 1
-            references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
-            valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
-            unknown_refs = references.filter(price_unknown=True, no_handling=False, price__isnull=True)
+    all_refs = []
+    for purchase_item in purchase_items:
+        item = purchase_item.item
+        quantity = purchase_item.planned_purchase_quantity or 1
+        references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
+        valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
+        unknown_refs = references.filter(price_unknown=True, no_handling=False, price__isnull=True)
 
+        if strategy == "price":
+            if not valid_refs.exists():
+                missing_items.add(item.name)
+                continue
+            all_refs.extend(list(valid_refs))
+        else:
             if not valid_refs.exists() and not unknown_refs.exists():
                 missing_items.add(item.name)
                 if not consider_missing:
                     continue
             all_refs.extend(list(valid_refs) + list(unknown_refs))
 
-        store_scores = []
+    unique_stores = list(set(ref.store for ref in all_refs))
+    route_scores = []
 
-        for route in permutations(set(ref.store for ref in all_refs), r=2):
-            s1, s2 = route
+    for r in range(1, len(unique_stores) + 1):
+        for route in permutations(unique_stores, r=r):
             total_time = (
-                s1.travel_time_home_min +
-                travel_times.get((s1, s2), float("inf")) +
-                s2.travel_time_home_min
+                route[0].travel_time_home_min +
+                sum(travel_times.get((route[i], route[i+1]), float("inf")) for i in range(len(route)-1)) +
+                route[-1].travel_time_home_min
             )
             included = {}
             total_price = 0
@@ -1189,188 +1197,65 @@ def calculate_route(purchase_items, strategy, user, consider_missing=True):
                             unknown_prices.append(entry)
                     else:
                         total_price += unit * quantity
+
             covered_items = set(included.keys())
             if all(p.item.name in covered_items for p in purchase_items):
-                store_scores.append((total_time, total_price, included, route))
+                if strategy == "time":
+                    route_scores.append((total_time, total_price, included, route))
+                elif strategy == "balance":
+                    score = 0.6 * total_price + 0.4 * total_time
+                    route_scores.append((score, total_price, included, route, total_time))
+                elif strategy == "price":
+                    route_scores.append((total_price, total_time, included, route))
 
-        for store in set(ref.store for ref in all_refs):
-            time = store.travel_time_home_min * 2
-            included = {}
-            total_price = 0
-            for ref in all_refs:
-                if ref.store == store:
-                    quantity = next((p.planned_purchase_quantity or 1 for p in purchase_items if p.item == ref.item), 1)
-                    unit = (ref.price / ref.price_per_unit) if ref.price and ref.price_per_unit else 0
-                    included[ref.item.name] = {
-                        "store": store.name,
-                        "unit_price": unit if unit else None,
-                        "price": unit * quantity if unit else 0,
-                        "quantity": quantity,
-                    }
-                    if ref.price is None:
-                        entry = f"{store.name}の{ref.item.name}"
-                        if entry not in unknown_prices:
-                            unknown_prices.append(entry)
-                    else:
-                        total_price += unit * quantity
-            covered_items = set(included.keys())
-            if all(p.item.name in covered_items for p in purchase_items):
-                store_scores.append((time, total_price, included, [store]))
-
-        if store_scores:
-            store_scores.sort(key=lambda x: (x[0], x[1]))
-            best_time, best_price, best_details, best_route = store_scores[0]
-            unit_total_price = sum(
-                detail["unit_price"] * detail["quantity"]
-                for detail in best_details.values() if detail["unit_price"] is not None
-            )
-            store_details = {}
-            for item_name, detail in best_details.items():
-                results[item_name] = detail
-                store_details.setdefault(detail["store"], []).append({
-                    "name": item_name,
-                    "quantity": detail["quantity"],
-                    "unit_price": detail["unit_price"],
-                })
-
-            route_store_names = [store.name for store in best_route]
-            unknown_prices = [
-                entry for entry in unknown_prices
-                if any(store_name in entry for store_name in route_store_names)
-            ]
-            
-            return {
-                "details": results,
-                "route": best_route,
-                "total_price": best_price,
-                "unit_total_price": unit_total_price,
-                "total_time": best_time,
-                "store_details": store_details,
-                "missing_items": list(missing_items),
-                "unknown_prices": unknown_prices,
-                "mode": strategy,
-                "no_suggestions": False,
-            }
-        else:
-            return {
-                "details": {},
-                "route": [],
-                "total_price": 0,
-                "unit_total_price": 0,
-                "total_time": 0,
-                "store_details": {},
-                "missing_items": list(missing_items),
-                "unknown_prices": unknown_prices,
-                "mode": strategy,
-                "no_suggestions": True,
-            }
-
-    # それ以外（price, balance）
-    for purchase_item in purchase_items:
-        item = purchase_item.item
-        quantity = purchase_item.planned_purchase_quantity or 1
-        references = StoreItemReference.objects.filter(item=item, store__user=user).order_by('-updated_at')
-        valid_refs = references.filter(price__isnull=False, price_per_unit__isnull=False)
-        unknown_refs = references.filter(price_unknown=True, no_handling=False, price__isnull=True)
-
-        if not valid_refs.exists() and not unknown_refs.exists():
-            missing_items.add(item.name)
-            if not consider_missing:
-                continue
-
-        all_refs = list(valid_refs) + list(unknown_refs)
-        best_reference = None
-
-        if strategy == "price":
-            if not valid_refs.exists():
-                missing_items.add(item.name)
-                continue
-            best_reference = min(valid_refs, key=lambda ref: (
-                (ref.price / ref.price_per_unit) * quantity,
-                ref.store.travel_time_home_min
-            ))
-
+    if route_scores:
+        if strategy == "time":
+            route_scores.sort(key=lambda x: (x[0], x[1]))  # 最短時間 → 金額
+            best_time, best_price, best_details, best_route = route_scores[0]
         elif strategy == "balance":
-            best_reference = min(all_refs, key=lambda ref: (
-                0.6 * ((ref.price / ref.price_per_unit) * quantity if ref.price and ref.price_per_unit else float("inf")) +
-                0.4 * (
-                    ref.store.travel_time_home_min + min(
-                        travel_times.get((ref.store, other), float("inf")) for other in stores if other != ref.store
-                    )
-                )
-            ))
+            route_scores.sort(key=lambda x: x[0])  # 総合スコア
+            _, best_price, best_details, best_route, best_time = route_scores[0]
+        elif strategy == "price":
+            route_scores.sort(key=lambda x: (x[0], x[1]))  # 最安 → 時間
+            best_price, best_time, best_details, best_route = route_scores[0]
 
-        if not best_reference:
-            continue
-
-        store = best_reference.store
-        unit_price = (best_reference.price / best_reference.price_per_unit) if best_reference.price and best_reference.price_per_unit else None
-        item_total_price = unit_price * quantity if unit_price is not None else 0
-
-        results[item.name] = {
-            'store': store.name,
-            'unit_price': unit_price,
-            'price': item_total_price,
-            'quantity': quantity,
-        }
-
-        if store not in store_item_map:
-            store_item_map[store] = []
-        store_item_map[store].append(item)
-
-        store_details.setdefault(store.name, []).append({
-            'name': item.name,
-            'quantity': quantity,
-            'unit_price': unit_price,
-        })
-
-        if unit_price is None:
-            unknown_prices.append(f"{store.name}の{item.name}")
-        else:
-            total_price += item_total_price
-            unit_total_price += unit_price * quantity
-
-    selected_stores = list(store_item_map.keys())
-    if not selected_stores:
+        unit_total_price = sum(
+            detail["unit_price"] * detail["quantity"]
+            for detail in best_details.values() if detail["unit_price"] is not None
+        )
+        for item_name, detail in best_details.items():
+            results[item_name] = detail
+            store_details.setdefault(detail["store"], []).append({
+                "name": item_name,
+                "quantity": detail["quantity"],
+                "unit_price": detail["unit_price"],
+            })
+        route_store_names = [store.name for store in best_route]
+        unknown_prices = [entry for entry in unknown_prices if any(store_name in entry for store_name in route_store_names)]
         return {
-            "details": {},
-            "route": [],
-            "total_price": 0,
-            "unit_total_price": 0,
-            "total_time": 0,
-            "store_details": {},
+            "details": results,
+            "route": best_route,
+            "total_price": best_price,
+            "unit_total_price": unit_total_price,
+            "total_time": best_time,
+            "store_details": store_details,
             "missing_items": list(missing_items),
             "unknown_prices": unknown_prices,
             "mode": strategy,
-            "no_suggestions": True,
+            "no_suggestions": False,
         }
 
-    best_route = min(
-        permutations(selected_stores),
-        key=lambda r: (
-            sum(travel_times.get((r[i], r[i + 1]), float("inf")) for i in range(len(r) - 1)) +
-            r[0].travel_time_home_min +
-            r[-1].travel_time_home_min
-        )
-    )
-
-    total_travel_time = (
-        sum(travel_times.get((best_route[i], best_route[i + 1]), float("inf")) for i in range(len(best_route) - 1)) +
-        best_route[0].travel_time_home_min +
-        best_route[-1].travel_time_home_min
-    )
-
     return {
-        "details": results,
-        "route": best_route,
-        "total_price": total_price,
-        "unit_total_price": unit_total_price,
-        "total_time": total_travel_time,
-        "store_details": store_details,
+        "details": {},
+        "route": [],
+        "total_price": 0,
+        "unit_total_price": 0,
+        "total_time": 0,
+        "store_details": {},
         "missing_items": list(missing_items),
         "unknown_prices": unknown_prices,
         "mode": strategy,
-        "no_suggestions": False,
+        "no_suggestions": True,
     }
 
 
